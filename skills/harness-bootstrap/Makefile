@@ -85,8 +85,8 @@ selftest:
 # 规则集收窄在 pyproject.toml：select = ALL 会把中文标点算成 error，一千多条噪声
 # 之后门禁就变成调规则。版本区间也写在那里，避免判定随 ruff 升级而漂移。
 lint-python:
-	@$(PY) -c 'import ruff' 2>/dev/null || python3 -m ruff --version >/dev/null 2>&1 || { \
-	  echo "lint-python 需要 ruff：python3 -m pip install 'ruff>=0.17,<0.18'" >&2; exit 1; }
+	@$(PY) -c 'import ruff' 2>/dev/null || $(PY) -m ruff --version >/dev/null 2>&1 || { \
+	  echo "lint-python 需要 ruff：$(PY) -m pip install 'ruff>=0.17,<0.18'" >&2; exit 1; }
 	@$(PY) -m ruff check .
 
 # 工具层不在这里重写一遍：委托给模板自己的 lint 目标，
