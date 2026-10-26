@@ -56,21 +56,25 @@ harness 建设本身是修改仓库，harness 里注册的任何流程也是修�
 
 ### 1. 五层分层，加载顺序即分层顺序
 
-**目录名不是分层**：五层是逻辑层，落在 `.harness/` 固定布局的**子目录**上。生成物的标准布局（清单只此一处，别处只引不抄）：
+**目录名不是分层**：五层是逻辑层，落在 `.harness/` 固定布局的**子目录**上。生成物的标准布局（清单只此一处，别处只引不抄；形态：`必建`=模板必须有，`按需`=目录要在但里面可以只有 `.gitkeep`，`派生`=脚本生成、模板不预置会过期的副本）：
 
 ```text
-AGENTS.md                 入口（地图，不是手册）
-.harness/workflow/        流程：flow.json（阶段唯一事实源）+ transitions + contract + playbooks/ + skills.declared.yaml + 正文
-.harness/specs/           知识：业务域规格、规范与断言对照 + notes/{proposed,implemented,rejected}
-.harness/codebase-guide/  知识（派生）：代码库索引，脚本生成，禁手改
-.harness/scripts/         执行：verify 调度器 + 一个 scope 一个文件 + gen_guide
-.harness/git-hooks/       执行：提交前跑共有门径
-.harness/config.json      执行：阈值与模块根（单一根配置）
-.harness/deliverables/    状态：门记录、证据、账本、报告
-.harness/tasks/           状态：任务看板（还没做什么）
-.harness/memory/          状态：踩坑记忆与全仓决策
-.harness/INDEX.md         状态（派生）：discovery 能力块，脚本生成，禁手改
-.harness/stack-templates/ 模板：门记录与产物骨架
+路径                                                     形态    说明
+AGENTS.md                                              必建    入口（地图，不是手册）
+.harness/workflow/                                     必建    流程：flow.json（阶段唯一事实源）+ transitions + contract + 正文
+.harness/workflow/playbooks/                           按需    一组可复用的操作剧本；没有剧本就不建目录
+.harness/workflow/skills.declared.yaml                 按需    声明本仓库装了哪些 skill（声明即承诺）
+.harness/specs/                                        必建    知识：业务域规格、规范与断言对照
+.harness/specs/notes/{proposed,implemented,rejected}/  按需    决策的三种状态，各是一个目录
+.harness/codebase-guide/                               必建    知识（派生）：代码库索引，脚本生成，禁手改
+.harness/scripts/                                      必建    执行：verify 调度器 + 一个 scope 一个文件 + gen_guide
+.harness/git-hooks/                                    必建    执行：提交前跑共有门径
+.harness/config.json                                   必建    执行：阈值与模块根（单一根配置）
+.harness/deliverables/                                 必建    状态：门记录、证据、账本、报告
+.harness/tasks/                                        必建    状态：任务看板（还没做什么）
+.harness/memory/                                       必建    状态：踩坑记忆与全仓决策
+.harness/INDEX.md                                      派生    状态（派生）：discovery 能力块，脚本生成，禁手改
+.harness/stack-templates/                              必建    模板：门记录与产物骨架
 ```
 
 | 层 | 位置 | 作用 | 加载时机 |
@@ -83,9 +87,6 @@ AGENTS.md                 入口（地图，不是手册）
 
 层间引用**单向**：入口 → 流程 → 知识 → 执行 → 状态。反向引用一律禁止。
 平铺进一个目录的代价是位置不再约束方向，所以方向必须由断言守（`AGENTS.md` 的规则 ↔ scope 对照表）。
-
-**阶段不写死在脚本里**：阶段、顺序、门记录文件名、每阶段交付物只写在 `workflow/flow.json`；
-`gates` scope 读它，不维护第二份常量表。散文正文（`workflow/README.md`）只写「为什么、怎么做」，不重复列阶段。
 
 ### 2. 规则与断言配对
 
@@ -236,6 +237,7 @@ find . -name AGENTS.md | wc -l                        # 已有规则文件数
 - 退出码契约：0 = 通过（可含 WARN），非 0 = 有 ERROR。
 - scope 分域可单查，每个 scope 是独立函数，**每个新 scope 必须做反向测试**（造违规样本确认真的报 ERROR）——否则整个 scope 可能上线起就没执行过，跑一百次都「通过」。
 - scope 分域就是独立的 conformance 单元：**声明即承诺**。UHP 里服务器不能广播自己没实现的能力，客户端信任它却收到 `404`，是无法恢复的欺骗。同一条规矩换个主语：入口给一条规则标了 scope，就等于承诺这个 scope 真的会拦；从上线起就没执行过的 scope，比不标更坏——它给了一个绿灯。所以每个 scope 上线前跑一次反向测试，按 scope 分开测、分开报，不拿总体「通过」掩盖某一域没测。
+- **阶段不写死在脚本里**：阶段、顺序、门记录文件名、每阶段交付物只写在 `workflow/flow.json`；`gates` scope 读它，不维护第二份常量表。散文正文（`workflow/README.md`）只写「为什么、怎么做」，不重复列阶段。
 
 ### 基线机制
 

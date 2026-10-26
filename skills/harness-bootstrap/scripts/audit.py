@@ -34,6 +34,7 @@ from scopes import (  # noqa: E402  （必须先修好 sys.path 再导入）
     frontmatter,
     host,
     layout,
+    layout_parity,
     ledger,
     links,
     sections,
@@ -45,7 +46,7 @@ from scopes import (  # noqa: E402  （必须先修好 sys.path 再导入）
 )
 
 # 注册表：顺序 = 跑的顺序（输出还会按 severity/scope/line/code 再排序）
-SCOPES = (frontmatter, bash, baseline, host, layout, sections, struct, ledger, terms,
+SCOPES = (frontmatter, bash, baseline, host, layout, layout_parity, sections, struct, ledger, terms,
           version, xref, xrefdoc, links)
 
 

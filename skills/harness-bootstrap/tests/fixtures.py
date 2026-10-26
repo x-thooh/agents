@@ -50,6 +50,8 @@ CASES = (
     # 上面两条是 ERROR 档；这两条专验 80 那一档真会触发——把 WARN 分支删掉它们就红。
     ("bad-section-warn", {"SECT001"}, ()),
     ("bad-reference-warn", {"SECT002"}, ()),
+    # 布局表 ↔ 模板对账：表说了模板没建，必须报 LP001（两套模板里故意只建一套的后半）
+    ("bad-layout-parity", {"LP001"}, ()),
     # 调度器体征：换一个「长成实现」的调度器去审合规样本
     ("ok-minimal", {"LAYOUT001"}, ("--dispatch", "tests/fixtures/bad-inline-scope/scripts/audit.py")),
 )
