@@ -230,6 +230,8 @@ find . -name AGENTS.md | wc -l                        # 已有规则文件数
 交付刹车（最小可用再增量 / 停止条件 / 预算先留收尾）与 verify 脚本规范（`--fix` 边界、
 一个 scope 一个文件、声明即承诺）见 [`references/process-notes.md`](references/process-notes.md)。
 
+scope 层的四段落点是 `scripts/hooks.py`：一个文件登记每个 scope 的 `PLAN`（它管什么）与 `REFLECT`（它能报的 code），由 `loop` 与源码里的 code 集**逐条对账**——漏登记、多登记、空都报。为什么集中一文件而不是每 scope 自带两个函数：`BUDGET001` 的 150 行只减不增，而多数 scope 已贴着这条线；集中登记不动额度，且对账比「非空就算过」更有牙齿。
+
 ### 文档驱动生成：生成了代码，就必须回写文档
 
 拿文档当输入生成代码（规格 → 实现、清单 → 文件、表格 → 目录）之后，**同一轮里必须回头
