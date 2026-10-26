@@ -20,12 +20,13 @@ harness-bootstrap/
 ├── scripts/          标准：可执行代码（audit.py 调度 + report.py 输出 + cli.py 解析入口参数
 │                     + hooks.py 每 scope 的 plan/reflect + round.py 一轮=一次提交的行为级对照
 │                     + retro.py 复盘的事实底板（数字先算，AI 只许在数字上写）
+│                     + retro_check.py 复盘校验（栏位 / 复检结论）+ retro_board.py（工单表与完成证据）
 │                     + scopes/ 一个 scope 一个文件
 │                     + gen_code_index.py 生成清单 + check_strict.sh 判 strict）
 ├── agents/           标准：子 Agent 定义（本 skill 目前没有，不建空目录）
 ├── README.md         额外：维护者入口，给人看，不进 skill 上下文
 ├── Makefile          额外：统一命令入口（所有命令从 make 走）
-├── tests/            额外：自身门禁的引擎（`fixtures.py`）+ 期望表（`cases.py`）+ 三道闸（`coverage.py`）+ 反向 fixture
+├── tests/            额外：自身门禁的引擎（`fixtures.py`）+ 期望表（`cases.py`）+ 三道闸（`coverage.py`）+ 行为层（`template_boot.py`）+ 复盘校验器的反向测试（`retro_reverse.py`）+ 反向 fixture
 └── templates/        额外：生成物模板（每套含 TEMPLATE.md 模板说明 + AGENTS.md 入口），拷进目标仓库用，不是参考文档
 ```
 
