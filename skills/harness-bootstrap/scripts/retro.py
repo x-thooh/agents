@@ -102,8 +102,7 @@ def check():
         return 0
     board = _board()
     if not board:  # None = 没建表；False = 坏 JSON。两种都判不了，不冒充通过
-        print(f"retro: {RETRO}/tasks.json 缺失或不是合法 JSON——工单栏无从核验",
-              file=sys.stderr)
+        print(f"retro: {RETRO}/tasks.json 缺失或不是合法 JSON——工单栏无从核验", file=sys.stderr)
         return 2
     bad, cited = [], set()
     for path in files:
@@ -130,8 +129,10 @@ def check():
             continue
         ev = str(task.get("evidence", "")).strip()
         if status == "done" and not _evidence_ok(ev):
-            bad.append(f"{tid}: 标 done 却没给可核验证据（{ev or '空'}）——"
-                       "`commit:<sha>` 要真在历史里、`path:<相对路径>` 要真存在")
+            bad.append(
+                f"{tid}: 标 done 却没给可核验证据（{ev or '空'}）——"
+                "`commit:<sha>` 要真在历史里、`path:<相对路径>` 要真存在"
+            )
         if status == "open" and ev:
             bad.append(f"{tid}: 还没做完却写了 evidence——证据是完成态的凭据，不是打算")
     orphan = sorted(set(board) - cited)

@@ -34,6 +34,7 @@ EXTRAS = {
     ".git": "版本库",
     "LICENSE": "采用条款；本 skill 的安装方式就是拷贝，没有许可在法务上等于保留一切权利",
     "pyproject.toml": "Python 静态检查（ruff）的唯一配置处；不打包发布，只放工具配置",
+    ".harness": "本 skill 自己的状态层（只到 memory/，见 .harness/README.md）；不放 verify.py，避免同一个断言写两处",
 }
 
 # 近似名 = 拼错的信号。单数/大小写变体都按错报，不猜意图。
