@@ -4,7 +4,7 @@
 标准布局表为准——这里不抄第二份清单，抄出来的迟早和正文不一致。
 
 - 正文：`SKILL.md`（修改三段纪律、设计思想、UHP 六条原则与章节对照、DSH 三形状、五阶段、记忆树、断言规范、移植清单）
-- 自身门禁：`scripts/audit.py` + `tests/fixtures/`——审本 SKILL.md（frontmatter / bash 围栏 / 交叉引用 / 相对链接 / 基线记账 / 版本保质期 / 宿主实测 / 双向对账 / 规范用语 / 调度器体征 / 目录形状）+ references/*.md 里的跨文件 §X 引用（存在性），不依赖 git，不碰其他 skill；实现按 scope 分文件住 `scripts/scopes/`
+- 自身门禁：`scripts/audit.py` + `tests/fixtures/`——审本 SKILL.md（frontmatter / bash 围栏 / 交叉引用 / 相对链接 / 基线记账 / 版本保质期 / 宿主实测 / 双向对账 / 规范用语 / 调度器体征 / 目录形状 / 节与参考材料的 100 行上限）+ references/*.md 里的跨文件 §X 引用（存在性），不依赖 git，不碰其他 skill；实现按 scope 分文件住 `scripts/scopes/`
 - `references/`：SKILL.md 放不下也没必要放的东西（坑清单、笔记骨架、验收命令），按 §二.5 阈值外置，入口只留判据与链接
 - 评测：`evals/`（skill-up 套件，custom local 引擎直连 magpie，脚本判分）——验「按 SKILL.md 干活」的行为，不验 SKILL.md 自身的文字合规
 

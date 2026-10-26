@@ -42,6 +42,10 @@ CASES = (
     ("bad-struct-extra", {"STRUCT001"}, ()),
     ("bad-struct-singular", {"STRUCT001"}, ()),
     ("bad-struct-refs-content", {"STRUCT002"}, ()),
+    # 单节 100 行上限：超了要拆，不是提限
+    ("bad-section-long", {"SECT001"}, ()),
+    # 参考材料单文件 100 行上限：同一条规则的另一半
+    ("bad-reference-long", {"SECT002"}, ()),
     # 调度器体征：换一个「长成实现」的调度器去审合规样本
     ("ok-minimal", {"LAYOUT001"}, ("--dispatch", "tests/fixtures/bad-inline-scope/scripts/audit.py")),
 )
