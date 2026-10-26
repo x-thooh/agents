@@ -50,13 +50,36 @@ SCOPES = (frontmatter, bash, baseline, host, layout, layout_parity, sections, st
           version, xref, xrefdoc, links)
 
 
-def run_all(text, path, skill_dir, check_links, dispatch=None):
+def run_all(text, path, skill_dir, check_links, dispatch=None, link_status=None):
     findings = []
     ctx = {"text": text, "path": path, "skill_dir": skill_dir,
-           "check_links": check_links, "dispatch": dispatch}
+           "check_links": check_links, "dispatch": dispatch,
+           "link_status": link_status or {}}
     for mod in SCOPES:
         mod.run(ctx, findings)
     return findings, ctx.get("not_applicable", [])
+
+
+def _parse_link_status(items):
+    """`--link-status URL=CODE` → {URL: int|'ERR'}。
+
+    在入口就把值验完：写错值时报用法错误（退出码 2），而不是让 links 拿到一个
+    字符串去 int() 然后在某个 fixture 里 traceback。
+    """
+    out = {}
+    for item in items:
+        url, sep, value = item.rpartition("=")
+        if not sep or not url:
+            raise ValueError(f"--link-status 要写成 URL=CODE：{item!r}")
+        if value == "ERR":
+            out[url] = "ERR"
+            continue
+        try:
+            out[url] = int(value)
+        except ValueError:
+            raise ValueError(
+                f"--link-status 的 CODE 必须是整数或 ERR：{value!r}") from None
+    return out
 
 
 def main(argv=None):
@@ -66,10 +89,19 @@ def main(argv=None):
                         help="skill 目录（默认 = 本脚本所在的 skill）")
     parser.add_argument("--check-links", action="store_true",
                         help="真的请求外部链接（默认只报一条未检查 WARN）")
+    parser.add_argument("--link-status", action="append", default=[],
+                        metavar="URL=CODE",
+                        help="测试缝：把某个 URL 的状态码固定成 CODE（整数）或 ERR（不可达）。\n"
+                             "只为反向测试 LINK002/LINK003 存在——公网结果不能用来判门禁。")
     parser.add_argument("--json", action="store_true", help="输出 JSON")
     parser.add_argument("--dispatch", default=None,
                         help="调度器源码路径（默认 <skill-dir>/scripts/audit.py；只为反向测试存在）")
     args = parser.parse_args(argv)
+
+    try:
+        link_status = _parse_link_status(args.link_status)
+    except ValueError as exc:
+        parser.error(str(exc))  # 退出码 2，与「用法错误」一致，不带 traceback
 
     skill_dir = args.skill_dir or os.path.dirname(_HERE)
     skill_dir = os.path.abspath(skill_dir)
@@ -85,7 +117,8 @@ def main(argv=None):
         print(f"audit: 读不了 {skill_md}: {exc}", file=sys.stderr)
         return 2
 
-    findings, na = run_all(text, skill_md, skill_dir, args.check_links, args.dispatch)
+    findings, na = run_all(text, skill_md, skill_dir, args.check_links, args.dispatch,
+                           link_status)
     findings.sort(key=lambda f: (f.severity != "ERROR", f.scope, f.line, f.code))
     errors = [f for f in findings if f.severity == "ERROR"]
     warns = [f for f in findings if f.severity == "WARN"]

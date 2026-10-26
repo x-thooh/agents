@@ -19,7 +19,8 @@ MD_LINK_REL = re.compile(r"\[[^\]]*\]\((?![a-z][a-z0-9+.-]*:|#)([^)\s]+)\)")
 def run(ctx, findings):
     text = ctx["text"]
     check_relative_links(text, ctx["skill_dir"], findings)
-    check_external_links(text, findings, ctx.get("check_links", False))
+    check_external_links(text, findings, ctx.get("check_links", False),
+                         ctx.get("link_status"))
 
 
 def check_relative_links(text, skill_dir, findings):
@@ -34,7 +35,7 @@ def check_relative_links(text, skill_dir, findings):
                                         f"相对链接指向不存在的文件: {target}"))
 
 
-def check_external_links(text, findings, do_check):
+def check_external_links(text, findings, do_check, status_override=None):
     urls = []
     for idx, ln in enumerate(text.split("\n")):
         urls.extend((idx + 1, u) for u in MD_LINK.findall(ln))
@@ -45,13 +46,30 @@ def check_external_links(text, findings, do_check):
                                 f"外部链接 {len(urls)} 条未检查（--check-links 才真查）"))
         return
     for line, url in urls:
-        code, err = http_status(url)
+        code, err = _status(url, status_override)
         if code is None:
             findings.append(Finding("WARN", NAME, line, "LINK003",
                                     f"链接不可达（降级 WARN）: {url} ({err})"))
         elif code >= 400:
             findings.append(Finding("ERROR", NAME, line, "LINK002",
                                     f"链接返回 {code}: {url}"))
+
+
+def _status(url, override):
+    """取状态码。override 是 `--link-status URL=CODE` 建的测试缝（见 audit.py）。
+
+    公网链接的两种结局（4xx、不可达）不可能靠真请求来确定：真去请求就是让门禁
+    依赖网络抖动，不请求就是这两条断言永远不执行。所以把「拿状态码」这一步变成
+    可注入的——默认仍走 http_status，只在传来 override 时绕过。缝在取数那一步，
+    判定逻辑（>=400 算 ERROR / None 降级 WARN）没有被绕过。
+
+    override 的值已由 audit.py 解析成 int 或 `ERR`；这里不再做字符串转数字，
+    也就没有「随便输一个值就能让审计脚本崩掉」的面。
+    """
+    if not override or url not in override:
+        return http_status(url)
+    got = override[url]
+    return (None, "测试缝：模拟不可达") if got == "ERR" else (got, None)
 
 
 def http_status(url):
