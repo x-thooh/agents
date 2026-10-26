@@ -172,10 +172,10 @@ AGENTS.md                 入口（地图，不是手册）
 | UHP 章节 | 本层对应物 |
 | --- | --- |
 | Architecture §2 conformance class（Core/Extended/Full，累计） | scope 分域：每个 scope 是一个独立的 conformance 单元，声明即承诺（见 §六 verify 规范）。只弱借用：不取 UHP 的累计分级——域是正交的，没有谁包含谁，也没有「声称高级别必须过低级别」的蕴含 |
-| Lifecycle §1–2 版本协商 + capability discovery | `harness/INDEX.md` 顶部的能力块：规则版本、scope 清单、无断言规则数（见 §十）。派生字段（scope 清单 / 无断言规则数）由脚本现场数，人手只维护意图账本 `skills_declared` |
+| Lifecycle §1–2 版本协商 + capability discovery | `.harness/INDEX.md` 顶部的能力块：规则版本、scope 清单、无断言规则数（见 §十）。派生字段（scope 清单 / 无断言规则数）由脚本现场数，人手只维护意图账本 `skills_declared` |
 | Harnesses / Plugins | `AGENTS.md` 的加载顺序；`skills/` 一个目录一条可安装流程 |
 | Environments（构建一次，每会话只读） | 目录骨架 + 模板 + `baseline` 文件：所有会话共享，会话不许顺手改 |
-| Memories（树 + 授权 + records） | `harness/memory/`，见 §八 记忆树 |
+| Memories（树 + 授权 + records） | `.harness/memory/`，见 §八 记忆树 |
 | Tasks §6 幂等 | `tasks/` 的检查点；破坏性动作必须能重跑（见 §九） |
 | Files（artifact 归属、不可穿越） | 产物归属明确、路径不许穿越（禁止 `../` 逃出根目录） |
 | Errors（machine-readable code） | `Finding(scope, path, code)` + 基线指纹 |
@@ -208,7 +208,7 @@ find . -name AGENTS.md | wc -l                        # 已有规则文件数
 5. 存量欠账：清零还是记账（决定要不要基线机制）
 6. 分几期：一次做完还是分期
 
-前五个是「不问就会猜错」的，代价是大量文件返工。每个决策（含被否掉的方案与理由）记进 `harness/memory/decisions.md`。
+前五个是「不问就会猜错」的，代价是大量文件返工。每个决策（含被否掉的方案与理由）记进 `.harness/memory/decisions.md`。
 
 **无人可问时**（无头 agent / 自动评测）：六问按保守默认作答，逐条记入 `decisions.md` 并标 `assumed: true`，人工确认后回填。不得因为问不到人就跳过契约阶段——跳过等同于让 agent 自行猜，代价是整层返工。
 
@@ -327,7 +327,7 @@ UHP Memories 只规定三件事：树、授权、记录。`memory/` 不是一个
 ```bash
 make init      # 目录/文件齐全、钩子已装
 make check     # 全库回归，非零退出即有 ERROR
-make check -- --json    # 原始计数，不看降级后的
+make check-json    # 原始计数，不看降级后的
 ```
 
 本 skill 自身的门禁（改 SKILL.md 前后都要跑，0 ERROR 才算改完）：命令、反向断言表、规则↔断言对照表全在 [`references/acceptance.md`](references/acceptance.md)。
