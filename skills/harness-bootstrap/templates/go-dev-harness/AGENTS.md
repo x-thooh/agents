@@ -33,7 +33,7 @@ style/refactor/perf/test/build/ci/chore/revert。由 `commit-msg` 钩子判，�
 
 每个阶段由一个或多个 scope 判定（写在 flow.json 的 `scopes` 字段），跨阶段由 `gates` 判定。
 当前 scope 清单：`scope=gates` `scope=contract` `scope=design` `scope=layout` `scope=runtime`
-`scope=impl` `scope=test` `scope=review` `scope=release`；跨阶段 `scope=baseline`。
+`scope=impl` `scope=test` `scope=review` `scope=release`；`scope=notes`；跨阶段 `scope=baseline`。
 
 ## 硬规则
 
@@ -65,6 +65,10 @@ style/refactor/perf/test/build/ci/chore/revert。由 `commit-msg` 钩子判，�
     `.harness/accepted.json`（理由 + 负责人 + 复查日期）。账本内降 WARN、账本外仍
     ERROR 且前缀「新欠」；豁免过期、账本格式坏、总数上升都是 ERROR。
     `scope=baseline`（跨阶段，最后跑）
+20. 决策笔记：`.harness/specs/notes/{proposed,implemented,rejected}/` 下每篇必须被文档引用
+    （孤儿笔记 = 写了没人读得到），且 `status:` 与所在目录一致（换状态用 `git mv`，
+    只改字段会留下没有版本记录的错位）。`scope=notes`
+
 ## 人判项（无断言）
 
 以下是机器判不了的，必须在门记录里由 owner 签字，强度来源是人工评审：

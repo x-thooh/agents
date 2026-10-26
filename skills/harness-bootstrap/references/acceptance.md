@@ -36,7 +36,8 @@
 | 交付前不自选加戏、预算留给收尾 | 人判（看 diff：多出来的阶段/交付物是不是需求里没有的） | **无断言**（人审 diff；曾在评测用例里守，该套件已删——§二.5 的额度规则不接受「跑不起来的断言」冒充断言） |
 | 链接/锚点、裸路径 | verify `scope=links` | 强 |
 | 枚举闭集（分类/状态/kind） | verify 常量表 | 强 |
-| 语料位置 ↔ `Status:` 互校 | verify `scope=notes` | 强（必做反向测试） |
+| 语料位置 ↔ `Status:` 互校 | **两套模板 verify 的 `scope=notes`（NTS002）**；头五行/`summary`/`不显然之处` 仍属目标仓库侧，模板未交付 | 强（位置互校）+ 无断言（其余） |
+| 笔记必须被文档引用（孤儿笔记 = 写了没人读得到） | **两套模板 verify 的 `scope=notes`（NTS001）**：`AGENTS.md` / `decisions.md` / 其它笔记里一次都没出现即 ERROR；归档区不豁免（仍要有入站链接才找得到） | 强（反向测试 `notes_case`） |
 | 索引派生一致性 | verify 重新生成比对 | 强 |
 | 额度（行数/篇数） | 常量住在 `scripts/scopes/common.py`；本仓库由 audit.py SECT001/SECT002（单节与单文件 80/100）、BUDGET001（代码 150/200，含调度器；覆盖 `scripts/` 与 `tests/`，`tests/fixtures/` 与 `templates/` 除外——见 `doc-budgets.md`）、BUDGET002（SKILL.md 总量 400/500）守 | 中（覆盖范围内强 / 范围外无断言） |
 | discovery 双向对账 | verify `scope=skills` | 强 |

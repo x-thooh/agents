@@ -288,6 +288,23 @@ def baseline_solo_case(name, scope, rel, code):
         print(f"PASS {name}: 判不了，不冒充通过")
 
 
+def notes_case(name, expected_code, setup):
+    """notes scope 的反向测试：一篇笔记一个缺陷，期望恰好报那个 code。"""
+    with tempfile.TemporaryDirectory(prefix="notes-") as tmp:
+        root = copy_root(tmp)
+        setup(root)
+        subprocess.run(
+            [sys.executable, str(root / ".harness/scripts/gen_guide.py"), str(root)],
+            check=True,
+            capture_output=True,
+        )
+        payload, rc = run_verify(root, "notes")
+        codes = {f["code"] for f in payload["findings"] if f["severity"] == "ERROR"}
+        if rc != 1 or codes != {expected_code}:
+            raise AssertionError(f"{name}: 期望唯一 ERROR {expected_code}，实际 {sorted(codes)}，rc={rc}")
+        print(f"PASS {name}: {expected_code}")
+
+
 def baseline_error_case(name, expected_code, setup):
     """账本本身出错（格式 / 过期 / 只减不增）：只跑 baseline scope，期望唯一 ERROR。"""
     with tempfile.TemporaryDirectory(prefix="go-base-") as tmp:
@@ -693,6 +710,36 @@ def main():
         "conf",
         ".harness/config.json",
         "CONF001",
+    )
+    notes_case(
+        "notes: 孤儿笔记（没人链进来）",
+        "NTS001",
+        lambda root: write_text(
+            root,
+            ".harness/specs/notes/proposed/2026-01-01-orphan.md",
+            "---\ntitle: 没人引用的决策\ndate: 2026-01-01\nstatus: proposed\n"
+            "scope: internal.order\nsummary: 写了但没有任何文档链进来\n---\n\n"
+            "## 不显然之处\n\n这条只在当前文件里存在。\n",
+        ),
+    )
+    notes_case(
+        "notes: 状态与目录不一致",
+        "NTS002",
+        lambda root: (
+            write_text(
+                root,
+                ".harness/specs/notes/implemented/2026-01-02-misplaced.md",
+                "---\ntitle: 位置与字段对不上\ndate: 2026-01-02\nstatus: proposed\n"
+                "scope: internal.order\nsummary: 目录说已落地，字段说还没拍\n---\n\n"
+                "## 不显然之处\n\n状态是位置，字段只是投影。\n",
+            ),
+            write_text(
+                root,
+                ".harness/memory/decisions.md",
+                "# 决策记录（全仓级）\n\n"
+                "- 2026-01-02 位置与字段对不上（见 .harness/specs/notes/implemented/2026-01-02-misplaced.md）\n",
+            ),
+        ),
     )
     baseline_monotonic_case("baseline: 总数上升即 ERROR", "conf", ".harness/config.json", "CONF001")
     baseline_solo_case("baseline: 单查不许编造「可以刷新账本」", "conf", ".harness/config.json", "CONF001")

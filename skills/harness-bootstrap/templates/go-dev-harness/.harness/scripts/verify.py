@@ -26,6 +26,7 @@ from scopes import (  # noqa: E402
     gates,
     impl,
     layout,
+    notes,
     release,
     review,
     runtime,
@@ -44,6 +45,7 @@ SCOPES = (
     test,
     review,
     release,
+    notes,
     baseline,
 )
 
