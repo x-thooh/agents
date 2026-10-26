@@ -46,6 +46,10 @@ CASES = (
     ("bad-section-long", {"SECT001"}, ()),
     # 参考材料单文件 100 行上限：同一条规则的另一半
     ("bad-reference-long", {"SECT002"}, ()),
+    # 两档：撞 80 就 WARN（准备拆），超 100 才 ERROR（必须拆）。
+    # 上面两条是 ERROR 档；这两条专验 80 那一档真会触发——把 WARN 分支删掉它们就红。
+    ("bad-section-warn", {"SECT001"}, ()),
+    ("bad-reference-warn", {"SECT002"}, ()),
     # 调度器体征：换一个「长成实现」的调度器去审合规样本
     ("ok-minimal", {"LAYOUT001"}, ("--dispatch", "tests/fixtures/bad-inline-scope/scripts/audit.py")),
 )

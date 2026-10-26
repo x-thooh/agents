@@ -1,7 +1,11 @@
-"""sections：§二.5 那两个「100 行」阈值的硬上限。
+"""sections：§二.5 那两个阈值的硬上限，分两档。
 
-  SECT001 流程手册单节超 100 行 —— 拆：细节外置到 references/，本节只留判据与链接
-  SECT002 参考材料单文件超 100 行 —— 拆：按主题分成多个 references 文件
+  SECT001 流程手册单节 —— 撞 80 行 WARN（准备拆）；超 100 行 ERROR（必须拆）
+  SECT002 参考材料单文件 —— 同样两档
+
+两档不是一个数：80 是**准备拆**，100 是**必须拆**。等到撞线才动手，等于每次都靠
+删内容腾地方——§二 上一次就是这么从 102 行压回 100 的。80 给的是 20 行余地，
+让人在还有地方可放的时候就开始搬，而不是先删掉难讲的那句。
 
 为什么必须机检：有上限而无数值、无断言，等于没有上限。数值写在散文里，
 下次谁加五行就越界，门禁照样全绿——本 skill 的 §二 就这么撞过一次（102 行），
@@ -22,7 +26,10 @@ from .common import Finding
 
 NAME = "sections"
 
-LIMIT = 100  # 两个阈值共用的数。改它=提限，要单独一轮并在 decisions 写明理由。
+WARN_AT = 80  # 准备拆。留 20 行余地：撞线前就该动手。
+LIMIT = 100   # 必须拆。单节 / 单文件两个对象共用这两个数。
+
+# 动任一常量=动额度，要单独一轮并在 decisions 写明理由（§二.5 额度只减不增）。
 
 HEAD = re.compile(r"^(#{1,2})\s+\S")
 
@@ -53,23 +60,48 @@ def run(ctx, findings):
             if span > LIMIT:
                 findings.append(Finding(
                     "ERROR", NAME, idx + 1, "SECT001",
-                    f"「{title}」{span} 行 > {LIMIT} 行上限：拆——细节外置到 references/，"
+                    f"「{title}」{span} 行 > {LIMIT} 行上限：必须拆——细节外置到 references/，"
                     f"本节只留判据与链接（不是提限；提限要单独一轮并写明谁批的）"))
+            elif span > WARN_AT:
+                findings.append(Finding(
+                    "WARN", NAME, idx + 1, "SECT001",
+                    f"「{title}」{span} 行 > {WARN_AT} 行：准备拆——还有 {LIMIT - span} 行余地，"
+                    f"现在就把细节外置到 references/，别等撞到 {LIMIT} 行再靠删内容腾地方"))
     else:
         ctx.setdefault("not_applicable", []).append(NAME)
 
     ref_dir = os.path.join(ctx["skill_dir"], "references")
     if not os.path.isdir(ref_dir):
         return
-    for name in sorted(os.listdir(ref_dir)):
+    try:
+        names = sorted(os.listdir(ref_dir))
+    except OSError as exc:
+        # 目录在 isdir 之后消失、或无读权限：记 not_applicable 并写明原因，不冒充通过。
+        ctx.setdefault("not_applicable", []).append(f"{NAME}(references 不可读：{exc.strerror})")
+        return
+    for name in names:
         if not name.endswith(".md"):
             continue
         path = os.path.join(ref_dir, name)
-        with open(path, encoding="utf-8") as fh:
-            n = len(fh.read().split("\n"))
+        try:
+            with open(path, encoding="utf-8") as fh:
+                n = len(fh.read().split("\n"))
+        except OSError as exc:
+            # 断链、是目录、编码外的乱码：这条规则判不了。报错，别当 0 条发现。
+            findings.append(Finding(
+                "ERROR", NAME, 0, "SECT002",
+                f"读不了该文件（{exc.strerror}）：上限没法判，不能当通过——修文件或删条目",
+                path=f"references/{name}"))
+            continue
         if n > LIMIT:
             findings.append(Finding(
                 "ERROR", NAME, 0, "SECT002",
-                f"共 {n} 行 > {LIMIT} 行上限：拆——按主题分成多个文件，"
+                f"共 {n} 行 > {LIMIT} 行上限：必须拆——按主题分成多个文件，"
                 f"别把手册整本搬到 references/ 里当第二个手册",
+                path=f"references/{name}"))
+        elif n > WARN_AT:
+            findings.append(Finding(
+                "WARN", NAME, 0, "SECT002",
+                f"共 {n} 行 > {WARN_AT} 行：准备拆——还有 {LIMIT - n} 行余地，按主题预分，"
+                f"别等撞到 {LIMIT} 行再拆",
                 path=f"references/{name}"))
