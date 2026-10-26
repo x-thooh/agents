@@ -87,7 +87,7 @@ make fixtures       # = python3 tests/fixtures.py：全部 fixture 逐条比对�
 ```
 
 期望清单只有一处——`tests/fixtures.py` 的 `CASES` 表，它跑在 `make check` 里。
-README 和 `references/acceptance.md` 都不再抄第二份：抄出来的表迟早和第一份不一致，
+README 和 `references/self-gates.md` 都不再抄第二份：抄出来的表迟早和第一份不一致，
 而「表说这条规则有人守」的信用就建立在这上面。新增 scope 时改那张表。
 
 audit.py 不判语义一致性（机器判不了）；语义项在 `SKILL.md` §六 的「判据」列标注为人判。

@@ -307,7 +307,7 @@ make check     # 全库回归，非零退出即有 ERROR
 make check-json    # 原始计数，不看降级后的
 ```
 
-本 skill 自身的门禁（改 SKILL.md 前后都要跑，0 ERROR 才算改完）：命令、反向断言表、规则↔断言对照表全在 [`references/acceptance.md`](references/acceptance.md)。
+本 skill 自身的门禁（改 SKILL.md 前后都要跑，0 ERROR 才算改完）在 [`references/self-gates.md`](references/self-gates.md)；目标仓库该把每条规则挂到哪个断言载体上，在 [`references/acceptance.md`](references/acceptance.md)。两者不互相代替。
 
 人工只核两件事：入口地图上每个入口文件真实存在（覆盖断言是弱断言）；每条硬规则在断言表里有对应行，没有的写明「无断言」及强度来源。
 
