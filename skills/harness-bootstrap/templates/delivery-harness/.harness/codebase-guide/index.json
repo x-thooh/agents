@@ -59,6 +59,10 @@
       "kind": "dir"
     },
     {
+      "path": "tests/commit_msg.py",
+      "kind": "file"
+    },
+    {
       "path": "tests/reverse.py",
       "kind": "file"
     }

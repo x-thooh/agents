@@ -154,6 +154,20 @@ def fix_case(name, setup, expect_rc, check):
         print(f"PASS {name}: exit {rc}")
 
 
+def hooks_case(name, expect_code, strip_exec=False):
+    """钩子执行位 / 存在性：丢了执行位时 git 静默跳过，只能靠断言发现。"""
+    with tempfile.TemporaryDirectory(prefix="dh-hooks-") as tmp:
+        root = copy_root(tmp)
+        hook = root / ".harness/git-hooks/commit-msg"
+        if strip_exec:
+            hook.chmod(0o644)
+        payload, rc = run_verify(root, "gates")
+        codes = codes_of(payload)
+        if rc == 0 or expect_code not in codes:
+            raise AssertionError(f"{name}: 期望 {expect_code}，实际 rc={rc} codes={codes}")
+        print(f"PASS {name}: {expect_code}")
+
+
 def positive_control():
     payload, rc = run_verify(ROOT)
     errors = payload["summary"]["errors"]
@@ -182,6 +196,8 @@ def reverse_case(name, rel, mutate, scope, expected_code):
 
 def main():
     positive_control()
+
+    hooks_case("gates: commit-msg 丢了执行位（git 会静默跳过）", "GATE008", strip_exec=True)
 
     # conf：键名拼错必须报，不能静默忽略（静默忽略 = 整条扫描被关掉）
     reverse_case(

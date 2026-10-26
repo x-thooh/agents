@@ -4,6 +4,7 @@
 `transitions.json` 定义结果状态机，`contract.json` 定义门记录必填字段与账本位置。
 """
 import json
+import os
 import re
 from pathlib import Path
 
@@ -32,6 +33,7 @@ LESSONS = f"{HARNESS}/memory/lessons.md"
 GUIDE = f"{HARNESS}/codebase-guide/index.json"
 TASK_STATUS = ("todo", "doing", "blocked", "done")
 AGENTS_MAX_LINES = 150
+HOOKS_DIR = f"{HARNESS}/git-hooks"
 
 
 def run(ctx, findings):
@@ -66,6 +68,7 @@ def run(ctx, findings):
     check_order(stages, records, transitions, findings)
     check_ledgers(root, contract, findings)
     check_state(root, [s["id"] for s in stages], findings)
+    check_hooks(root, findings)
 
 
 def check_flow(flow, findings):
@@ -288,3 +291,25 @@ def fix_guide(root):
 
 
 FIXERS = {"GUIDE001": (fix_guide, GUIDE)}
+
+
+def check_hooks(root, findings):
+    """GATE008：钩子必须在，且真的会被 git 调用。
+
+    钩子文件没有执行位时 git 直接跳过，不报错——装了、看着在、实际没跑，
+    比没装更危险。「声明即承诺」在钩子上的说法是：写了 commit-msg 就必须能拦。
+    """
+    hooks_dir = root / HOOKS_DIR
+    if not hooks_dir.is_dir():
+        add(findings, "ERROR", NAME, HOOKS_DIR, 0, "GATE008",
+            f"缺 {HOOKS_DIR}/：提交门禁没有载体，make init 也无处可指")
+        return
+    native = {p.name for p in hooks_dir.iterdir() if p.is_file() and not p.name.startswith(".")}
+    if not native:
+        add(findings, "ERROR", NAME, HOOKS_DIR, 0, "GATE008",
+            f"{HOOKS_DIR}/ 里没有任何钩子脚本：门禁只剩 make check 这一道，靠人记得跑")
+    for name in sorted(native):
+        path = hooks_dir / name
+        if os.name != "nt" and not os.access(path, os.X_OK):
+            add(findings, "ERROR", NAME, f"{HOOKS_DIR}/{name}", 0, "GATE008",
+                "钩子没有执行位：git 会静默跳过它（装了但没跑）。chmod +x 修")

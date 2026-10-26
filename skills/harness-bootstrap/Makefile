@@ -63,6 +63,7 @@ selftest:
 	@$(PY) $(DELIVERY)/tests/reverse.py
 	@$(PY) $(GODEV)/tests/reverse.py
 	@$(PY) $(GODEV)/tests/commit_msg.py
+	@$(PY) $(DELIVERY)/tests/commit_msg.py
 
 # 工具层不在这里重写一遍：委托给模板自己的 lint 目标，
 # go_src 从模板的 config.json 读，路径不写第二份。

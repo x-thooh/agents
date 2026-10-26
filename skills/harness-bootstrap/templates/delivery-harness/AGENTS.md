@@ -8,12 +8,12 @@
 ## 命令
 
 ```bash
-make init           # 装 pre-commit 钩子（一次；之后每次提交自动跑 check）
+make init           # 装钩子（pre-commit + commit-msg），一次
 make check          # 全量校验；0 ERROR 才可交付
 make check-json     # 原始 JSON，便于 CI
 make check-strict   # 示例数据 = ERROR；真实交付必须绿
 make fix            # 自动修派生数据（目前只有 GUIDE001 索引），修完重跑
-make selftest       # 每个 scope 的反向测试
+make selftest       # 每个 scope 的反向测试 + 提交消息检查的正反例
 ```
 
 `--fix` 只动派生数据——重新生成一遍就能复原的东西。写证据、选版本、补理由一律不修：
@@ -52,6 +52,7 @@ make selftest       # 每个 scope 的反向测试
 16. 状态层三条：`tasks/board.json` 的 `stage` 必须在 `flow.json` 里、`status` 只能是 todo/doing/blocked/done；
     `memory/lessons.md` 每条必须有现象/根因/断言三段；`codebase-guide/index.json` 由 `scripts/gen_guide.py` 生成，
     人手改过即 ERROR。`scope=gates`
+17. 提交消息符合 Conventional Commits 1.0.0，且**一个提交只做一件事**（正文行首以「顺带/另外/同时/此外」另起一件即为信号）。断言来源：`.harness/git-hooks/commit-msg`（`make init` 安装后强制）+ `tests/commit_msg.py` 正反例；它不在 verify 的 scope 里，且可被 `git commit --no-verify` 绕过——绕过口是明的，没装钩子时这条规则退化为人工纪律。钩子丢了执行位即 GATE008 ERROR（git 会静默跳过）。
 
 ## 人判项（无断言）
 
@@ -85,9 +86,12 @@ Makefile                         make init / check / check-json / check-strict /
 .harness/scripts/verify.py       调度器（注册表 / 排序 / 退出码 / --fix 编排）
 .harness/scripts/scopes/         一个 scope 一个文件
 .harness/scripts/gen_guide.py    生成 codebase-guide/index.json
+.harness/scripts/check_commit.py 提交消息检查（Conventional Commits 1.0.0 + 一个提交一件事）
 .harness/git-hooks/pre-commit    提交前跑 check（make init 安装）
+.harness/git-hooks/commit-msg    提交消息门（同上；必须可执行）
 .harness/stack-templates/        门记录与提测包模板
 tests/reverse.py                 反向测试：每个 scope 至少一条违规样本
+tests/commit_msg.py              提交消息检查器的正/反例
 ```
 
 ## 维护本文件
