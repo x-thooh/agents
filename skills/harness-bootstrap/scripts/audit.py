@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """harness-bootstrap 自身门禁：只审 --skill-dir 指定的这一个 skill。
-
-边界（不要越界）：
-  * 只审一个 skill 目录（默认 = 本脚本所在 skill），不扫描 ~/.pi/agent/skills 下其他 skill；
+边界（不要越界）：只审一个 skill 目录（默认 = 本脚本所在 skill），不扫描其他 skill；
   * 读取面 = SKILL.md 全文 + skill 根目录与 references/ 的条目名（struct）+ references/*.md
     里的 §X.Y 引用（仅存在性，xrefdoc）——不对 references 做全文审查，也不改写它们；
   * 只读，不写文件；不依赖 git；同输入同输出（可重复执行）；
@@ -11,7 +9,7 @@
 本文件只做调度：读入 → 跑注册表里的 scope → 把结果交给 `report.py`。
 scope 实现在 `scripts/scopes/<name>.py`，输出与退出码在 `scripts/report.py`
 （§六 verify 脚本规范：单文件长到一次只能改一处、改不动时，就该拆了）。
-拆分判据：拆分前后 `--json` 输出字节等同。
+拆分判据：拆分前后输出字节等同。
 
 语义一致性机器判不了——那是人判项，由 SKILL.md 的「判据类型」列标注，本脚本不冒充。
 用法: python3 scripts/audit.py [--skill-dir DIR] [--only a,b] [--check-links] [--json]
@@ -43,6 +41,7 @@ from scopes import (  # noqa: E402  （必须先修好 sys.path 再导入）
     layout_parity,
     ledger,
     links,
+    loop,
     sections,
     struct,
     terms,
@@ -72,6 +71,7 @@ SCOPES = (
     xref,
     xrefdoc,
     links,
+    loop,
 )
 
 

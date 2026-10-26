@@ -1,10 +1,7 @@
 """links：外部链接（默认跳过）与相对链接 + 锚点（离线强断言）。
-
-相对链接的文件必须存在；带 `#fragment` 时锚点也必须存在——文件在、锚点错就是
-「重排后静默指向别处」那个失败态（断言坑 #12），只判文件等于只守了一半。
-内联外部链接是承诺（要么 `--check-links` 真查，要么降成脚注）；脚注是引用出处，不管。
+文件在、锚点错就是「重排后静默指向别处」（坑 #12）；内联外部链接是承诺
+（`--check-links` 才真查），脚注是引用出处不管。
 """
-
 import http.client
 import pathlib
 import re
@@ -53,17 +50,18 @@ def run(ctx, findings):
         try:
             body = path.read_text(encoding="utf-8")
         except OSError as exc:
-            findings.append(Finding("ERROR", NAME, 0, "LINK004",
-                                   f"读不了（{exc.strerror}）：链接判不了，不能当通过", path=rel))
+            findings.append(
+                Finding("ERROR", NAME, 0, "LINK004", f"读不了（{exc.strerror}）：链接判不了，不能当通过", path=rel)
+            )
             continue
         check_relative_links(strip_code(body), refs, findings, source=rel)
 
 
 def check_relative_links(text, base, findings, source=None):
     """base = 包含这段文字的那个文件所在目录。source = 报 finding 时用的相对路径。"""
+
     def emit(line, code, message):
-        findings.append(Finding("ERROR", NAME, line, code, message, **(
-            {"path": source} if source else {})))
+        findings.append(Finding("ERROR", NAME, line, code, message, **({"path": source} if source else {})))
 
     for idx, ln in enumerate(text.split("\n")):
         for target in MD_LINK_REL.findall(ln):
@@ -81,9 +79,11 @@ def check_relative_links(text, base, findings, source=None):
             if anchors is None:
                 emit(idx + 1, "LINK004", f"链接目标读不了，锚点判不了（不能当通过）: {target}")
             elif frag not in anchors:
-                emit(idx + 1, "LINK004",
-                     f"锚点在目标文件里不存在: {target}——文件在、锚点错，"
-                     "就是「重排后静默指向别处」那个形态")
+                emit(
+                    idx + 1,
+                    "LINK004",
+                    f"锚点在目标文件里不存在: {target}——文件在、锚点错，就是「重排后静默指向别处」那个形态",
+                )
 
 
 def check_external_links(text, findings, do_check, status_override=None):
