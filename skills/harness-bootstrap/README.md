@@ -1,7 +1,7 @@
 # harness-bootstrap
 
-给一个 git 仓库搭建、移植、重做 `.harness` 工程层的抽象 skill。生成物布局是 `.harness/` 十件套
-（workflow / specs / deliverables / tasks / memory / codebase-guide / scripts / git-hooks / stack-templates / config.json）。
+给一个 git 仓库搭建、移植、重做 `.harness` 工程层的抽象 skill。生成物布局以 `SKILL.md` §二.1 的
+标准布局表为准——这里不抄第二份清单，抄出来的迟早和正文不一致。
 
 - 正文：`SKILL.md`（修改三段纪律、设计思想、UHP 六条原则与章节对照、DSH 三形状、五阶段、记忆树、断言规范、移植清单）
 - 自身门禁：`scripts/audit.py` + `tests/fixtures/`——审本 SKILL.md（frontmatter / bash 围栏 / 交叉引用 / 相对链接 / 基线记账 / 版本保质期 / 宿主实测 / 双向对账 / 规范用语 / 调度器体征 / 目录形状）+ references/*.md 里的跨文件 §X 引用（存在性），不依赖 git，不碰其他 skill；实现按 scope 分文件住 `scripts/scopes/`

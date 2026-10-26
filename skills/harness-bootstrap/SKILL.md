@@ -56,12 +56,12 @@ harness 建设本身是修改仓库，harness 里注册的任何流程也是修�
 
 ### 1. 五层分层，加载顺序即分层顺序
 
-**目录名不是分层**：五层是逻辑层，落在 `.harness/` 十件套的**子目录**上。生成物的标准布局：
+**目录名不是分层**：五层是逻辑层，落在 `.harness/` 固定布局的**子目录**上。生成物的标准布局（清单只此一处，别处只引不抄）：
 
 ```text
 AGENTS.md                 入口（地图，不是手册）
-.harness/workflow/        流程：flow.json（阶段唯一事实源）+ transitions + contract + 正文
-.harness/specs/           知识：业务域规格、规范与断言对照
+.harness/workflow/        流程：flow.json（阶段唯一事实源）+ transitions + contract + playbooks/ + skills.declared.yaml + 正文
+.harness/specs/           知识：业务域规格、规范与断言对照 + notes/{proposed,implemented,rejected}
 .harness/codebase-guide/  知识（派生）：代码库索引，脚本生成，禁手改
 .harness/scripts/         执行：verify 调度器 + 一个 scope 一个文件 + gen_guide
 .harness/git-hooks/       执行：提交前跑共有门径
@@ -69,6 +69,7 @@ AGENTS.md                 入口（地图，不是手册）
 .harness/deliverables/    状态：门记录、证据、账本、报告
 .harness/tasks/           状态：任务看板（还没做什么）
 .harness/memory/          状态：踩坑记忆与全仓决策
+.harness/INDEX.md         状态（派生）：discovery 能力块，脚本生成，禁手改
 .harness/stack-templates/ 模板：门记录与产物骨架
 ```
 
@@ -125,23 +126,16 @@ AGENTS.md                 入口（地图，不是手册）
 
 ### 8. 语料有生命周期：状态是位置，不是字段
 
-一篇笔记只承载一个决策，用目录承载状态：
-
-| 位置 | 含义 |
-| --- | --- |
-| `.harness/specs/notes/proposed/` | 还没拍板（允许将来时） |
-| `.harness/specs/notes/implemented/` | 已拍板（禁 Proposal / Plan / Migration plan / Acceptance criteria——计划腔不算现实） |
-| `.harness/specs/notes/rejected/` | 被否掉，判定写在 `Status: rejected — <理由>` |
-
-判据（骨架、头五行、模块与 `scope` 的全套规矩见 [`references/notes-convention.md`](references/notes-convention.md)）：
+一篇笔记只承载一个决策，用目录承载状态：`proposed/`（未拍板）· `implemented/`（已拍板）· `rejected/`（被否）。
+骨架、头五行、模块清单与 `scope` 的全套规矩在 [`references/notes-convention.md`](references/notes-convention.md)——本节只留判据：
 
 - **一篇一个决策**：改结论不改旧篇，新写一篇并互相链接（`supersedes`），作废不删
 - **写入门槛**：代码能推出的不写；每篇必须有 `## 不显然之处` 段，段在但空着即 ERROR
 - **状态是位置**：`Status:` 只是投影，必须与所在目录互校；换状态用 `git mv`
 - **作用域是字段**：`scope:` 填模块标识不是目录路径，缺了不是「全仓」而是「没声明」，ERROR
-- **模块清单**：AI 起草（每条带 `文件:行` 级证据）、人拍板（`modules-confirmed: <sha>`）、冲突时以代码事实裁决；目录只作弱提示
-- **归属只问一个问题**：`.harness/specs/` 现在是什么 · `.harness/specs/notes/` 为什么这么定 · `.harness/tasks/` 还没做什么 · `.harness/memory/trace/` 这次为什么出事
-- **禁人手索引**：`INDEX.md` 由脚本生成，重新生成后逐字节比对，不一致即 ERROR。派生字段同理：scope 清单、无断言规则数这类能从表/注册表现场数出来的值，只准脚本数，手写一个数字就是制造第二处真相（本 skill 自己踩过：模板里写死 `unanchored_rules: 3`，与「不写死计数」直接冲突）
+- **模块清单**：AI 起草（每条带 `文件:行` 级证据）、人拍板（`modules-confirmed: <sha>`）；目录只作弱提示
+- **归属只问一个问题**：`specs/` 现在是什么 · `specs/notes/` 为什么这么定 · `tasks/` 还没做什么 · `memory/trace/` 这次为什么出事
+- **禁人手索引**：`INDEX.md` 与派生字段（scope 清单、无断言规则数）只准脚本数；手写一个数字就是第二处真相（本 skill 踩过：写死 `unanchored_rules: 3`，与「不写死计数」直接冲突）
 - **日期是首次提出日**：以 `git log` 为准，不是落地日
 
 ### 9. 约定大于配置
