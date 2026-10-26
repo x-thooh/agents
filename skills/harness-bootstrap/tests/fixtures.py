@@ -102,6 +102,8 @@ CASES = (
     ("bad-layout-no-table", {"LP003"}, ()),
     # 派生清单必须与源码逐字节一致；样本自带一份故意过时的 code-index.md
     ("bad-stale-code-index", {"CODEINDEX001"}, ()),
+    # 文档声称的载体必须覆盖代码里每个 code；样本的文档故意漏了一个
+    ("bad-doc-missing-code", {"DOC001"}, ()),
     # 体量预算两档：两档都得真会响，否则「准备拆」只是句好听话
     ("bad-budget-warn", {"BUDGET001"}, ()),
     ("bad-budget-error", {"BUDGET001"}, ()),

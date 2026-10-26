@@ -39,6 +39,16 @@
 | 额度（行数/篇数） | 常量住在 `scripts/scopes/common.py`；本仓库由 audit.py SECT001/SECT002（文档 80/100）与 BUDGET001（代码 150/200，含调度器）守 | 中 / 强 |
 | discovery 双向对账 | verify `scope=skills` | 强 |
 | 归档笔记的 `Archived:` 日期 = 该笔记移动当次提交的日期（归档是事件驱动，不设时间阈值） | 目标仓库 verify `scope=archive`（读 `git log`；本仓库 audit.py 明说不依赖 git，故不在此处实现） | 强（有版本控制时）；无 git 的仓库降级为人判并显式标注 |
+| 围栏代码可执行（无占位符 U+2026、`bash -n` 通过） | audit.py BASH001 / BASH002 | 强 |
+| 提了基线就要有基线小节 | audit.py BASE002 | 中 |
+| 宿主加载实测（承诺分层入口前必须先实测宿主真读子目录） | audit.py HOST001 / HOST002 | 强 |
+| 双向对账的两侧各点名一个载体（否则是派生品自比较） | audit.py DUAL001 | 强 |
+| frontmatter 齐全且合法（有 frontmatter / name / name 形状 / 有 description / 非空 / 长度 ≤ 1024 / 字段表外） | audit.py FM001 / FM002 / FM003 / FM004 / FM005 / FM006 / FM007（FM008/FM009 见上） | 强 |
+| 文件内 `§X` / `§X.Y` 引用指向存在的章节/条目 | audit.py XREF001 / XREF002 | 强 |
+| 外部链接：内联=承诺可查，脚注=引用不查 | audit.py LINK001（未检查）/ LINK002（4xx）/ LINK003（不可达降级）/ LINK004（相对链接必须存在）；外部三条需 `--check-links` 才真跑，相对链接离线强断言 | 强（相对）+ 中（外部） |
+| 布局表 ↔ 模板双向对账（表为根，产物不得反向定义规范） | audit.py LP001 / LP002 / LP003 | 强 |
+| 规范用语：`scope 分域` 不是分级 | audit.py SCOPE001 | 强 |
+| **文档描述必须与代码一致**（代码里的每个 code 都要在本文档有行） | audit.py DOC001（漏一个即 ERROR；行写得对不对仍人判） | 强（覆盖）+ 人判（对应） |
 | 决策理由是否仍成立 | 人判 | **无断言**（人审 diff） |
 | 教训是否真能改变下次做法 | 人判 | **无断言**（人审） |
 
