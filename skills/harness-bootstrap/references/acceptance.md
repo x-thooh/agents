@@ -50,7 +50,7 @@ python3 scripts/audit.py --skill-dir tests/fixtures/ok-minimal   # 正对照：0
 | `## 不显然之处` 段存在且非空 | verify `scope=notes`（空段机检，内容人判） | 机器+人判 |
 | 规则编号 ↔ 断言表行 | verify `scope=harness` | 强 |
 | verify 脚本规范（一 scope 一文件 / 首版只上有断言的 scope / 声明即承诺） | audit.py LAYOUT001（调度器体征：scope 专属正则常量 / `Finding` 构造 / 体量上限）+ 正对照 `fixtures/ok-minimal` | 机器+人判（适用面：只在 `<skill_dir>/scripts/audit.py` 存在时检查，不存在记 not_applicable，不冒充通过） |
-| 交付前不自选加戏、预算留给收尾 | 评测用例 `empty-bootstrap`（预算内产出可判分） | 机器（评测） |
+| 交付前不自选加戏、预算留给收尾 | 人判（看 diff：多出来的阶段/交付物是不是需求里没有的） | **无断言**（人审 diff；曾在评测用例里守，该套件已删——§二.5 的额度规则不接受「跑不起来的断言」冒充断言） |
 | 链接/锚点、裸路径 | verify `scope=links` | 强 |
 | 枚举闭集（分类/状态/kind） | verify 常量表 | 强 |
 | 语料位置 ↔ `Status:` 互校 | verify `scope=notes` | 强（必做反向测试） |
