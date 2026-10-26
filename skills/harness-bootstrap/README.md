@@ -22,7 +22,6 @@ harness-bootstrap/
 │                     + retro.py 复盘的事实底板（数字先算，AI 只许在数字上写）
 │                     + scopes/ 一个 scope 一个文件
 │                     + gen_code_index.py 生成清单 + check_strict.sh 判 strict）
-├── .harness/         额外：本 skill 自己的状态层（只到 memory/；不放 verify.py，见 .harness/README.md）
 ├── agents/           标准：子 Agent 定义（本 skill 目前没有，不建空目录）
 ├── README.md         额外：维护者入口，给人看，不进 skill 上下文
 ├── Makefile          额外：统一命令入口（所有命令从 make 走）
