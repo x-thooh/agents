@@ -21,6 +21,7 @@ bootstrap 当天的 ERROR 整表灌进来，那不是记账，是开张即免罪
 顺序：本 scope 必须最后跑（`verify.py` 的 SCOPES 末尾）。它读的是其它 scope 已经报出来
 的 findings，跑早了等于拿半个清单对账。
 """
+
 import datetime
 import json
 import re
@@ -80,9 +81,16 @@ def read_baseline(root, findings):
         key = (parts[0], parts[1], parts[2])
         table[key] = table.get(key, 0) + count
     if bad:
-        add(findings, "ERROR", NAME, BASELINE_REL, bad[0], "BASE011",
+        add(
+            findings,
+            "ERROR",
+            NAME,
+            BASELINE_REL,
+            bad[0],
+            "BASE011",
             f"第 {bad} 行不是「域<TAB>路径<TAB>指纹<TAB>条数」四列且条数为正整数。"
-            "账本读不动就不能当通过：跳过坏行等于把它们从账上抹掉")
+            "账本读不动就不能当通过：跳过坏行等于把它们从账上抹掉",
+        )
     return table
 
 
@@ -94,12 +102,26 @@ def read_accepted(root, findings):
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        add(findings, "ERROR", NAME, ACCEPTED_REL, 1, "BASE011",
-            f"读不了或不是 JSON（{exc}）：豁免表读不动，等于所有豁免都失效")
+        add(
+            findings,
+            "ERROR",
+            NAME,
+            ACCEPTED_REL,
+            1,
+            "BASE011",
+            f"读不了或不是 JSON（{exc}）：豁免表读不动，等于所有豁免都失效",
+        )
         return {}
     if not isinstance(data, list):
-        add(findings, "ERROR", NAME, ACCEPTED_REL, 1, "BASE011",
-            "accepted.json 必须是条目数组：一条一个豁免，每条带理由与复查日期")
+        add(
+            findings,
+            "ERROR",
+            NAME,
+            ACCEPTED_REL,
+            1,
+            "BASE011",
+            "accepted.json 必须是条目数组：一条一个豁免，每条带理由与复查日期",
+        )
         return {}
     table, today = {}, datetime.date.today()
     for idx, entry in enumerate(data, 1):
@@ -108,20 +130,41 @@ def read_accepted(root, findings):
         count = _positive_int(item.get("count"))
         if missing or count is None:
             lack = missing + ([] if count is not None else ["count(正整数)"])
-            add(findings, "ERROR", NAME, ACCEPTED_REL, idx, "BASE011",
+            add(
+                findings,
+                "ERROR",
+                NAME,
+                ACCEPTED_REL,
+                idx,
+                "BASE011",
                 f"第 {idx} 条缺 {', '.join(lack)}。不修就必须盖章，盖章就必须有人"
-                "和日期——否则「豁免」只是一句没人负责的注释")
+                "和日期——否则「豁免」只是一句没人负责的注释",
+            )
             continue
         try:
             review_by = datetime.datetime.strptime(str(item["review_by"]), REVIEW_BY).date()
         except ValueError:
-            add(findings, "ERROR", NAME, ACCEPTED_REL, idx, "BASE011",
-                f"第 {idx} 条 review_by = {item.get('review_by')!r} 不是 YYYY-MM-DD")
+            add(
+                findings,
+                "ERROR",
+                NAME,
+                ACCEPTED_REL,
+                idx,
+                "BASE011",
+                f"第 {idx} 条 review_by = {item.get('review_by')!r} 不是 YYYY-MM-DD",
+            )
             continue
         if review_by < today:
-            add(findings, "ERROR", NAME, ACCEPTED_REL, idx, "BASE012",
+            add(
+                findings,
+                "ERROR",
+                NAME,
+                ACCEPTED_REL,
+                idx,
+                "BASE012",
                 f"第 {idx} 条豁免已于 {review_by} 过期（{item.get('reason', '')}）。"
-                "过期豁免必须重新盖章：换日期、换理由，或删行")
+                "过期豁免必须重新盖章：换日期、换理由，或删行",
+            )
             continue
         key = (str(item["scope"]), str(item["path"]), str(item["fingerprint"]))
         table[key] = table.get(key, 0) + count
@@ -132,8 +175,9 @@ def head_total(root):
     """HEAD 里账本的总条数；不是 git 仓库或 HEAD 没有账本时返回 None。"""
     total = 0
     for rel in (BASELINE_REL, ACCEPTED_REL):
-        proc = subprocess.run(["git", "-C", str(root), "show", f"HEAD:{rel}"],
-                              check=False, capture_output=True, text=True)
+        proc = subprocess.run(
+            ["git", "-C", str(root), "show", f"HEAD:{rel}"], check=False, capture_output=True, text=True
+        )
         if proc.returncode != 0:
             continue
         if rel == BASELINE_REL:
@@ -155,14 +199,27 @@ def check_monotonic(root, ledger_total, findings):
     """只减不增：刷新账本时总数不许上升。没有 git 就明说判不了，不冒充通过。"""
     previous = head_total(root)
     if previous is None:
-        add(findings, "WARN", NAME, BASELINE_REL, 1, "BASE013",
-            "没有版本控制里的旧账本可比，本次无法判断总数是否上升。"
-            "「判不了」按 WARN 报出来，不按通过处理")
+        add(
+            findings,
+            "WARN",
+            NAME,
+            BASELINE_REL,
+            1,
+            "BASE013",
+            "没有版本控制里的旧账本可比，本次无法判断总数是否上升。「判不了」按 WARN 报出来，不按通过处理",
+        )
         return
     if ledger_total > previous:
-        add(findings, "ERROR", NAME, BASELINE_REL, 1, "BASE013",
+        add(
+            findings,
+            "ERROR",
+            NAME,
+            BASELINE_REL,
+            1,
+            "BASE013",
             f"账本总数从 {previous} 涨到 {ledger_total}：那不是豁免，是把新欠盖了章。"
-            "只减不增——要新增一条 accepted，先修掉一条老账")
+            "只减不增——要新增一条 accepted，先修掉一条老账",
+        )
 
 
 def run(ctx, findings):
@@ -192,6 +249,13 @@ def run(ctx, findings):
     check_monotonic(root, sum(ledger.values()) + sum(exempt.values()), findings)
     debt = sum(ledger.values()) + sum(exempt.values()) - sum(current.values())
     if debt > 0:
-        add(findings, "WARN", NAME, BASELINE_REL, 1, "BASE014",
+        add(
+            findings,
+            "WARN",
+            NAME,
+            BASELINE_REL,
+            1,
+            "BASE014",
             f"账本比现状多 {debt} 条：老账已修掉一部分，可以刷新账本。"
-            "刷新前先确认当前 ERROR 全是同一批老账，并把前后条数记入 memory/decisions.md")
+            "刷新前先确认当前 ERROR 全是同一批老账，并把前后条数记入 memory/decisions.md",
+        )

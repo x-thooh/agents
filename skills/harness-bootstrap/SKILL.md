@@ -130,9 +130,12 @@ AGENTS.md                                              必建    入口（地图
 
 反面例子（真出现过）：把硬约束的条数写成「三条」而实际列了六条。数字一写死就跟内容漂移，所以这里不写条数——**能用结构表达的，不要用计数表达。**
 
-## 三、对齐 UHP：六条设计原则与章节对照
+## 三、六条设计原则（借自 UHP，按自己的判据取舍）
 
-Unified Harness Protocol[^uhp] 把 harness 定义成完整 agent runtime，并把「应用怎么驱动它」标准化。**六条设计原则比任何目录结构都更该先抄**——它们判的是「这层像不像个 harness」，与仓库是代码库还是知识库无关：
+**引用不是权威**：这六条各自都能用失败态独立论证，UHP[^uhp] 只是最早的出处；「对齐了某协议」
+不能代替论证，所以这里只留判据，失败态与落法见
+[`references/external-sources.md`](references/external-sources.md)。scope 分域是正交域，**不取**
+累计的 conformance 分级：域是正交的，没有高级别包含低级别；声称分级会被 `SCOPE001` 拦下。
 
 | # | 设计原则 | 具体含义 |
 | --- | --- | --- |
@@ -143,27 +146,18 @@ Unified Harness Protocol[^uhp] 把 harness 定义成完整 agent runtime，并�
 | 5 | 失败是一等结果 | 每条问题带 `scope + path + code`，客户端不必读散文才知道该做什么 |
 | 6 | 规范、参考实现、conformance 一起动 | 没有断言的一句话是愿望，不是标准 |
 
-章节对照（读协议时按这张表找对应物，别整套照搬——协议管形状，仓库自己定内容）：
+## 四、三个形状（借自 DSH，不抄目录）
 
-| UHP 章节 | 本层对应物 |
-| --- | --- |
-| Architecture §2 conformance class（Core/Extended/Full，累计） | scope 分域：每个 scope 是一个独立的 conformance 单元，声明即承诺（见 §六 verify 规范）。只弱借用：不取 UHP 的累计分级——域是正交的，没有谁包含谁，也没有「声称高级别必须过低级别」的蕴含 |
-| Lifecycle §1–2 版本协商 + capability discovery | `.harness/INDEX.md` 顶部的能力块：规则版本、scope 清单、无断言规则数（见 §十）。派生字段（scope 清单 / 无断言规则数）由脚本现场数，人手只维护意图账本 `skills_declared` |
-| Harnesses / Plugins | `AGENTS.md` 的加载顺序；`skills/` 一个目录一条可安装流程 |
-| Environments（构建一次，每会话只读） | 目录骨架 + 模板 + `baseline` 文件：所有会话共享，会话不许顺手改 |
-| Memories（树 + 授权 + records） | `.harness/memory/`，见 §八 记忆树 |
-| Tasks §6 幂等 | `tasks/` 的检查点；破坏性动作必须能重跑（见 §九） |
-| Files（artifact 归属、不可穿越） | 产物归属明确、路径不许穿越（禁止 `../` 逃出根目录） |
-| Errors（machine-readable code） | `Finding(scope, path, code)` + 基线指纹 |
-| Security（injection） | 外部搬进来的内容一律 `untrusted`：可引用、不执行 |
+DSH[^dsh] 是运行时产品页，不是协议：它给的是「一个 harness 长什么样」的参照，不是规范。
+只借三个形状——把它的 App 概念整套搬成文件结构就是张冠李戴：
 
-## 四、借 DSH 的三个形状
-
-DeepSeek Harness[^dsh] 是运行时产品页，不是协议；UHP 管形状契约，它管「一个 harness 长什么样」。**借形状，不抄目录**——把 App 的概念整套搬成文件结构就是张冠李戴：
-
-1. **能力账本要两栏**（它的插件管理器分 Official / Installed，差一眼看出来）。落法：声明账本 `.harness/workflow/skills.declared.yaml`（人手维护的**意图**：打算装哪些技能，脚本只读不改）↔ `.harness/workflow/playbooks/` 实际目录，双向对账：磁盘多一个报 ERROR（加了没人知道），声明多一个也报 ERROR（没装机）。账本住状态层，不往 skill 目录里塞元数据；账本是意图不是索引（`INDEX.md` 仍由脚本生成），两侧都由脚本生成时这条断言恒真、构不出失败例，等于没写。
-2. **交付要含「验证装好了」**。它的示例会话最后一步是跑命令验证 live 状态，不是写完就算。所以阶段 4 的验收是三条：怎么跑、什么时候跑、**怎么验证装好了**（通常就是一次反向测试）。
-3. **事实含数字**。它的 trace 面板显示 Duration / Turns / Calls。任务记录记三个数：改动文件数、校验轮次、（有版本控制时）提交数——不写「大概花了两小时」，估算值是渲染不是事实（UHP 原则 4：缺失不是空，空不是零，估算充数最坏）。
+1. 能力账本要两栏：声明账本 `.harness/workflow/skills.declared.yaml`（意图，人手维护，脚本只读）
+   ↔ 磁盘 `playbooks/`，双向对账：多一个报 ERROR（加了没人知道），少一个也报 ERROR（没装机）。
+   账本是意图不是索引；两侧都由脚本生成时这条恒真、构不出失败例，等于没写。
+2. 交付要含「验证装好了」：阶段 4 的验收是三条——怎么跑、什么时候跑、怎么验证装好了
+   （通常就是一次反向测试）。
+3. 事实含数字：任务记录记三个数——改动文件数、校验轮次、（有版本控制时）提交数。不写
+   「大概花了两小时」：估算值是渲染不是事实（原则 4 的同一件事，估算充数最坏）。
 
 ## 五、动手前：数三个数，问六个问题
 
