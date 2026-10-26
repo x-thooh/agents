@@ -17,7 +17,7 @@
 | 规则组 | 断言载体 | 强度 |
 | --- | --- | --- |
 | skill 目录形状（`SKILL.md` + `references/` + `scripts/` + `agents/`；根下每个条目要么是标准四件，要么在 `EXTRAS` 里写明理由） | audit.py STRUCT001（近似拼写 `reference`/`script`/`agent` 与未声明条目）/ STRUCT002（`references/` 只放 `.md`，不建子目录）+ `tests/fixtures.py` 三例 | 强 |
-| 基线记账与收敛（条数制 / 零基线 / accepted 只减不增 + 保质期） | audit.py BASE001/BASE003/BASE004 + verify `scope=baseline` | 强 |
+| 基线记账与收敛（条数制 / 零基线 / accepted 只减不增 + 保质期） | 文本侧：audit.py BASE001/BASE003/BASE004（正文有没有把机制写全）。执行侧：**无断言**——两套模板都未实现 `baseline` / `accepted`，本 skill 不提供参考实现 | 中（文本）+ **无断言**（执行；见 `templates/README.md`「未实现清单」，阶段 3 自建） |
 | 规则集版本保质期（`rules_version` 90 天未重新确认即 ERROR；基线不设刷新日期字段） | audit.py VER001（提到它的那一行必须同时写明天数与到期行为） | 强 |
 | references/*.md 里的跨文件 §X.Y 引用指向存在的章节/条目（断言坑 #12 的存在性半边） | audit.py XREFDOC001/XREFDOC002（改号/删节/外置后没跟着改；重排同号仍属人判） | 强（存在性半边）+ 人判（重排同号） |
 | 「每条硬规则在断言表里有对应行」有人核得动 | audit.py CODEINDEX001（`references/code-index.md` 与源码逐字节一致；`make code-index` 重生成） | 强（清单本身）+ 人判（行到底对应得对不对） |
