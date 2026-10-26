@@ -106,6 +106,10 @@ CASES = (
     ("bad-stale-code-index", {"CODEINDEX001"}, ()),
     # 文档声称的载体必须覆盖代码里每个 code；样本的文档故意漏了一个
     ("bad-doc-missing-code", {"DOC001"}, ()),
+    # 反方向：文档指向源码里已被删掉的 code（幻影），只守 DOC001 时全绿
+    ("bad-doc-phantom-code", {"DOC002"}, ()),
+    # 幻影的另一个方向：正文（SKILL.md）替不存在的 code 背书
+    ("bad-skill-phantom-code", {"DOC002"}, ()),
     # 体量预算两档：两档都得真会响，否则「准备拆」只是句好听话
     ("bad-budget-warn", {"BUDGET001"}, ()),
     ("bad-budget-error", {"BUDGET001"}, ()),

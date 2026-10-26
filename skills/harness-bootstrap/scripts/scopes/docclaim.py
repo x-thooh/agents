@@ -8,10 +8,17 @@
 判的是「提到过」而不是「对应的行写得对」：后者是语义，人判（acceptance.md 的强度列
 已这么标）。机器能守的那一半守死，够挡住「新增一个 code 却没进文档」这类漂移。
 
+  DOC001  源码 → 文档：代码里会报的 code，文档必须点到名（漏了=没人知道谁守它）。
+  DOC002  反方向在 `docphantom.py`（文档点名的 code 必须真存在）。
+          只守 DOC001 时，删掉一个 code 而文档没改，两边一起漂而门禁全绿——「幻影 code」。
+          判据收窄到「同一行里出现 `audit.py`」的行：acceptance.md 里还有大量目标仓库侧
+          的 code（CONF001 / GATE00x / CM006…），它们本来就不该在这个仓库的源码里。
+
 边界：只判本 skill 自己的两份文件；没有 `scripts/scopes/` 的样本记 not_applicable，
 不冒充通过（§七.2）。
 """
 import os
+import pathlib
 import re
 
 from .common import Finding
@@ -19,6 +26,8 @@ from .common import Finding
 NAME = "docclaim"
 
 CODE_LITERAL = re.compile(r'"([A-Z]{2,}[0-9]{3})"')
+# 文档里写 code 不带引号（反引号或裸写都算）：只用来判「文档 → 源码」方向。
+DOC_CODE_RE = re.compile(r"\b([A-Z]{2,}[0-9]{3})\b")
 ACCEPTANCE_REL = os.path.join("references", "acceptance.md")
 SCOPES_REL = os.path.join("scripts", "scopes")
 
