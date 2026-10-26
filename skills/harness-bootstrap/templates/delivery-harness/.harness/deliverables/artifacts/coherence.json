@@ -1,0 +1,58 @@
+{
+  "example": true,
+  "e2e": [
+    {
+      "id": "E2E-001",
+      "chain": "cart->order->payment->fulfillment",
+      "status": "pass",
+      "evidence": "E2E-REPORT-001"
+    }
+  ],
+  "data_consistency": [
+    {
+      "id": "DC-001",
+      "status": "pass",
+      "evidence": "DC-REPORT-001"
+    }
+  ],
+  "traceability": [
+    {
+      "requirement": "R-001",
+      "status": "pass",
+      "evidence": ["TC-001", "E2E-001"]
+    },
+    {
+      "requirement": "R-002",
+      "status": "pass",
+      "evidence": ["TC-002"]
+    }
+  ],
+  "regression": {
+    "status": "pass",
+    "scope": ["order", "payment"],
+    "new_p0_p1": 0
+  },
+  "nfr": [
+    {
+      "id": "NFR-001",
+      "status": "pass",
+      "evidence": "PERF-001"
+    },
+    {
+      "id": "NFR-002",
+      "status": "pass",
+      "evidence": "SEC-001"
+    },
+    {
+      "id": "NFR-003",
+      "status": "pass",
+      "evidence": "OBS-001"
+    },
+    {
+      "id": "NFR-004",
+      "status": "pass",
+      "evidence": "COMPAT-001"
+    }
+  ],
+  "known_issues": []
+}

@@ -1,0 +1,20 @@
+id: harness-regression
+title: 重大修改走「改前基准 / 改中条理 / 改后回归」三段纪律
+description: 给一个已有 .harness 工程层 的仓库出一个改规则的需求，验证 agent 不直接动手，而是先立基准、分步执行、最后用共有门径回归并逐项归因。
+
+input:
+  prompt: |
+    请按照已安装的 harness-bootstrap 技能（SKILL.md）执行，特别是「修改三段纪律」一节。
+    本仓库已有一套 .harness 工程层。现在有如下需求：把「文档目录命名必须带日期前缀」这条硬规则改成「建议但不强制」。
+    请按三段纪律执行这次修改：改前先立基准并指明验收锚点，改中分步落痕，改后用仓库统一的校验命令做全量回归，并对照基准逐项报告结果。
+
+context:
+  repo_fixture: evals/fixtures/repos/with-harness
+
+expect:
+  exit_code: 0
+judges:
+  - id: discipline
+    type: script
+    script_path: evals/fixtures/scripts/check-regression-discipline.sh
+    timeout_seconds: 120

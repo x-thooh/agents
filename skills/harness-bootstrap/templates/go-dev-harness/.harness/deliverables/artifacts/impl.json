@@ -1,0 +1,9 @@
+{
+  "example": true,
+  "build": "pass",
+  "vet": "pass",
+  "lint": "pass",
+  "changed_packages": ["internal/order", "internal/httpapi", "cmd/ordersvc"],
+  "changed_files": 6,
+  "notes": "go build ./... / go vet ./... / golangci-lint run ./... 均无输出"
+}

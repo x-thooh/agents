@@ -1,0 +1,17 @@
+{
+  "example": true,
+  "mrs": [
+    {
+      "id": "MR-142",
+      "title": "feat(order): 订单创建与查询",
+      "author": "dev-a",
+      "lines_changed": 220,
+      "reviewers": ["dev-b", "dev-c"],
+      "approvals": ["dev-b", "dev-c"],
+      "comments": [
+        {"id": "C-1", "status": "closed", "summary": "ctx 未透传，已修"},
+        {"id": "C-2", "status": "closed", "summary": "补 not_found 单测"}
+      ]
+    }
+  ]
+}

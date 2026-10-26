@@ -1,0 +1,10 @@
+{
+  "results": ["pass", "conditional", "reject"],
+  "blocking": ["reject"],
+  "requires": {
+    "pass": ["evidence"],
+    "conditional": ["evidence", "exceptions"],
+    "reject": ["rework"]
+  },
+  "notes": "blocking 的结果会让后续阶段无法 pass；requires 列出每种结果必须非空的字段"
+}

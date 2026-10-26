@@ -1,0 +1,25 @@
+{
+  "stage": "requirements",
+  "process_version": "v1.2",
+  "date": "YYYY-MM-DD",
+  "owner": "<A 角色/姓名>",
+  "result": "pass | conditional | reject",
+  "evidence": ["<单据 ID / 链接 / 提交哈希>"],
+  "exceptions": [
+    {
+      "id": "EX-001",
+      "issue": "<问题>",
+      "owner": "<责任人>",
+      "approver": "<批准人>",
+      "expiry": "YYYY-MM-DD"
+    }
+  ],
+  "rework": [
+    {
+      "issue": "<问题>",
+      "action": "<修复动作>",
+      "rerun_stages": ["requirements"]
+    }
+  ],
+  "example": true
+}

@@ -1,0 +1,20 @@
+{
+  "tasks": [
+    {
+      "id": "T-142",
+      "title": "订单创建与查询",
+      "owner": "dev-a",
+      "stage": "release",
+      "status": "doing",
+      "updated": "2026-10-26"
+    },
+    {
+      "id": "T-143",
+      "title": "退款回调幂等",
+      "owner": "dev-a",
+      "stage": "contract",
+      "status": "todo",
+      "updated": "2026-10-26"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "example": true,
+  "id": "ORD-142",
+  "title": "订单创建与查询接口",
+  "acceptance": [
+    {
+      "id": "AC-1",
+      "given_when_then": "给定合法 id 与正数金额，当 POST /orders，则返回 201 且状态为 new"
+    },
+    {
+      "id": "AC-2",
+      "given_when_then": "给定不存在的 id，当 GET /orders/{id}，则返回 404 与错误码 order_not_found"
+    },
+    {
+      "id": "AC-3",
+      "measure": "POST /orders 的 p99 < 120ms（本地 200 QPS 压测）"
+    }
+  ],
+  "interfaces": [
+    {
+      "name": "createOrder",
+      "method": "POST",
+      "path": "/orders",
+      "request": "{id: string, amount: int64}",
+      "response": "201 {id, amount, status, created_at}",
+      "errors": ["invalid_amount", "invalid_json"],
+      "idempotent": "no: 同 id 重复提交会覆盖，调用方需去重"
+    },
+    {
+      "name": "getOrder",
+      "method": "GET",
+      "path": "/orders/{id}",
+      "request": "path param id",
+      "response": "200 {id, amount, status, created_at}",
+      "errors": ["order_not_found"],
+      "idempotent": "yes"
+    }
+  ],
+  "nfr": {
+    "performance": "p99 < 120ms @200QPS，见 AC-3",
+    "observability": "每请求一条结构化日志（trace_id/order_id/status）；错误率与 p99 进指标",
+    "compatibility": "响应只增字段不删改；amount 固定 int64 分单位"
+  }
+}

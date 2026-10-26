@@ -1,0 +1,49 @@
+schema_version: v1alpha1
+
+environment:
+  type: none
+
+skills:
+  - source: local_path
+    path: .
+    include:
+      - SKILL.md
+      - reference/*
+
+# 直连 magpie：skill-up -> 本地 adapter -> magpie /v1/chat/completions
+engine:
+  name: magpie-agent
+  model:
+    provider: magpie
+    name: ollama-cloud/nemotron-3-ultra
+  custom:
+    transport: local
+    response_format: session_result
+    timeout_seconds: 2400
+    env:
+      MAGPIE_BASE_URL: http://127.0.0.1:3425/v1
+      MAGPIE_API_KEY: magpie
+      MAGPIE_MODEL: ollama-cloud/nemotron-3-ultra
+      HARNESS_SKILL_DIR: /Users/thooh/.agents/skills/harness-bootstrap
+      SKILLUP_MAX_STEPS: "80"
+    local:
+      command: bash
+      args:
+        - -lc
+        - exec python3 "$HARNESS_SKILL_DIR/evals/fixtures/engine/magpie_agent.py" --input "${input_file}" --output "${output_file}"
+      input_file: .skillup/inputs/messages.json
+      output_file: .skillup/outputs/session-result.json
+
+cases:
+  files:
+    - evals/cases/empty-bootstrap.yaml
+    - evals/cases/harness-regression.yaml
+  defaults:
+    timeout_seconds: 2400
+    max_turns: 1
+  parallelism: 1
+
+report:
+  formats: [json, html]
+  artifacts:
+    - transcript

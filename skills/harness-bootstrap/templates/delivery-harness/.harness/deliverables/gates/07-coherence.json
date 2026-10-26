@@ -1,0 +1,11 @@
+{
+  "stage": "coherence",
+  "process_version": "v1.2",
+  "date": "2026-10-25",
+  "owner": "QA lead",
+  "result": "pass",
+  "evidence": ["E2E-001", "REG-001"],
+  "exceptions": [],
+  "rework": [],
+  "example": true
+}

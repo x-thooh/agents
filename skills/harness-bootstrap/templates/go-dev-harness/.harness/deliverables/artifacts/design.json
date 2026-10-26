@@ -1,0 +1,51 @@
+{
+  "example": true,
+  "packages": [
+    {
+      "name": "cmd/ordersvc",
+      "responsibility": "进程装配、信号处理、优雅退出",
+      "deps": ["internal/config", "internal/httpapi", "internal/order"]
+    },
+    {
+      "name": "internal/config",
+      "responsibility": "配置加载与校验",
+      "deps": []
+    },
+    {
+      "name": "internal/order",
+      "responsibility": "订单领域逻辑与存储抽象",
+      "deps": []
+    },
+    {
+      "name": "internal/httpapi",
+      "responsibility": "HTTP 适配层与错误码映射",
+      "deps": ["internal/order"]
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D-1",
+      "choice": "存储先定接口 + 内存实现",
+      "why": "先打通链路，测试不依赖外部服务；DB 实现后补",
+      "rejected": ["直接依赖 database/sql", "引入 ORM"]
+    },
+    {
+      "id": "D-2",
+      "choice": "sentinel error + fmt.Errorf %w 包装",
+      "why": "上层能用 errors.Is 判定，HTTP 层据此映射状态码",
+      "rejected": ["每层重建自定义 error 类型", "匹配错误字符串"]
+    }
+  ],
+  "failure_modes": [
+    {
+      "mode": "内存存储重启丢数据",
+      "detect": "启动日志打印 repo 类型；prod 环境禁止 memory repo",
+      "mitigate": "接 DB 前不接生产流量"
+    },
+    {
+      "mode": "客户端重复提交同一 id 覆盖订单",
+      "detect": "Save 覆盖行为 + 请求日志按 id 计数",
+      "mitigate": "契约声明非幂等，调用方去重"
+    }
+  ]
+}

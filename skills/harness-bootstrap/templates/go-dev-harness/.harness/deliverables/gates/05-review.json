@@ -1,0 +1,9 @@
+{
+  "example": true,
+  "stage": "review",
+  "process_version": "go-dev-2026.10",
+  "date": "2026-10-26",
+  "owner": "dev-b",
+  "result": "pass",
+  "evidence": ["artifacts/review.json"]
+}

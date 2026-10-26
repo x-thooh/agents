@@ -1,0 +1,33 @@
+{
+  "example": true,
+  "manifest": {
+    "submission_form": "SUB-001",
+    "api_change": "API-CHANGE-001",
+    "db_change": "DB-CHANGE-001",
+    "db_rollback": "DB-ROLLBACK-001",
+    "config_change": "CFG-CHANGE-001",
+    "selftest_report": "ST-REPORT-001",
+    "known_issues": "KI-001",
+    "deployment": "DEPLOY-001",
+    "test_data": "TESTDATA-001",
+    "env_baseline": "ENV-BASELINE-001",
+    "risk_list": "RISK-001"
+  },
+  "smoke": {
+    "status": "pass",
+    "total": 20,
+    "passed": 20,
+    "executor": "QA"
+  },
+  "version": {
+    "tag": "v1.2.3",
+    "commit": "abc1234",
+    "test_env": "v1.2.3"
+  },
+  "qa_accepted": true,
+  "rollback_tested": true,
+  "defects": {
+    "P0": 0,
+    "P1": 0
+  }
+}

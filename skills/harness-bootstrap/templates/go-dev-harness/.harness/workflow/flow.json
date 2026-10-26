@@ -1,0 +1,53 @@
+{
+  "version": "go-dev-2026.10",
+  "stages": [
+    {
+      "id": "contract",
+      "order": 1,
+      "name": "需求与接口契约",
+      "gate": "01-contract.json",
+      "deliverable": "artifacts/contract.json",
+      "scopes": ["contract"]
+    },
+    {
+      "id": "design",
+      "order": 2,
+      "name": "方案设计",
+      "gate": "02-design.json",
+      "deliverable": "artifacts/design.json",
+      "scopes": ["design"]
+    },
+    {
+      "id": "impl",
+      "order": 3,
+      "name": "编码实现",
+      "gate": "03-impl.json",
+      "deliverable": "artifacts/impl.json",
+      "scopes": ["layout", "runtime", "impl"]
+    },
+    {
+      "id": "test",
+      "order": 4,
+      "name": "测试与自测",
+      "gate": "04-test.json",
+      "deliverable": "artifacts/test.json",
+      "scopes": ["test"]
+    },
+    {
+      "id": "review",
+      "order": 5,
+      "name": "代码评审",
+      "gate": "05-review.json",
+      "deliverable": "artifacts/review.json",
+      "scopes": ["review"]
+    },
+    {
+      "id": "release",
+      "order": 6,
+      "name": "发布与观察",
+      "gate": "06-release.json",
+      "deliverable": "artifacts/release.json",
+      "scopes": ["release"]
+    }
+  ]
+}

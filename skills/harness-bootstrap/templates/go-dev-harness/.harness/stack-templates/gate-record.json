@@ -1,0 +1,10 @@
+{
+  "stage": "<contract|design|impl|test|review|release>",
+  "process_version": "<与 quality.json 一致>",
+  "date": "YYYY-MM-DD",
+  "owner": "<签字人>",
+  "result": "pass|conditional|reject",
+  "evidence": ["artifacts/<stage>.json"],
+  "exceptions": [],
+  "rework": []
+}

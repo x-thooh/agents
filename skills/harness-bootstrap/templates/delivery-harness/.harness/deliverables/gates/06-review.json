@@ -1,0 +1,11 @@
+{
+  "stage": "review",
+  "process_version": "v1.2",
+  "date": "2026-10-24",
+  "owner": "Tech lead",
+  "result": "pass",
+  "evidence": ["MR-001", "CR-001"],
+  "exceptions": [],
+  "rework": [],
+  "example": true
+}

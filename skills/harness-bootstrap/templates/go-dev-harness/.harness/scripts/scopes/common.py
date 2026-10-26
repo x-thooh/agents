@@ -1,0 +1,319 @@
+"""Shared helpers for go-dev-harness verify scopes. Standard library only."""
+import datetime
+import json
+import re
+from pathlib import Path
+
+
+class Finding:
+    __slots__ = ("severity", "scope", "path", "line", "code", "message")
+
+    def __init__(self, severity, scope, path, line, code, message):
+        self.severity = severity
+        self.scope = scope
+        self.path = path
+        self.line = line
+        self.code = code
+        self.message = message
+
+    def as_dict(self):
+        return {
+            "severity": self.severity,
+            "scope": self.scope,
+            "path": self.path,
+            "line": self.line,
+            "code": self.code,
+            "message": self.message,
+        }
+
+
+def add(findings, severity, scope, path, line, code, message):
+    findings.append(Finding(severity, scope, path, line, code, message))
+
+
+def text(value):
+    return isinstance(value, str) and value.strip() != ""
+
+
+def num(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def as_list(value):
+    return value if isinstance(value, list) else []
+
+
+def as_dict(value):
+    return value if isinstance(value, dict) else {}
+
+
+def load_json(root, rel, scope, findings, code):
+    path = Path(root) / rel
+    if not path.is_file():
+        add(findings, "ERROR", scope, rel, 1, code, f"缺少 {rel}")
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        add(findings, "ERROR", scope, rel, 1, code, f"{rel} 读取失败: {exc}")
+        return None
+
+
+def warn_example(data, rel, scope, findings, strict):
+    if isinstance(data, dict) and data.get("example") is True:
+        severity = "ERROR" if strict else "WARN"
+        add(
+            findings,
+            severity,
+            scope,
+            rel,
+            1,
+            "EXAMPLE001",
+            f"{rel} 是示例数据（example: true）；交付前必须替换为真实证据",
+        )
+
+
+def quality_get(quality, dotted, default=None):
+    cur = quality
+    for key in dotted.split("."):
+        if not isinstance(cur, dict):
+            return default
+        cur = cur.get(key)
+        if cur is None:
+            return default
+    return cur
+
+
+def check_fields(obj, required, scope, path, findings, code, prefix=""):
+    """Require keys to exist and be non-empty strings/lists. Numbers/bools pass."""
+    ok = True
+    for key in required:
+        if not isinstance(obj, dict) or key not in obj:
+            add(findings, "ERROR", scope, path, 1, code, f"{prefix}{key} 缺失")
+            ok = False
+            continue
+        value = obj[key]
+        if isinstance(value, str) and not value.strip():
+            add(findings, "ERROR", scope, path, 1, code, f"{prefix}{key} 不能为空")
+            ok = False
+        elif isinstance(value, list) and not value:
+            add(findings, "ERROR", scope, path, 1, code, f"{prefix}{key} 不能为空")
+            ok = False
+    return ok
+
+
+def parse_date(value):
+    try:
+        return datetime.date.fromisoformat(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def has_cycle(graph):
+    state = {}
+
+    def visit(node):
+        if state.get(node) == 1:
+            return True
+        if state.get(node) == 2:
+            return False
+        state[node] = 1
+        for nxt in graph.get(node, []):
+            if visit(nxt):
+                return True
+        state[node] = 2
+        return False
+
+    return any(visit(node) for node in list(graph))
+
+
+def validate_exception(exc, scope, path, findings, code):
+    check_fields(exc, ("id", "issue", "owner", "approver", "expiry"), scope, path, findings, code, "exception.")
+    expiry = parse_date(exc.get("expiry"))
+    if expiry is None:
+        add(findings, "ERROR", scope, path, 1, code, f"exception {exc.get('id', '?')} 的 expiry 不是 YYYY-MM-DD")
+    elif expiry < datetime.date.today():
+        add(findings, "ERROR", scope, path, 1, code, f"exception {exc.get('id', '?')} 已过期（{expiry}）")
+
+
+def validate_change(change, scope, path, findings, code):
+    check_fields(
+        change,
+        ("id", "type", "description", "reason", "impact", "approver", "notified", "rebaselined", "rollback"),
+        scope,
+        path,
+        findings,
+        code,
+        "change.",
+    )
+    allowed = {"contract", "design", "scope", "schedule", "env"}
+    if change.get("type") not in allowed:
+        add(findings, "ERROR", scope, path, 1, code, f"change {change.get('id', '?')} 的 type 不在 {sorted(allowed)}")
+
+
+# --- Go source helpers -------------------------------------------------------
+
+
+def go_src(root, quality):
+    """Module root: quality.json `go_src` (default "."). Missing dir is not this helper's call."""
+    rel = quality_get(quality, "go_src", ".")
+    return Path(root) / (rel if isinstance(rel, str) and rel.strip() else ".")
+
+
+def go_files(src, include_tests=True):
+    files = sorted(p for p in Path(src).rglob("*.go") if p.is_file())
+    if include_tests:
+        return files
+    return [p for p in files if not p.name.endswith("_test.go")]
+
+
+def rel_to(root, path):
+    try:
+        return str(Path(path).relative_to(root))
+    except ValueError:
+        return str(path)
+
+
+def go_package(path):
+    """Package clause of a Go file, or '' when absent."""
+    try:
+        for raw in Path(path).read_text(encoding="utf-8").splitlines():
+            stripped = raw.strip()
+            if stripped.startswith("package "):
+                return stripped.split()[1]
+    except OSError:
+        return ""
+    return ""
+
+
+def _scan(line, in_block):
+    """Return (code_without_comments, in_block). String literals are kept verbatim."""
+    buf = []
+    i, n = 0, len(line)
+    in_str = None
+    while i < n:
+        if in_block:
+            if line.startswith("*/", i):
+                in_block = False
+                i += 2
+                continue
+            i += 1
+            continue
+        ch = line[i]
+        if in_str:
+            buf.append(ch)
+            if in_str == '"' and ch == "\\" and i + 1 < n:
+                buf.append(line[i + 1])
+                i += 2
+                continue
+            if ch == in_str:
+                in_str = None
+            i += 1
+            continue
+        if line.startswith("//", i):
+            break
+        if line.startswith("/*", i):
+            in_block = True
+            i += 2
+            continue
+        if ch in ('"', "`"):
+            in_str = ch
+            buf.append(ch)
+            i += 1
+            continue
+        buf.append(ch)
+        i += 1
+    return "".join(buf), in_block
+
+
+def code_lines(path):
+    """[(lineno, code)] with comments stripped; line numbers stay original."""
+    out = []
+    in_block = False
+    try:
+        raw_lines = Path(path).read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return out
+    for idx, raw in enumerate(raw_lines, 1):
+        code, in_block = _scan(raw, in_block)
+        out.append((idx, code))
+    return out
+
+
+def is_test_file(path):
+    return str(path).endswith("_test.go")
+
+
+def go_imports(path):
+    """Import paths of a Go file (single-line and block form)."""
+    paths = []
+    in_block = False
+    try:
+        raw_lines = Path(path).read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return paths
+    for raw in raw_lines:
+        line = raw.strip()
+        if in_block:
+            if line.startswith(")"):
+                in_block = False
+                continue
+            paths.append(line.strip('"'))
+            continue
+        if line.startswith("import ("):
+            in_block = True
+            continue
+        if line.startswith("import "):
+            paths.append(line[len("import "):].strip().strip('"'))
+    return [p for p in paths if p]
+
+
+WORD_ERR = re.compile(r"\berr\b")
+
+
+GUIDE_IGNORE = {".git", "__pycache__", ".idea", ".ruff_cache", "node_modules", ".venv"}
+GUIDE_SUFFIXES = {".py", ".json", ".md", ".sh", ".go", ".yaml", ".yml", ".toml"}
+
+
+def build_guide(root, depth=2):
+    """Deterministic code map: dirs and text files up to `depth`. Written only by gen_guide.py."""
+    root = Path(root)
+    entries = []
+    for path in sorted(root.rglob("*")):
+        rel = path.relative_to(root)
+        if any(part in GUIDE_IGNORE for part in rel.parts):
+            continue
+        if len(rel.parts) > depth:
+            continue
+        if path.is_dir():
+            entries.append({"path": rel.as_posix(), "kind": "dir"})
+        elif path.suffix in GUIDE_SUFFIXES:
+            entries.append({"path": rel.as_posix(), "kind": "file"})
+    return {"generated_by": ".harness/scripts/gen_guide.py", "depth": depth, "entries": entries}
+
+
+LESSON_KEYS = ("现象", "根因", "断言")
+
+
+def check_lessons(content, scope, path, findings, code):
+    """每条 lesson 必须有现象/根因/断言三段；缺第三段就是抱怨，不是记忆。"""
+    blocks = []
+    current = []
+    for line in content.splitlines():
+        if line.startswith("## "):
+            if current:
+                blocks.append(current)
+            current = [line]
+        elif current:
+            current.append(line)
+    if current:
+        blocks.append(current)
+    if not blocks:
+        add(findings, "ERROR", scope, path, 1, code, "lessons.md 里没有任何 `## ` 条目")
+        return
+    for block in blocks:
+        body = "\n".join(block)
+        title = block[0].strip()
+        for key in LESSON_KEYS:
+            if f"{key}:" not in body and f"{key}：" not in body:
+                add(findings, "ERROR", scope, path, 1, code, f"{title} 缺「{key}」一段")

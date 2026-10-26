@@ -1,0 +1,25 @@
+{
+  "example": true,
+  "version": "1.4.0",
+  "tag": "v1.4.0",
+  "commit": "9f3c2ab",
+  "env": "gray",
+  "gray": {
+    "percent": 10,
+    "duration_min": 30
+  },
+  "rollback": {
+    "trigger": "5xx > 1% 持续 5 分钟，或 p99 > 300ms",
+    "command": "kubectl rollout undo deploy/ordersvc -n prod",
+    "owner": "dev-a"
+  },
+  "smoke": {
+    "total": 12,
+    "passed": 12
+  },
+  "observe": {
+    "window_min": 60,
+    "error_rate": 0.2,
+    "p99_ms": 120
+  }
+}

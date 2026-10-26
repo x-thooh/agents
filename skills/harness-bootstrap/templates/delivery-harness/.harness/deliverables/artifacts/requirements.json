@@ -1,0 +1,85 @@
+{
+  "example": true,
+  "prd": {
+    "version": "v1.0",
+    "hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "signed_by": ["PO", "QA", "Arch"]
+  },
+  "requirements": [
+    {
+      "id": "R-001",
+      "acceptance": "下单成功后 1 秒内返回订单号",
+      "priority": "P0",
+      "target": "v1.0",
+      "owner": "PO"
+    },
+    {
+      "id": "R-002",
+      "acceptance": "重复提交同一幂等键只生成一单",
+      "priority": "P1",
+      "target": "v1.0",
+      "owner": "PO"
+    }
+  ],
+  "nfr": [
+    {
+      "id": "NFR-001",
+      "category": "performance",
+      "metric": "p95 < 300ms",
+      "verification": "load test"
+    },
+    {
+      "id": "NFR-002",
+      "category": "security",
+      "metric": "无越权访问",
+      "verification": "authz test"
+    },
+    {
+      "id": "NFR-003",
+      "category": "observability",
+      "metric": "关键链路有 trace_id",
+      "verification": "log check"
+    },
+    {
+      "id": "NFR-004",
+      "category": "compatibility",
+      "metric": "兼容最近两个大版本客户端",
+      "verification": "compat suite"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T-001",
+      "title": "订单创建接口",
+      "owner": "Dev-A",
+      "estimate_days": 2,
+      "depends_on": []
+    },
+    {
+      "id": "T-002",
+      "title": "幂等与并发控制",
+      "owner": "Dev-B",
+      "estimate_days": 1.5,
+      "depends_on": ["T-001"]
+    }
+  ],
+  "traceability": [
+    {
+      "requirement": "R-001",
+      "tasks": ["T-001"],
+      "tests": ["TC-001"]
+    },
+    {
+      "requirement": "R-002",
+      "tasks": ["T-002"],
+      "tests": ["TC-002"]
+    }
+  ],
+  "impact": {
+    "modules": ["order", "payment"],
+    "interfaces": ["POST /orders"],
+    "tables": ["orders"],
+    "configs": ["order.timeout"],
+    "existing_features": ["cart checkout"]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "gate_fields": ["stage", "process_version", "date", "owner", "result", "evidence"],
+  "ledgers": {
+    "changes": "deliverables/ledgers/changes.json",
+    "exceptions": "deliverables/ledgers/exceptions.json"
+  },
+  "notes": "gate_fields 是门记录的必填字段；ledgers 是账本位置，路径相对 .harness/"
+}

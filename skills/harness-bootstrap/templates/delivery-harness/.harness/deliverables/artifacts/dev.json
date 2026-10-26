@@ -1,0 +1,52 @@
+{
+  "example": true,
+  "tasks": [
+    {
+      "id": "T-001",
+      "status": "done",
+      "acceptance_met": true
+    },
+    {
+      "id": "T-002",
+      "status": "done",
+      "acceptance_met": true
+    }
+  ],
+  "unit_tests": {
+    "total": 120,
+    "passed": 120,
+    "failed": 0
+  },
+  "coverage": {
+    "core": 72.5,
+    "noncore": 55.0,
+    "new_code": 85.0
+  },
+  "ci": {
+    "status": "pass",
+    "url": "https://ci.example/runs/123"
+  },
+  "sast": {
+    "status": "pass",
+    "blockers": 0
+  },
+  "build": {
+    "status": "pass",
+    "warnings_blocking": 0
+  },
+  "commits": [
+    {
+      "hash": "abc1234",
+      "message": "feat(order): add create endpoint T-001",
+      "task": "T-001"
+    },
+    {
+      "hash": "def5678",
+      "message": "fix(order): enforce idempotency T-002",
+      "task": "T-002"
+    }
+  ],
+  "feature_flags": {
+    "default_safe": true
+  }
+}

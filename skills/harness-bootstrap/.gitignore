@@ -1,0 +1,11 @@
+# 编辑器 / 工具缓存
+.idea/
+.ruff_cache/
+__pycache__/
+*.pyc
+
+# 系统
+.DS_Store
+
+# 失败过程留痕（.harness/memory/trace/）默认入库，只忽略其中临时产物
+*.log

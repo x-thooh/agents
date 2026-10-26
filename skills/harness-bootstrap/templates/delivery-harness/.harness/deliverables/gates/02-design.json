@@ -1,0 +1,11 @@
+{
+  "stage": "design",
+  "process_version": "v1.2",
+  "date": "2026-10-21",
+  "owner": "Arch",
+  "result": "pass",
+  "evidence": ["DESIGN-001", "CONTRACT-001"],
+  "exceptions": [],
+  "rework": [],
+  "example": true
+}

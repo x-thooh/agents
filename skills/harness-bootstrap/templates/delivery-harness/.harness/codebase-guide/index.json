@@ -1,0 +1,66 @@
+{
+  "generated_by": ".harness/scripts/gen_guide.py",
+  "depth": 2,
+  "entries": [
+    {
+      "path": ".harness",
+      "kind": "dir"
+    },
+    {
+      "path": ".harness/codebase-guide",
+      "kind": "dir"
+    },
+    {
+      "path": ".harness/config.json",
+      "kind": "file"
+    },
+    {
+      "path": ".harness/deliverables",
+      "kind": "dir"
+    },
+    {
+      "path": ".harness/git-hooks",
+      "kind": "dir"
+    },
+    {
+      "path": ".harness/memory",
+      "kind": "dir"
+    },
+    {
+      "path": ".harness/scripts",
+      "kind": "dir"
+    },
+    {
+      "path": ".harness/specs",
+      "kind": "dir"
+    },
+    {
+      "path": ".harness/stack-templates",
+      "kind": "dir"
+    },
+    {
+      "path": ".harness/tasks",
+      "kind": "dir"
+    },
+    {
+      "path": ".harness/workflow",
+      "kind": "dir"
+    },
+    {
+      "path": "AGENTS.md",
+      "kind": "file"
+    },
+    {
+      "path": "README.md",
+      "kind": "file"
+    },
+    {
+      "path": "tests",
+      "kind": "dir"
+    },
+    {
+      "path": "tests/reverse.py",
+      "kind": "file"
+    }
+  ]
+}

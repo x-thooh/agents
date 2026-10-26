@@ -1,0 +1,11 @@
+{
+  "stage": "selftest",
+  "process_version": "v1.2",
+  "date": "2026-10-24",
+  "owner": "Dev lead",
+  "result": "pass",
+  "evidence": ["ST-001", "ST-REPORT-001"],
+  "exceptions": [],
+  "rework": [],
+  "example": true
+}

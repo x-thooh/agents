@@ -1,0 +1,11 @@
+{
+  "stage": "requirements",
+  "process_version": "v1.2",
+  "date": "2026-10-20",
+  "owner": "PO",
+  "result": "pass",
+  "evidence": ["PRD-001", "TASK-001"],
+  "exceptions": [],
+  "rework": [],
+  "example": true
+}

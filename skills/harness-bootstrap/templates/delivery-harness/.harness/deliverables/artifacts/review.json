@@ -1,0 +1,39 @@
+{
+  "example": true,
+  "mrs": [
+    {
+      "id": "MR-001",
+      "author": "Dev-A",
+      "core": false,
+      "lines_changed": 320,
+      "reviewers": ["Reviewer-1"],
+      "approvals": 1,
+      "comments_closed": true,
+      "unresolved": {
+        "security": 0,
+        "performance": 0,
+        "correctness": 0
+      },
+      "ci": "pass",
+      "sast": "pass",
+      "merged": true
+    },
+    {
+      "id": "MR-002",
+      "author": "Dev-B",
+      "core": true,
+      "lines_changed": 280,
+      "reviewers": ["Reviewer-1", "Reviewer-2"],
+      "approvals": 2,
+      "comments_closed": true,
+      "unresolved": {
+        "security": 0,
+        "performance": 0,
+        "correctness": 0
+      },
+      "ci": "pass",
+      "sast": "pass",
+      "merged": true
+    }
+  ]
+}

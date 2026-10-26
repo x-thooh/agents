@@ -1,0 +1,40 @@
+{
+  "example": true,
+  "checklist": [
+    {
+      "id": "ST-001",
+      "feature": "R-001",
+      "status": "pass",
+      "evidence": "TC-001"
+    },
+    {
+      "id": "ST-002",
+      "feature": "R-002",
+      "status": "pass",
+      "evidence": "TC-002"
+    }
+  ],
+  "execution_rate": 100,
+  "pass_rate": 96,
+  "defects": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 1,
+    "P3": 0
+  },
+  "defect_details": [
+    {
+      "id": "BUG-001",
+      "severity": "P2",
+      "owner": "Dev-A",
+      "deadline": "2026-11-01"
+    }
+  ],
+  "submission_ready": {
+    "package": true,
+    "env_deployed": true,
+    "smoke_ready": true,
+    "rollback_tested": true
+  },
+  "report": ".harness/deliverables/reports/selftest.md"
+}

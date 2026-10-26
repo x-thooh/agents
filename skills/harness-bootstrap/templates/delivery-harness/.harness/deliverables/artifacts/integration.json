@@ -1,0 +1,40 @@
+{
+  "example": true,
+  "interfaces": [
+    {
+      "id": "API-001",
+      "status": "pass",
+      "validated": [
+        "fields",
+        "nulls",
+        "enums",
+        "boundaries",
+        "error_codes",
+        "pagination",
+        "auth",
+        "timeout",
+        "retry",
+        "idempotency",
+        "rate_limit",
+        "degradation",
+        "logging",
+        "trace_id"
+      ]
+    }
+  ],
+  "contract_tests": {
+    "total": 10,
+    "passed": 10,
+    "status": "pass"
+  },
+  "env": {
+    "integration": "v1.2.3",
+    "test": "v1.2.3",
+    "diff": ""
+  },
+  "changes": [],
+  "defects": {
+    "P0": 0,
+    "P1": 0
+  }
+}

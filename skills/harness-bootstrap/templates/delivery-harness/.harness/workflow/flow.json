@@ -1,0 +1,69 @@
+{
+  "version": "v1.2",
+  "stages": [
+    {
+      "id": "requirements",
+      "order": 1,
+      "name": "需求分析",
+      "gate": "01-requirements.json",
+      "deliverable": "artifacts/requirements.json",
+      "scopes": ["requirements"]
+    },
+    {
+      "id": "design",
+      "order": 2,
+      "name": "技术方案评审",
+      "gate": "02-design.json",
+      "deliverable": "artifacts/design.json",
+      "scopes": ["design"]
+    },
+    {
+      "id": "dev",
+      "order": 3,
+      "name": "功能开发",
+      "gate": "03-dev.json",
+      "deliverable": "artifacts/dev.json",
+      "scopes": ["dev"]
+    },
+    {
+      "id": "integration",
+      "order": 4,
+      "name": "联调",
+      "gate": "04-integration.json",
+      "deliverable": "artifacts/integration.json",
+      "scopes": ["integration"]
+    },
+    {
+      "id": "selftest",
+      "order": 5,
+      "name": "开发自测",
+      "gate": "05-selftest.json",
+      "deliverable": "artifacts/selftest.json",
+      "scopes": ["selftest"]
+    },
+    {
+      "id": "review",
+      "order": 6,
+      "name": "代码评审",
+      "gate": "06-review.json",
+      "deliverable": "artifacts/review.json",
+      "scopes": ["review"]
+    },
+    {
+      "id": "coherence",
+      "order": 7,
+      "name": "整体功能自洽",
+      "gate": "07-coherence.json",
+      "deliverable": "artifacts/coherence.json",
+      "scopes": ["coherence"]
+    },
+    {
+      "id": "submission",
+      "order": 8,
+      "name": "提测",
+      "gate": "08-submission.json",
+      "deliverable": "artifacts/submission.json",
+      "scopes": ["submission"]
+    }
+  ]
+}

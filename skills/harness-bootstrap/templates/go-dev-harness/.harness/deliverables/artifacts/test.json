@@ -1,0 +1,17 @@
+{
+  "example": true,
+  "cases": 14,
+  "race": "pass",
+  "coverage": {
+    "total": 88,
+    "core": 92
+  },
+  "benchmarks": [
+    {
+      "name": "BenchmarkServiceCreate",
+      "ns_per_op": 49,
+      "baseline_ns_per_op": 60
+    }
+  ],
+  "notes": "覆盖率范围 ./internal/...（cmd 只装配不计）：config 91.7% / httpapi 82.9% / order 92.9%，总 88.0%，order 为 core；BenchmarkServiceCreate 实测 49ns/op"
+}

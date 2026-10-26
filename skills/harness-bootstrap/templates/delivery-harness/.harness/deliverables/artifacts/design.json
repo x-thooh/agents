@@ -1,0 +1,42 @@
+{
+  "example": true,
+  "design": {
+    "version": "v1.0",
+    "path": ".harness/specs/design.md",
+    "sections": [
+      "modules",
+      "boundaries",
+      "data_flow",
+      "schema",
+      "third_party",
+      "tech_selection",
+      "api",
+      "state_machine",
+      "exceptions",
+      "idempotency",
+      "concurrency",
+      "transactions",
+      "security",
+      "performance",
+      "observability",
+      "migration",
+      "rollback",
+      "compatibility",
+      "test_strategy",
+      "release"
+    ]
+  },
+  "review": {
+    "doc_sent": "2026-10-20",
+    "date": "2026-10-21",
+    "participants": ["PO", "Dev", "QA", "Arch", "Sec", "DBA", "Ops"],
+    "conclusion": "pass",
+    "issues": []
+  },
+  "contract": {
+    "version": "v1.0",
+    "fields": ["order_id", "user_id", "amount", "status"],
+    "error_codes": ["ORDER_DUPLICATE", "ORDER_INVALID"],
+    "signed_by": ["FE", "BE", "QA"]
+  }
+}

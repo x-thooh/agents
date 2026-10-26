@@ -1,0 +1,16 @@
+#!/bin/sh
+# 提交前跑共有门径（make check）：非零退出即拒绝提交，成功时不打印。
+# 安装：make init（等价于 git config core.hooksPath .githooks）
+set -e
+
+root=$(git rev-parse --show-toplevel 2>/dev/null) || {
+	echo "pre-commit: 不在 git 仓库内，跳过（先 git init）" >&2
+	exit 0
+}
+cd "$root"
+
+out=$(make -s check 2>&1) || {
+	echo "$out"
+	echo "pre-commit: make check 未通过，提交被拒——先修门禁，再提交" >&2
+	exit 1
+}

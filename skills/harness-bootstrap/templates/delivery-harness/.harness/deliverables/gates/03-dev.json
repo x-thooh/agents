@@ -1,0 +1,11 @@
+{
+  "stage": "dev",
+  "process_version": "v1.2",
+  "date": "2026-10-22",
+  "owner": "Dev lead",
+  "result": "pass",
+  "evidence": ["CI-001", "COV-001"],
+  "exceptions": [],
+  "rework": [],
+  "example": true
+}
