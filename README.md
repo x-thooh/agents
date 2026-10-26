@@ -1,5 +1,11 @@
 # ~/.agents —— 自写技能的仓库（分发归 magpie）
 
+> **从 GitHub 来的访客看这里**：这个仓库是某个人的 agent 技能中心，其他目录讲的是本机分发
+> （magpie 软链到 `~/.pi`/`~/.qoder` 等）。你要找的如果是那个工程层 skill，直接进
+> [`skills/harness-bootstrap/`](skills/harness-bootstrap/)——它自带 `README.md`（安装 = 拷目录）、
+> `SKILL.md`（正文）、`templates/`（拷进目标仓库的两套模板）与 `make check-all`（自身门禁）。
+> 许可：[MIT](skills/harness-bootstrap/LICENSE)。下面这些 `~/.agents` 的路径不必对上你的机器。
+
 2026-10-22 起，分发权归 magpie，这里只剩「自写技能的真身 + magpie 不认识的 agent」。
 
 ## 这一层就是 git 仓库的根
