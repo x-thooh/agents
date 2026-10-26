@@ -1,0 +1,26 @@
+{
+  "_comment": "mr-review 仓库 profile 模板。放到 <repo>/.mr-review.json（推荐，可提交）或 ~/.pi/mr-review/profiles/<repo-name>.json（本机私有）。字段全部可选，缺省走内置默认。",
+
+  "repo_id": 0,
+
+  "module": "example.com/org/repo",
+  "service_glob": "app/*",
+  "service_dir": "app/{name}/service",
+
+  "codegen_cmd": "make all",
+  "build_cmd": "make build NAME={name}",
+  "test_cmd": "go test ./...",
+
+  "plugin_root": "plugin",
+  "plugin_all_globs": "plugin/Makefile plugin/build/",
+
+  "shared_pkg_dir": "pkg",
+  "proto_dirs": "grpc proto",
+
+  "branches": { "main": "master", "test": "test" },
+  "merge_type": { "default": "rebase", "test": "no-fast-forward" },
+
+  "tester": { "name": "测试人员", "mobile": "13900000000" },
+  "dingtalk": { "keyword": "提测" },
+  "recipients_file": "~/.pi/mr-review-recipients.json"
+}

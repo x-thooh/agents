@@ -1,0 +1,23 @@
+{
+  "skill_name": "note-record",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "刚把《影响力》读完，想记一篇读书笔记到笔记库。重点是六个说服原理、各自最容易误用的场景，以及哪些结论我实测过、哪些只是书里的说法。别写成书单。",
+      "expected_output": "book 笔记落在 02_领域（Areas）/028_读书/《影响力》.md；frontmatter 含 author/status/updated/by；在 _读书汇总.md 加一行；跑 check-books 或 make note 并报告真实输出；不写入 04_归档。",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "线上 Redis 主从切换后，偶尔有客户端读到旧数据。最后确认是异步复制窗口叠加客户端缓存，处理方式是切换后先确认复制位点再放流量。想把这个判断沉淀成一篇能复用的笔记，下次遇到类似问题能直接照着排查。",
+      "expected_output": "判为 area，落在 02_领域（Areas）/025_组件/02501_Redis/ 下的正确分区；tags ≥2；有一句话定位、[必会] 标记、末节「与其他章节的衔接」、出处；make note 判定不是「需处理」。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "易码通这次上线回滚，根因是权益发放的幂等键设计成「用户 + 活动」，同一活动下多档权益会重放。记到项目里，包含回滚范围、修复方案和下次上线前的检查项。",
+      "expected_output": "判为 project，落在 01_项目（Projects）/01_易码通/；frontmatter 含 type/status/deadline/created/updated/by；不用 tags 代替项目字段；make note 或 check-projects 有真实输出。",
+      "files": []
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+# 编辑器 / 工具缓存
+.DS_Store
+.idea/
+.ruff_cache/
+__pycache__/
+*.pyc
+
+# 评测沙箱产物：33M 的跑出来的东西，不入库；脚本与用例本身在 skills/ 里
+note-record-evals/

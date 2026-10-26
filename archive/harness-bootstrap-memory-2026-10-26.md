@@ -1,0 +1,227 @@
+# 2026-10-26
+
+## 新增 go-dev-harness（Golang 研发的业务 harness 模板）
+
+- 位置：`go-dev-harness/`，与 `delivery-harness/` 平级，不引用 SKILL.md 正文（模板是业务域的答案，不是通用解）。
+- 结构：`AGENTS.md`（82 行，15 条硬规则）＋ `.agents/scripts/verify.py`（调度器）＋ `scopes/` 9 个 scope
+  （gates / contract / design / layout / runtime / impl / test / review / release，一个 scope 一个文件）
+  ＋ `.agents/harness/`（quality.json、6 个门记录、6 份证据、变更/例外账本）＋ `docs/process.md`、`docs/standards.md`
+  ＋ `sample/`（能过全部断言的示例 Go 模块）＋ `tests/reverse.py`（9 条反向样本）。
+- 关键设计决定：
+  - `go_src` 放 `quality.json`（默认 `sample`），拷进真实仓库改 `"."`，避免模板自带 go.mod 与目标仓库冲突。
+  - verify 纯 Python 不依赖 Go 工具链：build/vet/lint/覆盖率/benchmark 以证据文件记录，需要时在 scope 里加 adapter。
+  - 覆盖率统计范围约定 `./internal/...`（cmd 只装配不计），core 取业务规则包。
+  - 导出符号 doc 注释检查按「连续注释块的首行」判，不是紧邻上一行（多行 doc 会误报，已踩过）。
+- 验证：`verify` 0 ERROR/12 示例 WARN；`--strict` 12 ERROR（示例数据按预期拦）；`tests/reverse.py` 9/9 通过；
+  sample 模块 `go vet` 干净、`gofmt -l` 空、`go test` 全绿（coverage internal 88.0%，order 92.9%，bench 49ns/op）。
+- 环境坑：本机 `go test -race` 会撞 dyld `missing LC_UUID load command`（cgo/net 相关），用 `CGO_ENABLED=0` 跑测试正常；
+  mise 的 go shim 没设全局版本，需显式用 `/Users/thooh/.local/share/mise/installs/go/1.22.12/bin`。
+- 顺带改：`README.md` 增加「两个可拷贝的模板」对照表。skill 自身 `python3 scripts/audit.py` 仍 0 ERROR / 1 WARN。
+
+## 模板收口到 templates/
+
+- `delivery-harness/`、`go-dev-harness/` 移入 `templates/`（本仓库不是 git 仓库，用 `mv` 而非 `git mv`，无历史可保留）。
+- 新增 `templates/README.md`：两套的选型对照表（管什么/阶段/判据对象/签字人/出口/阈值）+ 共同骨架 7 件套
+  + 「加第三套模板」的五步。关键结论：**两套不能直接叠加**（抢同一批 `AGENTS.md` / `.agents/harness/gates/` /
+  `.agents/scripts/` 路径），要合只能选一套当骨架、把另一套阶段写成子流程。
+- 根 `README.md` 的模板表改为 `templates/...` 路径并链到 `templates/README.md`；正文与模板仍是单向无关。
+- 迁移四步照 SKILL.md §九 走：改前基线（skill 0E/1W、delivery 0E/16W、go-dev 0E/12W，两套 reverse 均通过）
+  → 移动 → 复跑（三处数字全部不变）→ 全库扫旧路径纯文本（除 templates/ 内自身标题外无残留），
+  并确认 templates/ 下没有 `../` 越级相对链接。
+
+## 五条 harness 原则的符合性审计 + 补 pre-commit
+
+- 审计结论：原则 1/2/3 设计符合、原则 4 部分符合（只有任务阶段梯度，没有 agent 权限梯度）、
+  原则 5 纪律有但落点缺；支撑视角「三层机制」只落 1 层（结束门禁），行动前/任务中两层缺失。
+- 已补：两套模板各加 `.githooks/pre-commit`（跑 `make -s check`，成功静默、失败回显并拒绝提交）
+  + `make init`（`git config core.hooksPath .githooks` + chmod）。AGENTS.md 命令块/目录地图、README 使用段同步。
+- 反向验证方式：临时 `git init` 仓库 → 正常提交静默通过；把 requirements 任务估时改成 9 天 → 提交被拒。
+  这是「怎么验证装好了」那条交付条件的落地。
+- 仍缺（按修复顺序）：① 本仓库未 `git init`，改动无历史不可回滚；② 无 CI 配置，pre-commit 可被绕过；
+  ③ `harness/` 缺 `trace/` 与 `lessons.md`（SKILL.md:85 要求三件套，模板只有 gates/artifacts）；
+  ④ 模板 verify 无 `--fix`（SKILL.md:104/237 声明了）。
+- 复跑：两套 0 ERROR（16/12 WARN 全是 example）、reverse 全绿、AGENTS.md 86/84 行、skill audit 0E/1W。
+
+
+## 迁移到 .harness/ 十件套（用户明确选定方案）
+
+- 决策来源：用户贴出 `.harness/` 目标树（scripts/workflow/specs/deliverables/tasks/memory/
+  codebase-guide/templates/git-hooks/config.json）并要求「harness 的标准布局」，经选择采用十件套。
+- 我提前标的三个撞名问题与解法（均已落地）：
+  ① 阶段常量重复 → `workflow/flow.json` 做阶段唯一事实源，gates.py 改为读 flow/transitions/contract，
+     删掉硬编码 `STAGES`，`scope_tokens` 也由 flow 派生；
+  ② `templates/` 与技能自身 `templates/` 撞名 → 生成物里改叫 `stack-templates/`；
+  ③ `artifacts` 与 `deliverables` 语义重叠 → 收成 `deliverables/artifacts/`、`deliverables/ledgers/` 等。
+- 新增断言：GATE006（flow 声明的交付物文件不存在）、GATE007（board 任务指向未定义阶段 / lessons 缺三块）、
+  GUIDE001（`codebase-guide/index.json` 重新生成后逐字节比对，禁手改）。两套 reverse 各加到 11 例。
+- 目录映射：逻辑五层（入口/流程/知识/执行/状态）改为映射到 `.harness/` 子目录，SKILL.md §二.1 表格同步重写，
+  并新增「阶段不写死在脚本里」一条硬规则。技能正文/README/参考材料/评测四处全部旧 `.agents` 路径已替换。
+- 迁移后回归：skill 0E/1W；delivery 0E/16W + reverse 11/11；go-dev 0E/12W + reverse 11/11；
+  `--strict` 12E（示例数据如预期转 ERROR）；样例 Go 模块 vet 干净、gofmt 无输出、测试全绿。
+- 仍未做（与上一节同一份待办，顺序不变）：① 本仓库 git init；② CI；③ 已部分完成（两套已有 memory 三件套
+  + GATE007 断言）；④ verify --fix。
+## 补齐三处缺口：git init / CI / verify --fix
+
+- **git init**（aac9794 基线）：161 文件入库，`.gitignore` 排 `.idea/ .ruff_cache/ __pycache__/ *.pyc .DS_Store`；
+  两套模板的空 `memory/trace/` 补 `.gitkeep`（git 不跟踪空目录，clone 出来十件套会缺一格）。
+  分三个提交保留回滚点：基线 → CI → --fix。
+- **CI**（e8689ea）：根 `Makefile`（check / check-json / check-skill / check-templates / selftest /
+  check-sample / check-strict / guide / help）+ `.github/workflows/verify.yml`。
+  gate job **故意不装 Go**，用真实执行证明「verify 只做词法检查」；sample job 装 Go 跑 check-sample，
+  防止「模板声称能编译」这句话烂掉。CI 不新增断言——目录齐不齐归 GATE00x，索引对不对归 GUIDE001。
+- **verify --fix**（0eeaf6e）：只修派生数据（当前唯一 GUIDE001），`FIXERS = {code: (修复函数, 目标路径)}`
+  与断言同住一个文件。三条边界各配反向测试：不越界（GATE006 不代劳）、无关文件脏时拒绝、
+  非 git 拒绝；两套 reverse 各 11 → 15 例。
+- **踩过的坑**：`--fix` 最初要求整个工作区干净，结果「提交被拦 → fix → 再提交」被自己卡死
+  （被拦的改动还留在索引里，永远是脏的）。改成按**目标文件**排除（`git status -- . ":!<target>"`）才通。
+  真实仓库验过：拦 → `FIXED GUIDE001` → `nothing to commit`，逐字节复原。
+- 另一处缺口：两套模板此前没有 `.gitignore`，跑一次 verify 就产生 `__pycache__`，
+  干净前置条件永远不成立。反向测试的 `run_verify` 也加 `PYTHONDONTWRITEBYTECODE=1`。
+- 验证方式：把仓库克隆到临时目录（**目录名必须是 `harness-bootstrap`**，否则 audit 的 FM004
+  会报 name 与目录名不一致——这是 skill 规范要求，不是 bug），克隆里 make check / check-strict /
+  check-sample 全绿，且工作区保持干净。
+
+## 目录形状统一到 skill 标准四件 + STRUCT 断言
+
+- 标准形状：`SKILL.md`（必需）/ `references/`（按需查）/ `scripts/`（可执行）/ `agents/`（子 Agent）。
+  本仓库原来是单数 `reference/`，改名 `git mv` 保留历史。
+- **隐藏陷阱**：`tests/fixtures/bad-xref-ext/reference/` 也必须跟着改，否则 `xrefdoc` 的 REF_DIR
+  找不到目录 → 记 `not_applicable` → **静默变绿**，比报错更坏。改名后确认 not_applicable 仍为空。
+- 改名判据照 §九：改前存 `audit --json` 基准 → `git mv` → 复跑，输出与基准**逐字节相同**。
+- 新增 `scripts/scopes/struct.py`：STRUCT001（根下条目必须落在 STANDARD/EXTRAS/TOOL_JUNK，
+  且 `reference`/`script`/`agent` 近似拼写一律按错报）、STRUCT002（`references/` 只放 .md，不建子目录）。
+  EXTRAS 每条带一句理由——「额外目录必须声明」才挡得住第二个入口悄悄长出来。
+- 新增 `tests/fixtures.py`：把 20 条期望（含正对照）编成表并接进 `make check`。此前 17 条 fixture
+  只活在 README 的手动命令表里，靠人记得跑 = 没有。期望清单现在只有这一处，README 与
+  references/acceptance.md 里抄的第二份已删。
+- `Finding` 加可选 `path`（默认 None = 在 SKILL.md 里），`line=0` 表示没有行号，输出不再硬凑 `:1`；
+  LAYOUT001 也补上真实路径（`scripts/audit.py`）。
+- 回归：自审 0E/1W；fixture 20/20；两套模板 0E/16W、0E/12W + reverse 各 15 例；
+  克隆到临时目录跑 make check 全绿且工作区干净。
+
+## go-dev 规范落地：lefthook 调度层 + GATE008/GATE009
+
+参考了 8 条规范（Effective Go / CodeReviewComments / Uber / project-layout / Conventional Commits /
+universal-dev-standards / golangci-lint / lefthook），落成 10 条新词法断言 + 2 条结构断言。
+
+- **lefthook 与 core.hooksPath 互斥，实测证明**：加一条只有 lefthook 知道的 `post-commit`
+  摸一个 marker 文件 → 未设 hooksPath 时 marker 出现，设了之后不再出现。所以 `make init` 与
+  `make init-lefthook` 必须二选一，`make init` 现在会警告。
+- **钩子没有执行位 = git 静默跳过**。`commit-msg` 是 Write 出来的 0644，装了也不跑。
+  GATE008 因此不只判「集合一致」，还判 `os.access(X_OK)`。这类「装了但没跑」比没装更难发现。
+- **GATE009（规范表引用不存在的代码）是被自己绊出来的**：写 standards.md 时图省事写了
+  `TST00x` 占位，正好是「文档说有人管、实际没人管」。注意 `TST00x` 连正则都匹配不到
+  （`\d{3}` 要求三位数字），第一次正对照用 `TST00X` 测是假阴性，改用 `TST999` 才验出来。
+  → 教训：正对照的样本本身也要能匹配上判据，否则「没报错」有两种解释。
+- **工具层与词法层的分工一句话**：`IMP001` 要 impl.json 里 `lint="pass"`——verify.py 只判
+  「写了 pass」，golangci-lint 判「是不是真 pass」。两层都留，因为失效方式不同（前者怕抄假数据，
+  后者怕没跑）。
+- **`make lint` 不重写 go_src 路径**：根 Makefile 委托 `$(MAKE) -C templates/go-dev-harness lint`，
+  路径从模板的 config.json 读。
+- 加 `lefthook.yml` 会让 codebase-guide 索引漂（`.yml` 在 GUIDE_SUFFIXES 里）→ 当场触发 GUIDE001，
+  正好演示 `--fix` 的场景；`make fix` 因工作区脏而拒绝，改用 gen_guide.py 直跑。
+- 回归：go-dev 0E/12W；reverse 25 → 29 例全过；commit_msg 11/11；golangci-lint 0 issues；
+  根 make check / lint / check-sample / check-strict 全绿；克隆到临时目录复跑全绿。
+- **未做（需拍板）**：delivery-harness 没有镜像 commit-msg 钩子与 reverse_case 的精确集合判据。
+  理由：该模板管交付流程而非 Go 规范，提交消息约定属于仓库级约定，是否下沉到交付模板是取舍问题。
+
+## 一次「规范 vs 参考实现」漂移审计（grill 前的事实盘点）
+
+`make check` 全绿（0 ERROR / 1 WARN），但绿的是已实现的那部分。逐条比对声明与实际，7 处对不上：
+
+1. `references/acceptance.md` 右栏引用 6 个 scope 名（notes / links / harness / folders / skills / archive，
+   共 8 处），两套模板 18 个 scope 与之**交集为 0**（delivery 是业务门禁，go-dev 是 Go 规范）。
+   这张表是「规则↔断言对照」，右栏却指向不存在的载体。
+2. `SKILL.md:144` 称「本 skill 自己踩过：模板里写死 `unanchored_rules: 3`」（措辞=已修），
+   但 `acceptance.md:70` 原文仍是 `unanchored_rules: 3`。xrefdoc 只查 §X.Y 存在性，查不到这个。
+3. `§二.5` 定「单节 100 行」，§二 实测 **102 行**；且 scopes 里无任何节长度断言（grep `100`/`LIMIT` 零命中）。
+4. 31 个 code 中 13 个从无反向测试：FM001/002/003/005/006/007、BASH002、BASE002、HOST002、
+   LINK001/002/003、XREFDOC001。其中 6 个 ERROR 级在 frontmatter —— 守的是「skill 会不会被正确唤起」。
+5. `acceptance.md:9` 与 `SKILL.md:330` 都写 `make check -- --json`，实测 make 把 `--json` 吞掉、
+   输出仍是文本；真命令是 `make check-json`。
+6. 阶段 5 产出「discovery 块」、`acceptance.md:62` 的 `harness/INDEX.md` —— 全仓库 0 个 INDEX.md。
+7. §二.8 / §八 的 `specs/notes/{proposed,implemented,rejected}/` 与 §四.1 的 `workflow/playbooks/`
+   —— 两套模板 0 个。
+
+共性：SKILL.md 描述的那套 harness（notes 树 / INDEX discovery / 双向对账 / links·notes·skills scope）
+没有任何一份参考实现兑现；模板实现的是另一套（业务门禁）。UHP 原则 6「规范、参考实现、conformance
+一起动」在这里断开。待用户拍板：这是待办，还是这张表本就该指向目标仓库。
+
+## 按「目标仓库自行实现」拍板后的修复（7 批，逐批回归）
+
+用户裁定：scope 默认按「服务名 + `pkg` 等共有目录」划分，目标仓库可自行指定 → 那张表的右栏是
+**目标仓库侧**的载体，不是本 skill 的验收清单。
+
+改前基准：skill 0E/1W、delivery 0E/16W、go-dev 0E/12W、fixtures 20/20。改后**四个数字全部不变**。
+
+1. **旧路径残留**：`harness/…`（无点）5 处 → `.harness/…`（SKILL.md ×3、acceptance.md、notes-convention.md）。
+   这是 `.agents/` → `.harness/` 那次迁移漏掉的一支，因为旧名没点、扫描时没进模式。
+2. **错命令**：`make check -- --json` → `make check-json`（SKILL.md §十、acceptance.md 各一处）。
+   实测 `make check -- --json` 会把 `--json` 吞掉、照跑文本模式——文档说了两年，命令从来没生效过。
+3. **`unanchored_rules: 3`** 改为 `<脚本数出来的整数>`（acceptance.md:70）。SKILL.md:144 早就说这条修过了。
+4. **acceptance.md 表重标**：标题改「（目标仓库侧）」+ 前置说明「右栏不是本 skill 自带的」，
+   并新增一节「本 skill 自身守什么」——把「只判规范写没写清、不判规范对不对」这句写进去。
+5. **§二 102 → 96 行**：§二.8 是 `references/notes-convention.md` 的第二个手册（三态表 + 判据全重复），
+   收成 8 行判据 + 指针。这才腾出空间做第 6 批。
+6. **标准布局补三格**：`specs/notes/{proposed,implemented,rejected}`、`workflow/playbooks/` +
+   `skills.declared.yaml`、`.harness/INDEX.md`。这三件后文强制、布局表却没有，正是两套模板都没有它们的根因。
+   连带把「十件套」这个计数在 SKILL.md/README 去掉（现 11 条，写死数字必漂）；模板自身的 README
+   保留「十件套」——它们确实还是 10 条，仍为真。
+7. **`xrefdoc` 报错位置错文件**（反向验证时撞出来的）：判 `references/*.md` 却没给 `Finding(path=)`，
+   落点回退成 `SKILL.md:<别人的行号>`，把读者指到不相干的位置。补 `path=references/<name>`，
+   消息里冗余的 `rel:` 前缀同步删掉。反向测试复验：`ERROR xrefdoc references/acceptance.md:64 XREFDOC002`。
+
+**仍未做**：①「单节 100 行」这条规则本身仍无断言（§二 现在 96，下次加 5 行就又超，没人知道）；
+② 31 个 code 里 13 个无反向样本；③ 模板仍缺 notes/、playbooks/、INDEX.md 三格空骨架。
+④ 改动未提交（6 文件，工作区脏）。
+
+## 拍板「上限 100 行，超了就拆分」→ 新增 sections scope
+
+用户裁定：**上限就是 100，超了拆分，不提限**。所以这条规则从纪律变成断言。
+
+- 新增 `scripts/scopes/sections.py`：`LIMIT = 100` 是唯一常量，两条断言——
+  `SECT001` 流程手册单节超限（判 `#`/`##`，跳过围栏代码块；修法=拆到 references/）、
+  `SECT002` 参考材料单文件超限（修法=按主题拆成多个文件）。`audit.py` 注册表加 `sections`
+  （13 个 scope）。
+- **一条规则的两半都要守**：§二.5 定的是两个 100 行阈值（参考材料单文件 / 流程手册单节），
+  只守一半等于没守——所以 SECT002 同批上线。
+- **反向样本两个**：`bad-section-long`（§二 之外的节写到 108 行）、`bad-reference-long`
+  （SKILL.md 干净，只有 references/long.md 108 行）。CASES 20 → 22 条，`make check` 全绿。
+- **对真实 SKILL.md 做过反向验证**：往 §一 塞 100 行 → `ERROR sections SKILL.md:45 SECT001
+  「## 一…」111 行`，还原后回 0 ERROR。不是只测 fixture。
+- 连带：§二.5 补「两个阈值都是断言」+ `SECT001/002` 指针；README 门禁清单、acceptance.md
+  「本 skill 自身守什么」同步。§二 因新增三行到 **100 行整**（上限边缘，再动就必须拆）。
+- 自洽检验：acceptance.md 89 行、notes-convention 64、assertion-pitfalls 17——都在 100 内，
+  新断言没有把自己判红。
+
+**仍未做**：① 33 个 code 里 13 个无反向样本：FM001/002/003/005/006/007、BASH002、BASE002、
+HOST002、LINK001/002/003、XREFDOC001（SECT001/002 上线即带样本，没进这个名单）；
+② 模板仍缺 notes/、playbooks/、INDEX.md 三格空骨架。
+
+## 改动按关注点拆成 6 个提交（工作区已干净）
+
+上一节的 ③「改动未提交」已解决。拆法不是事后 `git add -p`，而是**从基线重放**：
+把每处改动写成 (stage, 文件, 旧串, 新串) 的表，第 N 个提交 = 从 `0025b14` 重放 1..N 步。
+这样每个提交单独 checkout 出来都是自洽的，不是「凑出来的中间态」。
+
+顺序按可回滚价值排：纯文本缺陷 → 文档口径 → 结构重构 → 代码缺陷 → 新能力 → 记录。
+`fix` / `docs` / `refactor` / `fix` / `feat` / `docs`，逐个跑 `make check` 才提交。
+
+- 逐字节校验：拆完后与拆前快照 `diff -r` 全同（除 memory 本身）。
+- **踩到的坑**：第一次回放时 acceptance.md 的加粗标记与快照差一个字符——
+  因为中途用 Edit 修过一次 `不判「规范对不对**」。`，而重放表里记的是修之前的串。
+  → 教训：重放表必须记录**最终态**，不是记录「我做过哪些编辑」；中途的手工修正会漏。
+  发现方式是 `diff`，不是读代码——所以拆完必须逐字节比对，不能只看 `make check` 绿。
+- 另一个坑：`split.py` 最初从 `HEAD` 读基线，提交一次后 HEAD 就变了，第二次重放会
+  「找不到待替换串」。改成钉死基线 sha 才对。
+- **最贵的坑**：`git reset --hard` 不清未跟踪文件。上一次被中断的回放留下了
+  `sections.py` + 两个 fixture 目录，重做时它们还在，`git add -A` 一股脑扫进了
+  「docs(acceptance)」那个提交——一个本该 17 行的文档提交变成 327 行、5 个文件。
+  门禁照样绿（未注册的 scope 和未进 CASES 的 fixture 是死文件，不报错），
+  所以**绿不能证明提交内容对**。发现方式是 `git show --stat` 逐个看文件清单。
+  → 规矩：拆提交时每步先看 `git status` 的文件清单，再 `git add`，别用 `git add -A`。
+- 教训可复用：**中间态自洽**是拆提交的真正判据。若某个提交单独 checkout 出来跑不过门禁，
+  说明它依赖了后面的改动，那不是拆分，是把一个改动切成几段。但反过来不成立——
+  跑得过门禁也不代表内容对（见上一条），文件清单也要看。
+
+**仍未做**：① 13 个 code 无反向样本；② 模板缺 notes/、playbooks/、INDEX.md 三格空骨架。

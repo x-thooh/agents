@@ -1,0 +1,28 @@
+{
+  "_comment": "MR 评审钉钉 @ 收件人映射（模板，请勿把真实手机号提交到仓库）。",
+  "_usage": "真实映射放 ~/.pi/mr-review-recipients.json（私有，不进仓库），或用环境变量 MR_REVIEW_RECIPIENTS 指定路径；查找顺序：MR_REVIEW_RECIPIENTS > ~/.pi/mr-review-recipients.json > <skill>/config/dingtalk-recipients.json。",
+  "_match_order": "by_user_id > by_username > by_commit_email > by_email > by_name > by_commit_name（任一命中即用）",
+  "_keys_hint": {
+    "by_user_id": "云效 userId，如 6163de8bd6ea5ebe4ac3da11",
+    "by_username": "云效 username，如 aliyun:15184345039_Y4Y",
+    "by_commit_email": "【推荐】提交记录里的邮箱，如 rol@thooh.com —— 可读性好于云效 author.email 的 teambition 别名邮箱",
+    "by_email": "云效 author.email（可能是 accounts_xxx@mail.teambition.com 这类别名）",
+    "by_name": "云效显示名（姓名），如 李瑞",
+    "by_commit_name": "提交记录里的作者名（拼音），如 lirui"
+  },
+  "_note": "云效不提供成员手机号查询 API（search_organization_members 等一律 403），故手机号只能来自本映射或账号标识内嵌（username 的 aliyun:<手机号>_xxx、邮箱前缀即手机号）。",
+  "_recipients": "钉钉 @ 对象 = MR 发起人 + 本 MR 全部提交者（去重，逐个解析）+（审查通过时）roles.tester",
+  "_roles_hint": "roles.<role>.mobile 为固定角色收件人；--with-tester 会追加 roles.tester",
+  "by_user_id": {},
+  "by_username": {},
+  "by_commit_email": {},
+  "by_email": {},
+  "by_name": {},
+  "by_commit_name": {},
+  "roles": {
+    "tester": {
+      "name": "<测试人员姓名>",
+      "mobile": "<钉钉绑定手机号>"
+    }
+  }
+}
