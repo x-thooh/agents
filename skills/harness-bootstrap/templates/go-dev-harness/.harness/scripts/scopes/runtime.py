@@ -1,4 +1,5 @@
 """runtime: 错误处理与并发安全（panic / 吞错 / 丢链 / context / 同步原语）。"""
+
 import re
 from pathlib import Path
 
@@ -60,31 +61,43 @@ def run(ctx, findings):
 
 def _check_panic(pkg, rel, lineno, bare, findings):
     if pkg != "main" and "panic(" in bare:
-        add(findings, "ERROR", NAME, rel, lineno, "RUNT001",
-            "库代码里 panic：返回 error，由 main 决定退出")
+        add(findings, "ERROR", NAME, rel, lineno, "RUNT001", "库代码里 panic：返回 error，由 main 决定退出")
 
 
 def _check_exit(pkg, rel, lineno, bare, findings):
     if pkg == "main":
         return
     if "log.Fatal(" in bare or "os.Exit(" in bare:
-        add(findings, "ERROR", NAME, rel, lineno, "RUNT002",
-            "库代码里 log.Fatal/os.Exit：进程退出只属于 main")
+        add(findings, "ERROR", NAME, rel, lineno, "RUNT002", "库代码里 log.Fatal/os.Exit：进程退出只属于 main")
 
 
 def _check_context(pkg, rel, lineno, bare, findings):
     if pkg == "main":
         return
     if "context.Background()" in bare or "context.TODO()" in bare:
-        add(findings, "ERROR", NAME, rel, lineno, "RUNT005",
-            "库代码自造 context：ctx 必须由调用方传入（首参 ctx context.Context）")
+        add(
+            findings,
+            "ERROR",
+            NAME,
+            rel,
+            lineno,
+            "RUNT005",
+            "库代码自造 context：ctx 必须由调用方传入（首参 ctx context.Context）",
+        )
 
 
 def _check_wrap(rel, lineno, code, bare, findings):
     # 调用看 bare（字面量里出现 fmt.Errorf( 不是调用），%w 看 code（它是格式串内容）。
     if "fmt.Errorf(" in bare and WORD_ERR.search(bare) and "%w" not in code:
-        add(findings, "ERROR", NAME, rel, lineno, "RUNT003",
-            "fmt.Errorf 包装 err 却没带 %w：错误链断了，上层无法 errors.Is/As")
+        add(
+            findings,
+            "ERROR",
+            NAME,
+            rel,
+            lineno,
+            "RUNT003",
+            "fmt.Errorf 包装 err 却没带 %w：错误链断了，上层无法 errors.Is/As",
+        )
 
 
 def _check_swallow(rel, lines, idx, findings):
@@ -95,19 +108,17 @@ def _check_swallow(rel, lines, idx, findings):
         return
     if not BLOCK_SWALLOW.match(stripped):
         return
-    for nxt_line, nxt_code in lines[idx + 1:]:
+    for nxt_line, nxt_code in lines[idx + 1 :]:
         if not nxt_code.strip():
             continue
         if BARE_RETURN.match(nxt_code.strip()):
-            add(findings, "ERROR", NAME, rel, nxt_line, "RUNT004",
-                "if err != nil 后直接 return nil：吞掉了错误")
+            add(findings, "ERROR", NAME, rel, nxt_line, "RUNT004", "if err != nil 后直接 return nil：吞掉了错误")
         return
 
 
 def _check_sleep(rel, lineno, bare, findings):
     if "time.Sleep(" in bare:
-        add(findings, "WARN", NAME, rel, lineno, "RUNT006",
-            "time.Sleep 不是同步原语：用 ctx/errgroup/channel 收敛等待")
+        add(findings, "WARN", NAME, rel, lineno, "RUNT006", "time.Sleep 不是同步原语：用 ctx/errgroup/channel 收敛等待")
 
 
 def _check_goroutine(rel, lineno, bare, body, findings):
@@ -115,8 +126,15 @@ def _check_goroutine(rel, lineno, bare, body, findings):
         return
     if "errgroup" in body or "sync." in body or "chan " in body or "chan<-" in body:
         return
-    add(findings, "WARN", NAME, rel, lineno, "RUNT007",
-        "go 语句同文件内没有 WaitGroup/errgroup/channel：goroutine 无收敛路径")
+    add(
+        findings,
+        "WARN",
+        NAME,
+        rel,
+        lineno,
+        "RUNT007",
+        "go 语句同文件内没有 WaitGroup/errgroup/channel：goroutine 无收敛路径",
+    )
 
 
 def _check_error_string(rel, lineno, code, findings):
@@ -131,11 +149,17 @@ def _check_error_string(rel, lineno, code, findings):
             continue
         first_word = message.split()[0]
         if message[0].isupper() and not first_word.isupper():
-            add(findings, "ERROR", NAME, rel, lineno, "RUNT008",
-                f"错误串以大写开头（{message[:24]!r}）：它会被拼进别的消息，用小写")
+            add(
+                findings,
+                "ERROR",
+                NAME,
+                rel,
+                lineno,
+                "RUNT008",
+                f"错误串以大写开头（{message[:24]!r}）：它会被拼进别的消息，用小写",
+            )
         if message.rstrip().endswith(TRAILING_PUNCT):
-            add(findings, "ERROR", NAME, rel, lineno, "RUNT008",
-                f"错误串以标点结尾（{message[:24]!r}）：去掉结尾标点")
+            add(findings, "ERROR", NAME, rel, lineno, "RUNT008", f"错误串以标点结尾（{message[:24]!r}）：去掉结尾标点")
 
 
 def _check_error_var(rel, lineno, code, findings):
@@ -145,8 +169,15 @@ def _check_error_var(rel, lineno, code, findings):
         return
     name = match.group(1)
     if not (name.startswith("Err") or name.startswith("err")):
-        add(findings, "ERROR", NAME, rel, lineno, "RUNT009",
-            f"错误变量 {name!r} 没有 Err/err 前缀：导出用 ErrFoo，未导出用 errFoo")
+        add(
+            findings,
+            "ERROR",
+            NAME,
+            rel,
+            lineno,
+            "RUNT009",
+            f"错误变量 {name!r} 没有 Err/err 前缀：导出用 ErrFoo，未导出用 errFoo",
+        )
 
 
 def _check_init(pkg, rel, lineno, code, findings):
@@ -154,8 +185,15 @@ def _check_init(pkg, rel, lineno, code, findings):
     if pkg == "main":
         return
     if INIT_FUNC.match(code):
-        add(findings, "ERROR", NAME, rel, lineno, "RUNT010",
-            "库代码里 func init()：初始化逻辑放显式构造函数，由 main 调用")
+        add(
+            findings,
+            "ERROR",
+            NAME,
+            rel,
+            lineno,
+            "RUNT010",
+            "库代码里 func init()：初始化逻辑放显式构造函数，由 main 调用",
+        )
 
 
 def _collect_error_types(root, src):
@@ -174,5 +212,12 @@ def _check_error_type_names(error_types, findings):
     """Uber: Error Naming —— 自定义错误类型以 Error 结尾（NotFoundError）。"""
     for (_pkg_dir, name), (rel, line) in error_types.items():
         if not name.endswith("Error"):
-            add(findings, "ERROR", NAME, rel, line, "RUNT009",
-                f"错误类型 {name!r} 不以 Error 结尾：用 {name}Error，让调用方一眼看出它是什么")
+            add(
+                findings,
+                "ERROR",
+                NAME,
+                rel,
+                line,
+                "RUNT009",
+                f"错误类型 {name!r} 不以 Error 结尾：用 {name}Error，让调用方一眼看出它是什么",
+            )

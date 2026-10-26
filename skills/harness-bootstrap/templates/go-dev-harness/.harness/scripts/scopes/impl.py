@@ -1,4 +1,5 @@
 """impl: 编码阶段证据（build/vet/lint）+ 源码卫生。"""
+
 import re
 from pathlib import Path
 
@@ -30,8 +31,7 @@ def run(ctx, findings):
         check_fields(data, ("build", "vet", "lint", "changed_packages"), NAME, REL, findings, "IMP001")
         for key in TOOLCHAIN:
             if key in data and data.get(key) != "pass":
-                add(findings, "ERROR", NAME, REL, 1, "IMP001",
-                    f"{key} = {data.get(key)!r}，必须为 'pass'")
+                add(findings, "ERROR", NAME, REL, 1, "IMP001", f"{key} = {data.get(key)!r}，必须为 'pass'")
     scan_sources(root, as_dict(ctx.get("quality")), findings)
 
 
@@ -52,13 +52,11 @@ def scan_sources(root, quality, findings):
                 add(findings, "ERROR", NAME, rel, idx, "IMP002", "用空格缩进（Go 用 tab）")
             # 只抹字面量、保留注释：TODO 本来就常写在注释里，但 "TODO 这种写法" 只是文案。
             if TODO.search(blank_strings(line)):
-                add(findings, "WARN", NAME, rel, idx, "IMP004",
-                    "TODO/FIXME 必须带负责人，形如 TODO(name): 原因")
+                add(findings, "WARN", NAME, rel, idx, "IMP004", "TODO/FIXME 必须带负责人，形如 TODO(name): 原因")
             if line.count("`") % 2 == 1:
                 in_raw = not in_raw
         if len(lines) > max_lines:
-            add(findings, "WARN", NAME, rel, 1, "IMP003",
-                f"文件 {len(lines)} 行，超过 {max_lines}：按职责拆分")
+            add(findings, "WARN", NAME, rel, 1, "IMP003", f"文件 {len(lines)} 行，超过 {max_lines}：按职责拆分")
         check_import_groups(rel, lines, findings)
 
 
@@ -73,13 +71,19 @@ def check_import_groups(rel, lines, findings):
         stdlib = [p for p in paths if _is_stdlib(p)]
         third = [p for p in paths if not _is_stdlib(p)]
         if stdlib and third:
-            add(findings, "ERROR", NAME, rel, start, "IMP005",
-                "import 组里混了标准库与第三方：标准库单独放第一组，组间空一行")
+            add(
+                findings,
+                "ERROR",
+                NAME,
+                rel,
+                start,
+                "IMP005",
+                "import 组里混了标准库与第三方：标准库单独放第一组，组间空一行",
+            )
             seen_third_party = True
             continue
         if stdlib and seen_third_party:
-            add(findings, "ERROR", NAME, rel, start, "IMP005",
-                "标准库出现在第三方之后：标准库必须是最前面的一组")
+            add(findings, "ERROR", NAME, rel, start, "IMP005", "标准库出现在第三方之后：标准库必须是最前面的一组")
         if third:
             seen_third_party = True
 

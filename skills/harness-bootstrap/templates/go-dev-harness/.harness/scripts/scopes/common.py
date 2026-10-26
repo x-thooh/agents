@@ -1,4 +1,5 @@
 """Shared helpers for go-dev-harness verify scopes. Standard library only."""
+
 import datetime
 import json
 import re
@@ -306,7 +307,7 @@ def go_imports(path):
             in_block = True
             continue
         if line.startswith("import "):
-            paths.append(line[len("import "):].strip().strip('"'))
+            paths.append(line[len("import ") :].strip().strip('"'))
     return [p for p in paths if p]
 
 
@@ -376,9 +377,7 @@ def git_clean(root, targets=()):
     """
 
     def git(*args):
-        return subprocess.run(
-            ["git", "-C", str(root), *args], check=False, capture_output=True, text=True
-        )
+        return subprocess.run(["git", "-C", str(root), *args], check=False, capture_output=True, text=True)
 
     inside = git("rev-parse", "--is-inside-work-tree")
     if inside.returncode != 0 or inside.stdout.strip() != "true":

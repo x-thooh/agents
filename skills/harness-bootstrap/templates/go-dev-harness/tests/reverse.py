@@ -4,6 +4,7 @@
 Usage: python3 tests/reverse.py
 Exit 0 only when the positive control and every reverse case pass.
 """
+
 import json
 import os
 import shutil
@@ -155,9 +156,7 @@ def fix_case(name, setup, expect_rc, check):
         setup(root)
         payload, rc = run_verify(root, fix=True)
         if rc != expect_rc:
-            raise AssertionError(
-                f"{name}: 期望退出码 {expect_rc}，实际 {rc}；findings={codes_of(payload)}"
-            )
+            raise AssertionError(f"{name}: 期望退出码 {expect_rc}，实际 {rc}；findings={codes_of(payload)}")
         try:
             check(root, payload)
         except AssertionError as exc:
@@ -182,7 +181,8 @@ def reverse_case(name, scope, expected_code, mutate, resync_guide=True):
             # 样本必须只有一个缺陷，所以改完先把派生数据同步回去。
             subprocess.run(
                 [sys.executable, str(root / ".harness/scripts/gen_guide.py"), str(root)],
-                check=True, capture_output=True,
+                check=True,
+                capture_output=True,
             )
         payload, rc = run_verify(root, scope)
         findings = payload["findings"]
@@ -206,7 +206,8 @@ def warn_case(name, scope, expected_code, mutate):
         mutate(root)
         subprocess.run(
             [sys.executable, str(root / ".harness/scripts/gen_guide.py"), str(root)],
-            check=True, capture_output=True,
+            check=True,
+            capture_output=True,
         )
         payload, rc = run_verify(root, scope)
         findings = payload["findings"]
@@ -230,11 +231,11 @@ def clean_case(name, scope, mutate):
         mutate(root)
         subprocess.run(
             [sys.executable, str(root / ".harness/scripts/gen_guide.py"), str(root)],
-            check=True, capture_output=True,
+            check=True,
+            capture_output=True,
         )
         payload, rc = run_verify(root, scope)
-        errors = {finding["code"] for finding in payload["findings"]
-                  if finding["severity"] == "ERROR"}
+        errors = {finding["code"] for finding in payload["findings"] if finding["severity"] == "ERROR"}
         if errors or rc != 0:
             raise AssertionError(f"{name}: 合规写法被判成违规 {sorted(errors)}，exit {rc}")
         print(f"PASS {name}: 0 ERROR")
@@ -271,11 +272,9 @@ def baseline_error_case(name, expected_code, setup):
         root = copy_root(tmp)
         setup(root)
         payload, rc = run_verify(root, "baseline")
-        codes = {finding["code"] for finding in payload["findings"]
-                 if finding["severity"] == "ERROR"}
+        codes = {finding["code"] for finding in payload["findings"] if finding["severity"] == "ERROR"}
         if rc != 1 or codes != {expected_code}:
-            raise AssertionError(
-                f"{name}: 期望唯一的 ERROR 是 {expected_code}，实际 {sorted(codes)}，rc={rc}")
+            raise AssertionError(f"{name}: 期望唯一的 ERROR 是 {expected_code}，实际 {sorted(codes)}，rc={rc}")
         print(f"PASS {name}: {expected_code}")
 
 
@@ -287,11 +286,11 @@ def baseline_behavior_case(name, defect_setup, scope, rel, code):
         # 改证据文件会让 codebase-guide 索引漂移，那是第二个缺陷：先同步回去
         subprocess.run(
             [sys.executable, str(root / ".harness/scripts/gen_guide.py"), str(root)],
-            check=True, capture_output=True,
+            check=True,
+            capture_output=True,
         )
         payload, rc = run_verify(root)
-        hits = [f for f in payload["findings"]
-                if f["severity"] == "ERROR" and f["code"] == code]
+        hits = [f for f in payload["findings"] if f["severity"] == "ERROR" and f["code"] == code]
         if len(hits) != 1:
             raise AssertionError(f"{name}: 样本不干净，期望 1 条 {code}，实际 {len(hits)}")
         fingerprint = ledger_fingerprint(code, hits[0]["message"])
@@ -306,8 +305,7 @@ def baseline_behavior_case(name, defect_setup, scope, rel, code):
 
         write_text(root, LEDGER_REL, ledger_line(scope, rel, f"{code}:不存在的旧账", 1))
         payload, rc = run_verify(root)
-        debt = [f for f in payload["findings"]
-                if f["code"] == code and f["severity"] == "ERROR"]
+        debt = [f for f in payload["findings"] if f["code"] == code and f["severity"] == "ERROR"]
         if rc != 1 or len(debt) != 1 or not debt[0]["message"].startswith("新欠"):
             raise AssertionError(f"{name}: 账本外应保持 ERROR 且前缀「新欠」，实际 {debt}")
         print(f"PASS {name}: 基线内 WARN / 新欠 ERROR")
@@ -328,7 +326,6 @@ def baseline_monotonic_case(name, scope, rel, code):
         print(f"PASS {name}: BASE013")
 
 
-
 def main():
     positive_control()
 
@@ -337,9 +334,7 @@ def main():
         "conf: 拼错的配置键不会被静默忽略",
         "conf",
         "CONF001",
-        lambda root: edit_json(
-            root, ".harness/config.json", lambda data: data.update({"go_srcx": "typo"})
-        ),
+        lambda root: edit_json(root, ".harness/config.json", lambda data: data.update({"go_srcx": "typo"})),
     )
 
     reverse_case(
@@ -435,7 +430,7 @@ def main():
         lambda root: append_text(
             root,
             "sample/internal/order/order.go",
-            "\nfunc boom() {\n\tpanic(\"boom\")\n}\n",
+            '\nfunc boom() {\n\tpanic("boom")\n}\n',
         ),
     )
     # 误报守卫：code_lines 保留字面量原文（RUNT008 要读它），所以「禁调用」类
@@ -513,7 +508,7 @@ def main():
             ".harness/codebase-guide/index.json",
             lambda data: data["entries"].pop(0),
         ),
-        resync_guide=False,   # 这一例测的就是索引被改坏，不能同步
+        resync_guide=False,  # 这一例测的就是索引被改坏，不能同步
     )
 
     # --- 风格类断言（来源：CodeReviewComments / Uber Go Style Guide / project-layout）---
@@ -522,26 +517,29 @@ def main():
         "layout: receiver named this",
         "layout",
         "LAY008",
-        lambda root: append_text(root, "sample/internal/order/order.go",
-                                 "\nfunc (this *Order) touch() {}\n"),
+        lambda root: append_text(root, "sample/internal/order/order.go", "\nfunc (this *Order) touch() {}\n"),
     )
     reverse_case(
         "layout: mixed receiver types",
         "layout",
         "LAY009",
         lambda root: append_text(
-            root, "sample/internal/order/order.go",
+            root,
+            "sample/internal/order/order.go",
             "\nfunc (o *Order) paid() bool { return o.Status == StatusPaid }\n"
-            "func (o Order) amount() int64 { return o.Amount }\n"),
+            "func (o Order) amount() int64 { return o.Amount }\n",
+        ),
     )
     reverse_case(
         "layout: package comment detached by blank line",
         "layout",
         "LAY010",
         lambda root: replace_text(
-            root, "sample/internal/order/order.go",
+            root,
+            "sample/internal/order/order.go",
             "// Package order implements order creation and lookup.\npackage order",
-            "// Package order implements order creation and lookup.\n\npackage order"),
+            "// Package order implements order creation and lookup.\n\npackage order",
+        ),
     )
     reverse_case(
         "layout: src directory",
@@ -553,22 +551,23 @@ def main():
         "layout: doc comment without closing period",
         "layout",
         "LAY012",
-        lambda root: append_text(root, "sample/internal/order/order.go",
-                                 "\n// Note is a note without a closing period\nfunc Note() {}\n"),
+        lambda root: append_text(
+            root, "sample/internal/order/order.go", "\n// Note is a note without a closing period\nfunc Note() {}\n"
+        ),
     )
     reverse_case(
         "runtime: error string capitalized",
         "runtime",
         "RUNT008",
-        lambda root: append_text(root, "sample/internal/order/order.go",
-                                 '\nfunc bad() error { return fmt.Errorf("Bad thing") }\n'),
+        lambda root: append_text(
+            root, "sample/internal/order/order.go", '\nfunc bad() error { return fmt.Errorf("Bad thing") }\n'
+        ),
     )
     reverse_case(
         "runtime: error variable without Err prefix",
         "runtime",
         "RUNT009",
-        lambda root: append_text(root, "sample/internal/order/order.go",
-                                 '\nvar NotFound = errors.New("not found")\n'),
+        lambda root: append_text(root, "sample/internal/order/order.go", '\nvar NotFound = errors.New("not found")\n'),
     )
     reverse_case(
         "runtime: init() in library code",
@@ -581,9 +580,11 @@ def main():
         "impl",
         "IMP005",
         lambda root: replace_text(
-            root, "sample/internal/config/config.go",
+            root,
+            "sample/internal/config/config.go",
             '\t"time"\n)',
-            '\t"time"\n\t"example.com/ordersvc/internal/order"\n)'),
+            '\t"time"\n\t"example.com/ordersvc/internal/order"\n)',
+        ),
     )
 
     # --- --fix：只修派生数据；不越界、不猜、没有回滚点就不动手 ---
@@ -628,9 +629,18 @@ def main():
         lambda root: write_text(
             root,
             ACCEPTED_REL,
-            json.dumps([{"scope": "conf", "path": ".harness/config.json",
-                         "fingerprint": "CONF001:x", "count": 1, "reason": "赶工"}],
-                       ensure_ascii=False),
+            json.dumps(
+                [
+                    {
+                        "scope": "conf",
+                        "path": ".harness/config.json",
+                        "fingerprint": "CONF001:x",
+                        "count": 1,
+                        "reason": "赶工",
+                    }
+                ],
+                ensure_ascii=False,
+            ),
         ),
     )
     baseline_error_case(
@@ -639,16 +649,25 @@ def main():
         lambda root: write_text(
             root,
             ACCEPTED_REL,
-            json.dumps([{"scope": "conf", "path": ".harness/config.json",
-                         "fingerprint": "CONF001:x", "count": 1, "reason": "赶工",
-                         "owner": "reverse", "review_by": "2020-01-01"}], ensure_ascii=False),
+            json.dumps(
+                [
+                    {
+                        "scope": "conf",
+                        "path": ".harness/config.json",
+                        "fingerprint": "CONF001:x",
+                        "count": 1,
+                        "reason": "赶工",
+                        "owner": "reverse",
+                        "review_by": "2020-01-01",
+                    }
+                ],
+                ensure_ascii=False,
+            ),
         ),
     )
     baseline_behavior_case(
         "baseline: 账本内降级 / 账本外新欠",
-        lambda root: edit_json(
-            root, ".harness/config.json", lambda data: data.update({"go_srcx": "typo"})
-        ),
+        lambda root: edit_json(root, ".harness/config.json", lambda data: data.update({"go_srcx": "typo"})),
         "conf",
         ".harness/config.json",
         "CONF001",
