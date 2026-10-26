@@ -9,6 +9,7 @@ description: >
   纪律（改前基准 / 改中条理 / 改后回归）。
   触发词：建 harness、初始化工程层、AGENTS.md、verify 脚本、移植 harness、
   UHP、conformance、DSH、记忆树。
+license: MIT
 ---
 
 # Skill：Harness 项目初始化

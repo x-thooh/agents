@@ -29,6 +29,8 @@ EXTRAS = {
     ".gitignore": "git 忽略清单",
     ".github": "CI 门禁（pre-commit 可被 --no-verify 绕过）",
     ".git": "版本库",
+    "LICENSE": "采用条款；本 skill 的安装方式就是拷贝，没有许可在法务上等于保留一切权利",
+    "pyproject.toml": "Python 静态检查（ruff）的唯一配置处；不打包发布，只放工具配置",
 }
 
 # 近似名 = 拼错的信号。单数/大小写变体都按错报，不猜意图。
