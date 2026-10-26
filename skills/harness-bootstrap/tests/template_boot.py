@@ -18,6 +18,7 @@
 用法: python3 tests/template_boot.py
 退出码: 0 = 全过；1 = 有失败；2 = 环境错误
 """
+
 import json
 import re
 import shutil
@@ -33,8 +34,7 @@ BRIDGE = "go-dev-harness"  # 唯一带 go_src 的模板，③ 只对它有意义
 
 def boot(tpl, tmp):
     target = Path(tmp) / tpl
-    shutil.copytree(ROOT / "templates" / tpl, target,
-                    ignore=shutil.ignore_patterns("__pycache__", ".ruff_cache"))
+    shutil.copytree(ROOT / "templates" / tpl, target, ignore=shutil.ignore_patterns("__pycache__", ".ruff_cache"))
     return target
 
 
@@ -95,7 +95,8 @@ def main():
             if code != 1:
                 failures.append(
                     f"{tpl}: 去掉 {removed} 个 example、config 不动时 --strict 必须仍然退出 1，"
-                    f"实际 {code} —— 这就是假绿灯（门禁扫着模板自带的 sample/ 却说全绿）")
+                    f"实际 {code} —— 这就是假绿灯（门禁扫着模板自带的 sample/ 却说全绿）"
+                )
             elif "CONF002" not in out:
                 failures.append(f"{tpl}: 退出 1 但没报 CONF002（go_src 仍指 sample/），信号指错了地方")
             else:

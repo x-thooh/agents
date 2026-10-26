@@ -65,10 +65,7 @@ def facts():
     print("\n复盘写到 `archive/retro/YYYY-MM-DD-<需求>.md`，必填栏：")
     print(f"  {REQUIRED[0]}<code 与次数；一次都没拦到就写 0>")
     print(f"  {REQUIRED[1]}<tasks.json 里的 id，或「无」>")
-    print(
-        f"  {REVIEW}<仅当拦到 0：{'/'.join(DECISIONS)} 之一 + 为什么还留着或本轮削什么，"
-        f"理由不少于 {REVIEW_MIN} 字>"
-    )
+    print(f"  {REVIEW}<仅当拦到 0：{'/'.join(DECISIONS)} 之一 + 为什么还留着或本轮削什么，理由不少于 {REVIEW_MIN} 字>")
     return 0
 
 

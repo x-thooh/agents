@@ -18,6 +18,7 @@
 用法: python3 tests/retro_reverse.py
 退出码: 0 = 全过；1 = 有失败；2 = 环境错误
 """
+
 import json
 import shutil
 import subprocess
@@ -58,7 +59,9 @@ def run(note):
         (retro / "tasks.json").write_text(json.dumps(board, ensure_ascii=False), encoding="utf-8")
         proc = subprocess.run(
             [sys.executable, str(scripts / "retro_check.py")],
-            capture_output=True, text=True, check=False,
+            capture_output=True,
+            text=True,
+            check=False,
         )
         return proc.returncode, proc.stdout + proc.stderr
 
