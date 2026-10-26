@@ -31,6 +31,7 @@ if _HERE not in sys.path:
 from scopes import (  # noqa: E402  （必须先修好 sys.path 再导入）
     baseline,
     bash,
+    codeindex,
     frontmatter,
     host,
     layout,
@@ -46,8 +47,8 @@ from scopes import (  # noqa: E402  （必须先修好 sys.path 再导入）
 )
 
 # 注册表：顺序 = 跑的顺序（输出还会按 severity/scope/line/code 再排序）
-SCOPES = (frontmatter, bash, baseline, host, layout, layout_parity, sections, struct, ledger, terms,
-          version, xref, xrefdoc, links)
+SCOPES = (frontmatter, bash, baseline, host, layout, layout_parity, sections, struct, codeindex,
+          ledger, terms, version, xref, xrefdoc, links)
 
 
 def run_all(text, path, skill_dir, check_links, dispatch=None, link_status=None):

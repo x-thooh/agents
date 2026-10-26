@@ -23,7 +23,7 @@ SCOPES_DIR = ROOT / "scripts" / "scopes"
 # 源码里出现的 code 字面量。前缀长度不固定：`FM001`/`LP001` 是两个字母，`XREFDOC001`
 # 是七个。之前写成 `[A-Z]{3,}` 时，两个字母前缀的 12 个 code（FM001–009、LP001–003）
 # 整块隐形，而反向测试抽的是 BASE002（三个字母）—— 抽到了，闸却是瞎的。
-CODE_LITERAL = re.compile(r'"([A-Z]{2,7}[0-9]{3})"')
+CODE_LITERAL = re.compile(r'"([A-Z]{2,}[0-9]{3})"')
 
 
 def declared_codes():
@@ -100,6 +100,8 @@ CASES = (
     ("bad-extra-field", {"FM007"}, ()),
     ("bad-layout-extra", {"LP002"}, ()),
     ("bad-layout-no-table", {"LP003"}, ()),
+    # 派生清单必须与源码逐字节一致；样本自带一份故意过时的 code-index.md
+    ("bad-stale-code-index", {"CODEINDEX001"}, ()),
     # code 级反向测试：下列每一个都曾从无 fixture（scope 级有机一条，code 级漏网），
     # 其中 LINK002/XREFDOC001 是 ERROR 级——一个从不执行的 ERROR 比 WARN 更坏。
     # LINK002/LINK003 靠 --link-status 把「取状态码」固定住，不靠公网。

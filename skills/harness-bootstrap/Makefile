@@ -12,7 +12,7 @@ TPL := templates
 DELIVERY := $(TPL)/delivery-harness
 GODEV := $(TPL)/go-dev-harness
 
-.PHONY: help check check-all check-json check-skill fixtures check-templates selftest check-sample check-strict lint guide
+.PHONY: help check check-all check-json check-skill fixtures check-templates selftest check-sample check-strict lint guide code-index
 
 help:
 	@echo "make check            核心门禁：技能自审 + fixture 断言表 + 两套模板 verify + 两套反向测试（不需要 Go）"
@@ -26,6 +26,7 @@ help:
 	@echo "make check-sample      样例 Go 模块 vet + test（需要 Go 工具链）"
 	@echo "make lint              工具层：golangci-lint 跑样例模块（需要 Go 工具链）"
 	@echo "make guide             重新生成两套 codebase-guide/index.json"
+	@echo "make code-index        重新生成 references/code-index.md（全部 code 清单）"
 
 # 两级：check 是跑得快的那一半，check-all 是全部门禁。
 # 为什么不是「check 就是全部」：跑完一条改就要等 strict 的两个模板全量，
@@ -73,14 +74,17 @@ check-sample:
 
 # 模板里带 example: true 的示例证据，--strict 必须把它们判成 ERROR。
 # 这条断言证明 strict 真的在生效；示例被换成真实数据后本目标会失败，提醒同步改这里。
+# 判断本体在 scripts/check_strict.sh：Make 要把 $ 写成 $$，而 shellcheck 读的是
+# Makefile 原文，`[ $$? -eq 1 ]` 会被它当成 PID 拼接（SC2255），先接变量又报 SC2034
+# （「变量没用」）——绕标注不如把逻辑搬出 Make，顺带这段现在能单独跑。
 check-strict:
-	@$(PY) $(DELIVERY)/.harness/scripts/verify.py --strict >/dev/null 2>&1; rc=$$?; \
-	  if [ $$rc -eq 1 ]; then echo "  delivery-harness  --strict 拦下示例数据（预期）"; \
-	  else echo "  delivery-harness --strict 期望退出码 1，实际 $$rc：example: true 被改掉，或 strict 失效" >&2; exit 1; fi
-	@$(PY) $(GODEV)/.harness/scripts/verify.py --strict >/dev/null 2>&1; rc=$$?; \
-	  if [ $$rc -eq 1 ]; then echo "  go-dev-harness    --strict 拦下示例数据（预期）"; \
-	  else echo "  go-dev-harness --strict 期望退出码 1，实际 $$rc：example: true 被改掉，或 strict 失效" >&2; exit 1; fi
+	@bash scripts/check_strict.sh delivery-harness $(DELIVERY)/.harness/scripts/verify.py
+	@bash scripts/check_strict.sh go-dev-harness $(GODEV)/.harness/scripts/verify.py
 
 guide:
 	@$(PY) $(DELIVERY)/.harness/scripts/gen_guide.py
 	@$(PY) $(GODEV)/.harness/scripts/gen_guide.py
+
+# 派生数据：清单只准脚本写。改完 scope 就跑一次，否则 codeindex scope 会报不一致。
+code-index:
+	@$(PY) scripts/gen_code_index.py

@@ -12,12 +12,15 @@
 
 按 §二.2 自查：每条规则要么在这里有一行，要么在台面上写明「无断言」及强度来源。
 
+**要核「每条硬规则都有一行」先得有完整 code 清单**：本 skill 实现里的全部 code（含 scope 与级别）在 [`code-index.md`](./code-index.md)。它由 `python3 scripts/gen_code_index.py` 生成，`codeindex` scope 会重新生成一遍做逐字节比对——手改即 ERROR。所以清单不会漂；漂了就会被拦。
+
 | 规则组 | 断言载体 | 强度 |
 | --- | --- | --- |
 | skill 目录形状（`SKILL.md` + `references/` + `scripts/` + `agents/`；根下每个条目要么是标准四件，要么在 `EXTRAS` 里写明理由） | audit.py STRUCT001（近似拼写 `reference`/`script`/`agent` 与未声明条目）/ STRUCT002（`references/` 只放 `.md`，不建子目录）+ `tests/fixtures.py` 三例 | 强 |
 | 基线记账与收敛（条数制 / 零基线 / accepted 只减不增 + 保质期） | audit.py BASE001/BASE003/BASE004 + verify `scope=baseline` | 强 |
 | 规则集版本保质期（`rules_version` 90 天未重新确认即 ERROR；基线不设刷新日期字段） | audit.py VER001（提到它的那一行必须同时写明天数与到期行为） | 强 |
 | references/*.md 里的跨文件 §X.Y 引用指向存在的章节/条目（断言坑 #12 的存在性半边） | audit.py XREFDOC001/XREFDOC002（改号/删节/外置后没跟着改；重排同号仍属人判） | 强（存在性半边）+ 人判（重排同号） |
+| 「每条硬规则在断言表里有对应行」有人核得动 | audit.py CODEINDEX001（`references/code-index.md` 与源码逐字节一致；`make code-index` 重生成） | 强（清单本身）+ 人判（行到底对应得对不对） |
 | 入口覆盖链、指针存在性 | verify `scope=folders` | 强 |
 | `description` 无流程摘要、有触发条件 | audit.py FM008/FM009（启发式：抓箭号与序号词，纯主题清单靠人判） | 机器+人判 |
 | 决策 `scope` 值 ⊆ 已批准的模块清单（锚点可定位；proposed 严格、implemented 降级） | verify 发现器 + `modules-confirmed` + `scope=notes` | 强（必做反向测试） |
