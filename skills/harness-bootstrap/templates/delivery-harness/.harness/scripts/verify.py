@@ -8,6 +8,7 @@ Each scope lives in scripts/scopes/<name>.py. This file only:
   * sorts and prints findings;
   * owns the exit-code contract (0 = no ERROR, 1 = ERROR, 2 = usage / 前置条件不满足).
 """
+
 import argparse
 import json
 import sys
@@ -135,9 +136,7 @@ def main(argv=None):
             # 修完必须重跑：不能拿修前的结论凑数，也不能假设一定修好了
             findings, not_applicable = collect(root, selected, args.strict)
 
-    findings.sort(
-        key=lambda f: (f.severity != "ERROR", f.scope, f.path, f.line, f.code)
-    )
+    findings.sort(key=lambda f: (f.severity != "ERROR", f.scope, f.path, f.line, f.code))
     errors = [f for f in findings if f.severity == "ERROR"]
     warns = [f for f in findings if f.severity == "WARN"]
 

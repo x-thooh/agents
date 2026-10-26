@@ -247,7 +247,8 @@ def run(ctx, findings):
     check_monotonic(root, sum(ledger.values()) + sum(exempt.values()), findings)
     if not _upstream_ran(ctx):
         ctx.setdefault("not_applicable", []).append(
-            f"{NAME}(只跑了 baseline 自己：降级与新欠要读其它 scope 的 findings，单查判不了)")
+            f"{NAME}(只跑了 baseline 自己：降级与新欠要读其它 scope 的 findings，单查判不了)"
+        )
         return
     allowed = dict(ledger)
     for key, count in exempt.items():

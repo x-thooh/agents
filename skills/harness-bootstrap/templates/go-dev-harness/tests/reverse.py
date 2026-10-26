@@ -280,8 +280,8 @@ def baseline_solo_case(name, scope, rel, code):
         codes = codes_of(payload)
         if "BASE014" in codes:
             raise AssertionError(
-                f"{name}: 上游没跑却报 BASE014（假建议：老账已修掉一部分）。"
-                "单查 baseline 时发现集恒为空，判定无从谈起")
+                f"{name}: 上游没跑却报 BASE014（假建议：老账已修掉一部分）。单查 baseline 时发现集恒为空，判定无从谈起"
+            )
         na = payload["summary"].get("not_applicable") or []
         if not any(str(item).startswith("baseline") for item in na):
             raise AssertionError(f"{name}: 单查 baseline 应记 not_applicable，实际 {na}")
@@ -695,9 +695,7 @@ def main():
         "CONF001",
     )
     baseline_monotonic_case("baseline: 总数上升即 ERROR", "conf", ".harness/config.json", "CONF001")
-    baseline_solo_case(
-        "baseline: 单查不许编造「可以刷新账本」", "conf", ".harness/config.json", "CONF001"
-    )
+    baseline_solo_case("baseline: 单查不许编造「可以刷新账本」", "conf", ".harness/config.json", "CONF001")
 
     print("ALL REVERSE TESTS PASSED")
 

@@ -13,6 +13,7 @@
 ③ 是花学费换来的：早先只抽一个三字母的 code 做反向验证，两个字母前缀的 12 个 code
 整块隐形而门禁全绿。逐个验，才能把「闸自己有没有盲区」变成可执行的东西。
 """
+
 import re
 from pathlib import Path
 
@@ -53,15 +54,11 @@ def check_coverage():
     """返回问题列表；空列表表示三道闸全过。"""
     by_module = declared_codes()
     if not by_module:
-        return [(
-            "没识别出任何 scope 模块（需同时有 `NAME` 常量与 `run(` 函数）——"
-            "提取器无从谈起，不能当通过"
-        )]
+        return [("没识别出任何 scope 模块（需同时有 `NAME` 常量与 `run(` 函数）——提取器无从谈起，不能当通过")]
     out = []
     empty = sorted(name for name, codes in by_module.items() if not codes)
     if empty:
-        out.append("这些 scope 模块没抽出任何 code（提取器对它们失效，不是它们没有 code）："
-                   + " ".join(empty))
+        out.append("这些 scope 模块没抽出任何 code（提取器对它们失效，不是它们没有 code）：" + " ".join(empty))
 
     covered = set()
     for _fixture, expected, _extra in CASES:

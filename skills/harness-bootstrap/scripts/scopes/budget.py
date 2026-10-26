@@ -26,6 +26,7 @@ scopes 自己长多大没人管。规矩没有数值就是愿望。
 口径只扩到 `tests/` 顶层的 .py：`tests/fixtures/` 底下是**故意坏的样本**，
 它们超行数、写坏链接都是本职工作，拿体量去审它们等于把门口的体重计摆到手术台边。
 """
+
 import os
 
 from . import common
@@ -45,9 +46,7 @@ def _files(root, label, skip_top):
     """按相对路径升序返回 (相对路径, 行数)；读不动的记一条 ERROR 由调用方处理。"""
     out, unreadable = [], []
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = sorted(
-            d for d in dirnames if d not in SKIP_DIRS and not (dirpath == root and d in skip_top)
-        )
+        dirnames[:] = sorted(d for d in dirnames if d not in SKIP_DIRS and not (dirpath == root and d in skip_top))
         for name in sorted(filenames):
             if not name.endswith(".py"):
                 continue
@@ -67,22 +66,36 @@ def _check_total(ctx, findings):
     """SKILL.md 总量。与单节额度同时生效：超总量报 BUDGET002，不并进 SECT001。"""
     total = line_count(ctx["text"])
     if total > common.SKILL_LIMIT:
-        findings.append(Finding(
-            "ERROR", NAME, 1, "BUDGET002",
-            f"SKILL.md 共 {total} 行 > {common.SKILL_LIMIT} 行上限：外置细节，"
-            f"把「要用时去查」的部分挪进 references/，别靠删判据腾地方"))
+        findings.append(
+            Finding(
+                "ERROR",
+                NAME,
+                1,
+                "BUDGET002",
+                f"SKILL.md 共 {total} 行 > {common.SKILL_LIMIT} 行上限：外置细节，"
+                f"把「要用时去查」的部分挪进 references/，别靠删判据腾地方",
+            )
+        )
     elif total > common.SKILL_WARN:
-        findings.append(Finding(
-            "WARN", NAME, 1, "BUDGET002",
-            f"SKILL.md 共 {total} 行 > {common.SKILL_WARN} 行：准备外置——"
-            f"还有 {common.SKILL_LIMIT - total} 行余地，现在就把成段的细节搬走"))
+        findings.append(
+            Finding(
+                "WARN",
+                NAME,
+                1,
+                "BUDGET002",
+                f"SKILL.md 共 {total} 行 > {common.SKILL_WARN} 行：准备外置——"
+                f"还有 {common.SKILL_LIMIT - total} 行余地，现在就把成段的细节搬走",
+            )
+        )
 
 
 def run(ctx, findings):
     _check_total(ctx, findings)
-    present = [(label, os.path.join(ctx["skill_dir"], label), skip)
-               for label, skip in SCAN_DIRS
-               if os.path.isdir(os.path.join(ctx["skill_dir"], label))]
+    present = [
+        (label, os.path.join(ctx["skill_dir"], label), skip)
+        for label, skip in SCAN_DIRS
+        if os.path.isdir(os.path.join(ctx["skill_dir"], label))
+    ]
     if not present:
         ctx.setdefault("not_applicable", []).append(NAME)
         return
@@ -92,24 +105,32 @@ def run(ctx, findings):
         files += found
         unreadable += bad
     for rel in unreadable:
-        findings.append(Finding(
-            "ERROR", NAME, 0, "BUDGET001",
-            f"读不了 {rel}：体量判不了，不能当通过",
-            path=rel))
+        findings.append(Finding("ERROR", NAME, 0, "BUDGET001", f"读不了 {rel}：体量判不了，不能当通过", path=rel))
     if not files:
         # 有 scripts/ 或 tests/ 却一个 .py 都没读到：那是扫描失效，不是「都很小」——坑 #11
         ctx.setdefault("not_applicable", []).append(f"{NAME}(scripts/ 与 tests/ 下没有 .py，判不了)")
         return
     for rel, n in files:
         if n > common.CODE_LIMIT:
-            findings.append(Finding(
-                "ERROR", NAME, 0, "BUDGET001",
-                f"{n} 行 > {common.CODE_LIMIT} 行上限：必须拆——按职责分文件，"
-                f"别等它长成那个「只会变大的单文件」",
-                path=rel))
+            findings.append(
+                Finding(
+                    "ERROR",
+                    NAME,
+                    0,
+                    "BUDGET001",
+                    f"{n} 行 > {common.CODE_LIMIT} 行上限：必须拆——按职责分文件，别等它长成那个「只会变大的单文件」",
+                    path=rel,
+                )
+            )
         elif n > common.CODE_WARN:
-            findings.append(Finding(
-                "WARN", NAME, 0, "BUDGET001",
-                f"{n} 行 > {common.CODE_WARN} 行：准备拆——还有 {common.CODE_LIMIT - n} 行余地，"
-                f"现在就把职责边界分出去，别等撞到 {common.CODE_LIMIT} 行再靠删注释腾地方",
-                path=rel))
+            findings.append(
+                Finding(
+                    "WARN",
+                    NAME,
+                    0,
+                    "BUDGET001",
+                    f"{n} 行 > {common.CODE_WARN} 行：准备拆——还有 {common.CODE_LIMIT - n} 行余地，"
+                    f"现在就把职责边界分出去，别等撞到 {common.CODE_LIMIT} 行再靠删注释腾地方",
+                    path=rel,
+                )
+            )
