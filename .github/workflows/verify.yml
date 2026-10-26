@@ -37,6 +37,13 @@ jobs:
         with:
           python-version: "3.12"
 
+      # Python 静态检查是 check-all 的一部分，所以这里必须装 ruff——
+      # 装的是 pyproject.toml 里 required-version 声明的区间，版本漂了判定就漂了。
+      # 不装会让 make lint-python 报「需要 ruff」并让整个 job 红：缺工具链时
+      # 宁可红，也不要静默跳过（跳过 = 这条门禁在 CI 上不存在）。
+      - name: 装 ruff
+        run: python -m pip install "ruff>=0.17,<0.18"
+
       # 本 job 故意不装 Go：verify 只做词法检查，不依赖工具链。
       # 「不需要 Go」这句话在这里被真实执行，而不是写在 README 里。
       # 跑 check-all，不是 check + check-strict 两条：本地与 CI 必须是**同一条命令**，

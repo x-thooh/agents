@@ -36,7 +36,7 @@
 | 枚举闭集（分类/状态/kind） | verify 常量表 | 强 |
 | 语料位置 ↔ `Status:` 互校 | verify `scope=notes` | 强（必做反向测试） |
 | 索引派生一致性 | verify 重新生成比对 | 强 |
-| 额度（行数/篇数） | 常量住在 `scripts/scopes/common.py`；本仓库由 audit.py SECT001/SECT002（单节与单文件 80/100）、BUDGET001（代码 150/200，含调度器）、BUDGET002（SKILL.md 总量 400/500）守 | 中 / 强 |
+| 额度（行数/篇数） | 常量住在 `scripts/scopes/common.py`；本仓库由 audit.py SECT001/SECT002（单节与单文件 80/100）、BUDGET001（代码 150/200，含调度器；**只覆盖 `scripts/`**，`templates/` 与 `tests/` 不在内——见 `doc-budgets.md`，该部分**无断言**）、BUDGET002（SKILL.md 总量 400/500）守 | 中（覆盖范围内强 / 范围外无断言） |
 | discovery 双向对账 | verify `scope=skills` | 强 |
 | 归档笔记的 `Archived:` 日期 = 该笔记移动当次提交的日期（归档是事件驱动，不设时间阈值） | 目标仓库 verify `scope=archive`（读 `git log`；本仓库 audit.py 明说不依赖 git，故不在此处实现） | 强（有版本控制时）；无 git 的仓库降级为人判并显式标注 |
 | 围栏代码可执行（无占位符 U+2026、`bash -n` 通过） | audit.py BASH001 / BASH002 | 强 |
