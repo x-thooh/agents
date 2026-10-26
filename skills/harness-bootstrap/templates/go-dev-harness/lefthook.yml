@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=https://lefthook.dev/schema.json
+# lefthook（可选）：只决定「什么时候跑」，不决定「跑什么」。
+#
+# 跑什么一律交给 .harness/git-hooks/ 下的脚本。理由很直接：同一个断言写两处，
+# 就有两个地方会漂——改了一处忘了另一处，钩子还在跑，但跑的是旧的。
+# 所以这里每条 job 都是一行 `sh .harness/git-hooks/<hook>`，没有第二份检查逻辑。
+# hook 名集合必须与 .harness/git-hooks/ 下的可执行文件一一对应，由 gates scope 的 GATE008 守。
+#
+# 启用（与 make init 二选一，别同时装）：
+#   make init-lefthook     # git config --unset core.hooksPath && lefthook install
+# 为什么不能同时装：core.hooksPath 一旦设置，git 就只看那个目录，lefthook 写进
+# .git/hooks/ 的转发脚本永远不会被调用——钩子看起来装了，实际没跑。
+pre-commit:
+  jobs:
+    - name: harness-check
+      run: sh .harness/git-hooks/pre-commit
+
+commit-msg:
+  jobs:
+    - name: conventional-commits
+      run: sh .harness/git-hooks/commit-msg {1}

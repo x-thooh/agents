@@ -4,6 +4,7 @@
 `transitions.json` 定义结果状态机，`contract.json` 定义门记录必填字段与账本位置。
 """
 import json
+import os
 import re
 from pathlib import Path
 
@@ -32,6 +33,23 @@ LESSONS = f"{HARNESS}/memory/lessons.md"
 GUIDE = f"{HARNESS}/codebase-guide/index.json"
 TASK_STATUS = ("todo", "doing", "blocked", "done")
 AGENTS_MAX_LINES = 150
+HOOKS_DIR = f"{HARNESS}/git-hooks"
+LEFTHOOK = "lefthook.yml"
+# lefthook 顶层键里哪些是 git hook。其余（min_version / skip_output / extends / remotes / output）
+# 是配置项，不参与比对——不筛就会把配置项当成「多出来的 hook」误报。
+GIT_HOOKS = {
+    "applypatch-msg", "pre-applypatch", "post-applypatch", "pre-commit",
+    "pre-merge-commit", "prepare-commit-msg", "commit-msg", "post-commit",
+    "pre-rebase", "post-checkout", "post-merge", "pre-push", "pre-receive",
+    "update", "post-receive", "post-update", "reference-transaction",
+    "push-to-checkout", "pre-auto-gc", "post-rewrite", "sendemail-validate",
+    "post-index-change",
+}
+TOP_KEY = re.compile(r"^([a-z][a-z0-9-]*):\s*$")
+SPECS = f"{HARNESS}/specs/standards.md"
+# 规范表里提到的断言代码；代码里的定义形如 add(..., "GATE001", ...) 或 ("CM001", ...)
+CODE_IN_DOC = re.compile(r"\b([A-Z]{3,5}\d{3})\b")
+CODE_LITERAL = re.compile(r"[\"']([A-Z]{3,5}\d{3})[\"']")
 
 
 def run(ctx, findings):
@@ -46,6 +64,8 @@ def run(ctx, findings):
     if not stages:
         return
     check_agents(root, stages, findings)
+    check_hooks(root, findings)
+    check_specs(root, findings)
 
     version = flow.get("version")
     gate_fields = [f for f in as_list(contract.get("gate_fields")) if isinstance(f, str)]
@@ -132,6 +152,80 @@ def check_agents(root, stages, findings):
             if rel_target and not (root / rel_target).exists():
                 add(findings, "ERROR", NAME, rel, idx, "GATE002",
                     f"AGENTS.md 相对链接指向不存在的文件: {target}")
+
+
+def check_hooks(root, findings):
+    """GATE008：钩子只有一份实现，且它真的会被 git 调用。
+
+    lefthook 只决定「什么时候跑」，跑什么一律在 `.harness/git-hooks/` 里。
+    两套钩子并存时，只要有一边多一个 hook，那个 hook 就只在装了它的机器上生效——
+    漂了没人发现，因为「我这儿是绿的」。
+
+    另一条更隐蔽：钩子文件没有执行位时 git 直接跳过，不报错。
+    装了、看着在、实际没跑，比没装更危险。
+    """
+    hooks_dir = root / HOOKS_DIR
+    if not hooks_dir.is_dir():
+        add(findings, "ERROR", NAME, HOOKS_DIR, 0, "GATE008",
+            f"缺 {HOOKS_DIR}/：提交门禁没有载体，make init 也无处可指")
+        return
+
+    native = {p.name for p in hooks_dir.iterdir() if p.is_file() and not p.name.startswith(".")}
+    if not native:
+        add(findings, "ERROR", NAME, HOOKS_DIR, 0, "GATE008",
+            f"{HOOKS_DIR}/ 里没有任何钩子脚本：门禁只剩 make check 这一道，靠人记得跑")
+    for name in sorted(native):
+        path = hooks_dir / name
+        if os.name != "nt" and not os.access(path, os.X_OK):
+            add(findings, "ERROR", NAME, f"{HOOKS_DIR}/{name}", 0, "GATE008",
+                "钩子没有执行位：git 会静默跳过它（装了但没跑）。chmod +x 修")
+
+    config = root / LEFTHOOK
+    if not config.is_file():
+        return  # 只有一套钩子，不存在漂移
+    declared = set()
+    for idx, line in enumerate(config.read_text(encoding="utf-8").splitlines(), 1):
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        top = TOP_KEY.match(line)
+        if top and top.group(1) in GIT_HOOKS:
+            declared.add(top.group(1))
+        if stripped.startswith("run:") and f"{HOOKS_DIR}/" not in stripped:
+            add(findings, "ERROR", NAME, LEFTHOOK, idx, "GATE008",
+                "job 必须委托给 .harness/git-hooks/ 的脚本：在 YAML 里内联检查，"
+                "等于给门禁开第二份定义，改一处就漂一处")
+    for hook in sorted(native - declared):
+        add(findings, "ERROR", NAME, LEFTHOOK, 1, "GATE008",
+            f"{HOOKS_DIR}/{hook} 没有对应的 lefthook hook：用 lefthook 的人不会跑它")
+    for hook in sorted(declared - native):
+        add(findings, "ERROR", NAME, LEFTHOOK, 1, "GATE008",
+            f"lefthook 声明了 {hook}，但 {HOOKS_DIR}/ 下没有同名脚本：这条钩子无实现")
+
+
+def check_specs(root, findings):
+    """GATE009：规范表引用的断言代码必须真的存在。
+
+    `specs/standards.md` 是「哪条规范由谁判」的唯一对照。往里写一个不存在的代码，
+    读的人会以为有断言在管——这比不写更糟，因为它看起来有人负责。
+    只判这一个方向：表里有、代码里没有。反方向（代码有、表里没写）是文档覆盖问题，
+    不是谎报，见本文件末尾的说明。
+    """
+    doc = root / SPECS
+    if not doc.is_file():
+        add(findings, "ERROR", NAME, SPECS, 0, "GATE009",
+            f"缺 {SPECS}：规范没有对照表，规则散在 AGENTS.md 和人的记忆里")
+        return
+    emitted = set()
+    scripts = root / HARNESS / "scripts"
+    for path in sorted(scripts.rglob("*.py")):
+        emitted.update(CODE_LITERAL.findall(path.read_text(encoding="utf-8")))
+    for idx, line in enumerate(doc.read_text(encoding="utf-8").splitlines(), 1):
+        for code in CODE_IN_DOC.findall(line):
+            if code not in emitted:
+                add(findings, "ERROR", NAME, SPECS, idx, "GATE009",
+                    f"规范表引用了 {code}，但没有任何 scope 产出这个代码："
+                    "写了个不存在的断言，等于宣称有人管")
 
 
 def check_gate(data, rel, stage, version, gate_fields, transitions, findings):

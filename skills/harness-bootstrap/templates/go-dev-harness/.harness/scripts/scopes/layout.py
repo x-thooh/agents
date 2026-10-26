@@ -13,6 +13,12 @@ DOC_PATTERNS = (
 )
 IFACE = re.compile(r"^type ([A-Z]\w*) interface \{$")
 GO_DIRECTIVE = re.compile(r"^go\s+(\d+)\.(\d+)")
+# func (recv *Type) Name(  —— receiver 名、是否指针、类型名
+RECEIVER = re.compile(r"^func\s+\(\s*(\w+)\s+(\*?)(\w+)\s*\)\s*(\w+)\s*\(")
+BAD_RECEIVER_NAMES = {"this", "self", "me"}
+# 自称包注释的行：// Package foo ... / // Command foo ...（CodeReviewComments: Package Comments）
+PACKAGE_COMMENT = re.compile(r"^//\s*(?:Package|Command|Binary|Program)\s+\w+")
+PERIOD_END = (".", "。")
 
 
 def run(ctx, findings):
@@ -27,8 +33,81 @@ def run(ctx, findings):
             f"模块根 {rel_src!r} 下没有 go.mod；把 quality.json 的 go_src 指到真实模块根")
         return
     check_gomod(gomod, rel_src, quality, findings)
+    check_src_dir(src, rel_src, findings)
     check_cmd(root, src, rel_src, quality, findings)
+    check_methods(root, src, findings)
+    check_package_comment(root, src, findings)
     check_docs_and_interfaces(root, src, quality, findings)
+
+
+def check_src_dir(src, rel_src, findings):
+    """golang-standards/project-layout「Directories You Shouldn't Have」：不要 src/。
+
+    那是 Java 习惯。Go 的模块根就是包根，多一层 src/ 只会让导入路径多一段无意义前缀。
+    """
+    if (src / "src").is_dir():
+        add(findings, "ERROR", NAME, f"{rel_src}/src", 1, "LAY011",
+            "不要 src/ 目录：Go 模块根就是包根，多一层只是让导入路径变长")
+
+
+def check_methods(root, src, findings):
+    """CodeReviewComments: Receiver Names / Receiver Type。
+
+    先按类型聚合再判，避免同一类型的方法各报一次——那是噪声，不是信号。
+    """
+    methods = {}
+    for path in go_files(src, include_tests=False):
+        rel = rel_to(root, path)
+        for idx, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            match = RECEIVER.match(raw.strip())
+            if not match:
+                continue
+            recv, star, typ = match.group(1), match.group(2), match.group(3)
+            methods.setdefault(typ, []).append((recv, "指针" if star else "值", rel, idx))
+
+    for typ, entries in methods.items():
+        bad = [e for e in entries if e[0] in BAD_RECEIVER_NAMES]
+        if bad:
+            recv, _kind, rel, line = bad[0]
+            add(findings, "ERROR", NAME, rel, line, "LAY008",
+                f"{typ} 的 receiver 叫 {recv!r}：用类型首字母（c / cl），this/self 是别的语言的习惯")
+        names = {e[0] for e in entries}
+        if len(names) > 1:
+            recv, _kind, rel, line = entries[0]
+            others = "、".join(sorted(names - {recv}))
+            add(findings, "ERROR", NAME, rel, line, "LAY008",
+                f"{typ} 的 receiver 名不一致：{recv!r} 与 {others} 混用，同一个类型只准一个名字")
+        kinds = {e[1] for e in entries}
+        if len(kinds) > 1:
+            kind, rel, line = entries[0][1], entries[0][2], entries[0][3]
+            other = next(k for k in kinds if k != kind)
+            add(findings, "ERROR", NAME, rel, line, "LAY009",
+                f"{typ} 混用{kind}与{other} receiver：同一类型统一一种，拿不准就用指针")
+
+
+def check_package_comment(root, src, findings):
+    """CodeReviewComments: Package Comments —— 包注释必须紧贴 package 子句。
+
+    只判「自称包注释却被空行隔开」这一种：许可证头注释后面空一行再 package 是正常写法，
+    把它也报掉就是误报。判据是那行注释自己声称是包注释（// Package foo ...）。
+    """
+    for path in go_files(src, include_tests=False):
+        lines = path.read_text(encoding="utf-8").splitlines()
+        pkg_idx = None
+        for idx, line in enumerate(lines):
+            if line.strip().startswith("package "):
+                pkg_idx = idx
+                break
+        if pkg_idx is None or pkg_idx == 0 or lines[pkg_idx - 1].strip() != "":
+            continue
+        cursor = pkg_idx - 2
+        block = []
+        while cursor >= 0 and lines[cursor].strip().startswith("//"):
+            block.append(lines[cursor].strip())
+            cursor -= 1
+        if block and PACKAGE_COMMENT.match(block[-1]):
+            add(findings, "ERROR", NAME, rel_to(root, path), pkg_idx + 1, "LAY010",
+                f"包注释与 package 子句之间有空行：godoc 不会把它算作包注释（要贴着写）")
 
 
 def check_gomod(gomod, rel_src, quality, findings):
@@ -104,9 +183,16 @@ def check_docs_and_interfaces(root, src, quality, findings):
         for idx, raw in enumerate(lines):
             code = raw.strip()
             name = _exported_name(code)
-            if name and not _documented(lines, idx, name):
+            if not name:
+                continue
+            block = _doc_block(lines, idx)
+            if block is None or not _starts_with_name(lines, block, name):
                 add(findings, "ERROR", NAME, rel, idx + 1, "LAY006",
                     f"导出符号 {name} 缺 doc 注释（形如 // {name} ...）")
+                continue
+            if not lines[block[1]].strip().endswith(PERIOD_END):
+                add(findings, "WARN", NAME, rel, block[1] + 1, "LAY012",
+                    f"{name} 的 doc 注释不以句号结尾：godoc 里会和后文连成一句")
         for idx, raw in enumerate(lines):
             match = IFACE.match(raw.strip())
             if not match:
@@ -125,16 +211,22 @@ def _exported_name(code):
     return None
 
 
-def _documented(lines, idx, name):
+def _doc_block(lines, idx):
+    """导出符号上方紧邻的 // 注释块（允许中间有空行），返回 (start, end) 或 None。"""
     end = idx - 1
     while end >= 0 and not lines[end].strip():
         end -= 1
     if end < 0 or not lines[end].strip().startswith("//"):
-        return False
+        return None
     start = end
     while start - 1 >= 0 and lines[start - 1].strip().startswith("//"):
         start -= 1
-    return re.match(rf"^//\s+{re.escape(name)}\b", lines[start].strip()) is not None
+    return start, end
+
+
+def _starts_with_name(lines, block, name):
+    """注释块首行必须以符号名开头（CodeReviewComments: Comment Sentences）。"""
+    return re.match(rf"^//\s+{re.escape(name)}\b", lines[block[0]].strip()) is not None
 
 
 def _method_count(lines, idx):

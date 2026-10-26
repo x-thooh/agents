@@ -3,6 +3,10 @@
   "depth": 2,
   "entries": [
     {
+      "path": ".golangci.yml",
+      "kind": "file"
+    },
+    {
       "path": ".harness",
       "kind": "dir"
     },
@@ -55,6 +59,10 @@
       "kind": "file"
     },
     {
+      "path": "lefthook.yml",
+      "kind": "file"
+    },
+    {
       "path": "sample",
       "kind": "dir"
     },
@@ -69,6 +77,10 @@
     {
       "path": "tests",
       "kind": "dir"
+    },
+    {
+      "path": "tests/commit_msg.py",
+      "kind": "file"
     },
     {
       "path": "tests/reverse.py",

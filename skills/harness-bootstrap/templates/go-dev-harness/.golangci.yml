@@ -1,0 +1,56 @@
+# golangci-lint v2 配置。校验：golangci-lint config verify && make lint
+#
+# 分工（与 .harness/scripts/verify.py 的关系）：
+#   verify   = 零依赖基线。只用词法，任何机器上都能跑，不需要 Go 工具链。
+#   本文件   = 可选深水区。需要类型信息的检查（errcheck、errorlint、staticcheck）只有它能做。
+# 两者重叠的部分是故意的：没有 golangci-lint 的环境里，harness 也必须拦得住基本错误。
+#
+# 改这里的阈值或启用项，同批改 .harness/specs/standards.md 的「工具层」一节。
+
+version: "2"
+
+linters:
+  # standard = errcheck / govet / ineffassign / staticcheck / unused
+  default: standard
+  enable:
+    - bodyclose      # HTTP 响应体没关
+    - errorlint      # 用 == 比 error、%v 包装而非 %w
+    - gocritic
+    - misspell
+    - nilerr         # err != nil 却 return nil
+    - noctx          # 发出请求不带 context
+    - revive
+    - unconvert
+    - unparam
+  settings:
+    revive:
+      # 只开能机器判、误报可控的几条；其余靠人判
+      rules:
+        - name: error-naming
+        - name: error-strings
+        - name: indent-error-flow
+        - name: package-comments
+        - name: receiver-naming
+        - name: unexported-return
+    gocritic:
+      # 只开 diagnostic + style；performance/experimental 误报多，留给 review 人判
+      enabled-tags:
+        - diagnostic
+        - style
+  exclusions:
+    rules:
+      # 测试文件放宽：errcheck/noctx 在测试里噪声大于收益
+      - path: _test\.go
+        linters:
+          - errcheck
+          - noctx
+          - unparam
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

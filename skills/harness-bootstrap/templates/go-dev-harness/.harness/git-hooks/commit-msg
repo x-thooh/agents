@@ -1,0 +1,14 @@
+#!/bin/sh
+# commit-msg：提交消息必须符合 Conventional Commits 1.0.0。
+# 装法：make init（core.hooksPath 指到本目录，不需要单独软链）。
+# 为什么单开一个钩子而不是塞进 pre-commit：pre-commit 拿不到消息文本，
+# commit-msg 的第一个参数就是消息文件——这是 git 给的位置，别自己找。
+
+msg_file="$1"
+root=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "commit-msg: 不在 git 仓库内，跳过" >&2; exit 0; }
+
+python3 "$root/.harness/scripts/check_commit.py" "$msg_file" || {
+    echo "" >&2
+    echo "commit-msg: 提交被拒——按上面的提示改消息，或 git commit --amend 重写" >&2
+    exit 1
+}

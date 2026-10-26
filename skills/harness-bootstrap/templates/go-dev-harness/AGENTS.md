@@ -8,13 +8,19 @@
 ## 命令
 
 ```bash
-make init           # 装 pre-commit 钩子（一次；之后每次提交自动跑 check）
+make init           # 装钩子（core.hooksPath → .harness/git-hooks），一次
+make init-lefthook  # 或用 lefthook 装同一批钩子；两套只装一套
 make check          # 全量校验；0 ERROR 才可交付
 make check-json     # 原始 JSON，便于 CI
 make check-strict   # 示例数据 = ERROR；真实交付必须绿
 make fix            # 自动修派生数据（目前只有 GUIDE001 索引），修完重跑
-make selftest       # 每个 scope 的反向测试
+make lint           # 工具层：golangci-lint（需要 Go 工具链，可选）
+make selftest       # 反向测试：每个 scope 至少一条违规样本 + 提交消息检查
 ```
+
+提交消息按 Conventional Commits 1.0.0：`<type>[(scope)][!]: <描述>`，type ∈ feat/fix/docs/
+style/refactor/perf/test/build/ci/chore/revert。由 `commit-msg` 钩子判，细则见
+`.harness/specs/standards.md`「提交消息」一节。
 
 `--fix` 只动派生数据——重新生成一遍就能复原的东西。写证据、选版本、补理由一律不修：
 脚本代劳等于伪造。前置条件是 git 工作区除目标文件外干净，否则退出码 2 且一个字都不改；
@@ -51,6 +57,9 @@ make selftest       # 每个 scope 的反向测试
 16. 状态层三条：`tasks/board.json` 的 `stage` 必须在 `flow.json` 里、`status` 只能是 todo/doing/blocked/done；
     `memory/lessons.md` 每条必须有现象/根因/断言三段；`codebase-guide/index.json` 由 `scripts/gen_guide.py` 生成，
     人手改过即 ERROR。`scope=gates`
+17. 钩子只有一份实现：`.harness/git-hooks/` 下的脚本必须有执行位（没执行位 git 静默跳过），
+    `lefthook.yml` 只做调度、每条 job 委托给这些脚本，两边的 hook 集合必须一致。`scope=gates`
+18. 提交消息符合 Conventional Commits 1.0.0；`specs/standards.md` 引用的断言代码必须真的存在。`scope=gates`
 
 ## 人判项（无断言）
 
@@ -66,13 +75,15 @@ make selftest       # 每个 scope 的反向测试
 
 ```text
 AGENTS.md                        本文件（地图）
-Makefile                         make init / check / check-json / check-strict / fix / selftest
+Makefile                         make init / init-lefthook / check / fix / lint / selftest
+.golangci.yml                    工具层配置（需 Go 工具链；与 specs/standards.md「工具层」同批改）
+lefthook.yml                     可选钩子调度层，只委托 .harness/git-hooks/，不内联检查
 .harness/config.json             阈值（覆盖率、main 行数、MR、发布观察窗）+ go_src
 .harness/workflow/flow.json      阶段唯一事实源（顺序/门记录/交付物/scope）
 .harness/workflow/transitions.json  结果状态机
 .harness/workflow/contract.json  门记录必填字段、账本位置
 .harness/workflow/README.md      流程正文（6 阶段：目的/输入/产物/检查）
-.harness/specs/standards.md      Go 规范与断言对照表
+.harness/specs/standards.md      Go 规范与断言对照表（含来源、工具层分工、未采纳项）
 .harness/deliverables/gates/     6 个阶段门记录
 .harness/deliverables/artifacts/ 6 个阶段的机器可读证据
 .harness/deliverables/ledgers/   变更账本、例外账本
@@ -83,10 +94,13 @@ Makefile                         make init / check / check-json / check-strict /
 .harness/scripts/verify.py       调度器（注册表 / 排序 / 退出码 / --fix 编排）
 .harness/scripts/scopes/         一个 scope 一个文件
 .harness/scripts/gen_guide.py    生成 codebase-guide/index.json
+.harness/scripts/check_commit.py 提交消息检查（Conventional Commits 1.0.0）
 .harness/git-hooks/pre-commit    提交前跑 check（make init 安装）
+.harness/git-hooks/commit-msg    提交消息门（同上；必须可执行）
 .harness/stack-templates/        门记录模板
 sample/                          示例 Go 模块（go_src；真实仓库改成 "."）
 tests/reverse.py                 反向测试：每个 scope 至少一条违规样本
+tests/commit_msg.py              提交消息检查器的正/反例
 ```
 
 ## 维护本文件
@@ -94,5 +108,6 @@ tests/reverse.py                 反向测试：每个 scope 至少一条违规�
 - 新增硬规则：同批在 `scopes/` 加断言，或在上面「人判项」写明强度来源；不许只写规则。
 - 改阈值：先改 `.harness/config.json`，再改本文件与 `.harness/specs/standards.md`，最后跑 `make check`。
 - 改阶段/产物：先改 `.harness/workflow/flow.json`，再改门记录与对应 scope；不要反过来。
-- 改索引：跑 `python3 .harness/scripts/gen_guide.py`，不要手改 `index.json`。
+- 改索引：跑 `python3 .harness/scripts/gen_guide.py`，不要手改 `index.json`（或直接 `make fix`）。
+- 加钩子：脚本放 `.harness/git-hooks/`（记得 `chmod +x`），并在 `lefthook.yml` 加同名 job 委托它。
 - 本文件行数硬上限 150，由 `gates` scope 断言。

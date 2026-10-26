@@ -37,6 +37,14 @@ def append_text(root, rel, extra):
     path.write_text(path.read_text(encoding="utf-8") + extra, encoding="utf-8")
 
 
+def replace_text(root, rel, old, new):
+    path = root / rel
+    text = path.read_text(encoding="utf-8")
+    if old not in text:
+        raise AssertionError(f"{rel} 里找不到待替换片段：{old!r}")
+    path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
 def run_verify(root, scope=None, fix=False):
     cmd = [
         sys.executable,
@@ -164,20 +172,49 @@ def positive_control():
     print(f"PASS positive control: 0 ERROR ({payload['summary']['warns']} example WARN)")
 
 
-def reverse_case(name, scope, expected_code, mutate):
+def reverse_case(name, scope, expected_code, mutate, resync_guide=True):
     with tempfile.TemporaryDirectory(prefix=f"go-{scope}-") as tmp:
         root = copy_root(tmp)
         mutate(root)
+        if resync_guide:
+            # 改文件会让 codebase-guide 索引漂移，那等于给样本加了第二个缺陷。
+            # 样本必须只有一个缺陷，所以改完先把派生数据同步回去。
+            subprocess.run(
+                [sys.executable, str(root / ".harness/scripts/gen_guide.py"), str(root)],
+                check=True, capture_output=True,
+            )
         payload, rc = run_verify(root, scope)
         findings = payload["findings"]
-        codes = [finding["code"] for finding in findings]
-        if payload["summary"]["errors"] < 1 or rc == 0:
-            raise AssertionError(f"{name}: expected an ERROR, got {codes}")
-        if expected_code not in codes:
-            raise AssertionError(f"{name}: expected {expected_code}, got {codes}")
+        errors = {finding["code"] for finding in findings if finding["severity"] == "ERROR"}
+        if not errors or rc == 0:
+            raise AssertionError(f"{name}: expected an ERROR, got {sorted(errors)}")
+        if expected_code not in errors:
+            raise AssertionError(f"{name}: expected {expected_code}, got {sorted(errors)}")
+        # 一件缺陷只该产出一个 ERROR：多出来的说明样本被污染了，判据随之失效
+        if errors != {expected_code}:
+            raise AssertionError(f"{name}: 期望唯一的 ERROR 是 {expected_code}，实际 {sorted(errors)}")
         if any(finding["scope"] != scope for finding in findings):
             raise AssertionError(f"{name}: findings leaked outside scope {scope}")
         print(f"PASS {name}: {expected_code}")
+
+
+def warn_case(name, scope, expected_code, mutate):
+    """WARN 级断言的反向测试：期望 0 ERROR，且该 code 以 WARN 出现。"""
+    with tempfile.TemporaryDirectory(prefix=f"go-{scope}-warn-") as tmp:
+        root = copy_root(tmp)
+        mutate(root)
+        subprocess.run(
+            [sys.executable, str(root / ".harness/scripts/gen_guide.py"), str(root)],
+            check=True, capture_output=True,
+        )
+        payload, rc = run_verify(root, scope)
+        findings = payload["findings"]
+        warns = {finding["code"] for finding in findings if finding["severity"] == "WARN"}
+        if rc != 0 or payload["summary"]["errors"] != 0:
+            raise AssertionError(f"{name}: 期望 0 ERROR，实际 {payload['summary']['errors']}")
+        if warns != {expected_code}:
+            raise AssertionError(f"{name}: 期望唯一的 WARN 是 {expected_code}，实际 {sorted(warns)}")
+        print(f"PASS {name}: {expected_code} (WARN)")
 
 
 def main():
@@ -196,6 +233,43 @@ def main():
                     "rework": [{"issue": "go vet 报错", "action": "修", "rerun_stages": ["impl"]}],
                 }
             ),
+        ),
+    )
+    reverse_case(
+        "gates: lefthook 多声明一个没有实现的 hook",
+        "gates",
+        "GATE008",
+        lambda root: append_text(
+            root,
+            "lefthook.yml",
+            "\npre-push:\n  jobs:\n    - name: x\n      run: sh .harness/git-hooks/pre-push\n",
+        ),
+    )
+    reverse_case(
+        "gates: 钩子没有执行位（git 会静默跳过）",
+        "gates",
+        "GATE008",
+        lambda root: os.chmod(root / ".harness/git-hooks/commit-msg", 0o644),
+    )
+    reverse_case(
+        "gates: lefthook 内联检查（第二份定义）",
+        "gates",
+        "GATE008",
+        lambda root: replace_text(
+            root,
+            "lefthook.yml",
+            "run: sh .harness/git-hooks/pre-commit",
+            "run: go vet ./...",
+        ),
+    )
+    reverse_case(
+        "gates: 规范表引用不存在的断言代码",
+        "gates",
+        "GATE009",
+        lambda root: append_text(
+            root,
+            ".harness/specs/standards.md",
+            "\n| 假规范 | 假的 | `TST999` | 本项目 |\n",
         ),
     )
     reverse_case(
@@ -294,6 +368,77 @@ def main():
             ".harness/codebase-guide/index.json",
             lambda data: data["entries"].pop(0),
         ),
+        resync_guide=False,   # 这一例测的就是索引被改坏，不能同步
+    )
+
+    # --- 风格类断言（来源：CodeReviewComments / Uber Go Style Guide / project-layout）---
+
+    reverse_case(
+        "layout: receiver named this",
+        "layout",
+        "LAY008",
+        lambda root: append_text(root, "sample/internal/order/order.go",
+                                 "\nfunc (this *Order) touch() {}\n"),
+    )
+    reverse_case(
+        "layout: mixed receiver types",
+        "layout",
+        "LAY009",
+        lambda root: append_text(
+            root, "sample/internal/order/order.go",
+            "\nfunc (o *Order) paid() bool { return o.Status == StatusPaid }\n"
+            "func (o Order) amount() int64 { return o.Amount }\n"),
+    )
+    reverse_case(
+        "layout: package comment detached by blank line",
+        "layout",
+        "LAY010",
+        lambda root: replace_text(
+            root, "sample/internal/order/order.go",
+            "// Package order implements order creation and lookup.\npackage order",
+            "// Package order implements order creation and lookup.\n\npackage order"),
+    )
+    reverse_case(
+        "layout: src directory",
+        "layout",
+        "LAY011",
+        lambda root: (root / "sample/src").mkdir(),
+    )
+    warn_case(
+        "layout: doc comment without closing period",
+        "layout",
+        "LAY012",
+        lambda root: append_text(root, "sample/internal/order/order.go",
+                                 "\n// Note is a note without a closing period\nfunc Note() {}\n"),
+    )
+    reverse_case(
+        "runtime: error string capitalized",
+        "runtime",
+        "RUNT008",
+        lambda root: append_text(root, "sample/internal/order/order.go",
+                                 '\nfunc bad() error { return fmt.Errorf("Bad thing") }\n'),
+    )
+    reverse_case(
+        "runtime: error variable without Err prefix",
+        "runtime",
+        "RUNT009",
+        lambda root: append_text(root, "sample/internal/order/order.go",
+                                 '\nvar NotFound = errors.New("not found")\n'),
+    )
+    reverse_case(
+        "runtime: init() in library code",
+        "runtime",
+        "RUNT010",
+        lambda root: append_text(root, "sample/internal/config/config.go", "\nfunc init() {}\n"),
+    )
+    reverse_case(
+        "impl: stdlib and third-party in one import group",
+        "impl",
+        "IMP005",
+        lambda root: replace_text(
+            root, "sample/internal/config/config.go",
+            '\t"time"\n)',
+            '\t"time"\n\t"example.com/ordersvc/internal/order"\n)'),
     )
 
     # --- --fix：只修派生数据；不越界、不猜、没有回滚点就不动手 ---
