@@ -117,17 +117,7 @@ AGENTS.md                 入口（地图，不是手册）
 
 ### 8. 语料有生命周期：状态是位置，不是字段
 
-一篇笔记只承载一个决策，用目录承载状态：`proposed/`（未拍板）· `implemented/`（已拍板）· `rejected/`（被否）。
-骨架、头五行、模块清单与 `scope` 的全套规矩在 [`references/notes-convention.md`](references/notes-convention.md)——本节只留判据：
-
-- **一篇一个决策**：改结论不改旧篇，新写一篇并互相链接（`supersedes`），作废不删
-- **写入门槛**：代码能推出的不写；每篇必须有 `## 不显然之处` 段，段在但空着即 ERROR
-- **状态是位置**：`Status:` 只是投影，必须与所在目录互校；换状态用 `git mv`
-- **作用域是字段**：`scope:` 填模块标识不是目录路径，缺了不是「全仓」而是「没声明」，ERROR
-- **模块清单**：AI 起草（每条带 `文件:行` 级证据）、人拍板（`modules-confirmed: <sha>`）；目录只作弱提示
-- **归属只问一个问题**：`specs/` 现在是什么 · `specs/notes/` 为什么这么定 · `tasks/` 还没做什么 · `memory/trace/` 这次为什么出事
-- **禁人手索引**：`INDEX.md` 与派生字段（scope 清单、无断言规则数）只准脚本数；手写一个数字就是第二处真相（本 skill 踩过：写死 `unanchored_rules: 3`，与「不写死计数」直接冲突）
-- **日期是首次提出日**：以 `git log` 为准，不是落地日
+一篇笔记只承载一个决策，用目录承载状态：`proposed/`（未拍板）· `implemented/`（已拍板）· `rejected/`（被否）。判据两条：**状态是位置**——`Status:` 只是投影，必须与所在目录互校，换状态用 `git mv`；**写入门槛**——代码能推出的不写，每篇必须有 `## 不显然之处` 段，段在但空着即 ERROR。骨架、头五行、模块清单、`scope`、索引只派生、日期取 `git log`，全套规矩见 [`references/notes-convention.md`](references/notes-convention.md)。
 
 ### 9. 约定大于配置
 
