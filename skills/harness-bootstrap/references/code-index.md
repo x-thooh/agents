@@ -45,9 +45,9 @@
 | `LINK003` | links | WARN |
 | `LINK004` | links | ERROR |
 | `LOOP001` | loop | ? |
-| `LOOP002` | loop | ? |
+| `LOOP002` | loop | ERROR → ? |
 | `LOOP003` | loop | ? |
-| `LOOP004` | loop | ? |
+| `LOOP004` | loop | ERROR → ? |
 | `SECT001` | sections | WARN → ERROR |
 | `SECT002` | sections | WARN → ERROR |
 | `STRUCT001` | struct | ERROR |

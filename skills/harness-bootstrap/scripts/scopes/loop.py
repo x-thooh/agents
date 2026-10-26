@@ -14,6 +14,9 @@
 「写下这四节」opt-in 的，不给一份只讲 frontmatter 的样本扣四个 ERROR。但只要出现
 一节，四节就必须齐：部分迁移比没迁移更坏，它给了一个「看起来有流程」的外观。
 """
+
+import importlib.util
+import pathlib
 import re
 
 from .common import Finding
@@ -24,6 +27,7 @@ NAME = "loop"
 TARGETS = (("感知", "LOOP001"), ("规划", "LOOP002"), ("行动", "LOOP003"), ("反思", "LOOP004"))
 H2 = re.compile(r"^##\s+[" + "〇一二三四五六七八九十" + r"]+、(.+)$")
 MARKERS = ("机器判：", "人判：")
+CODE_LITERAL = re.compile(r'"([A-Z]{2,}[0-9]{3})"')
 
 
 def _sections(lines):
@@ -45,22 +49,78 @@ def _sections(lines):
     return out
 
 
+def _check_hooks(ctx, findings):
+    """scope 层的四段落点：`scripts/hooks.py` 里的 PLAN / REFLECT 必须与实际代码集对得上。
+
+    对账而不是「非空就算过」：新增一个 code 却忘了登记，REFLECT 仍非空，但那个 code
+    永远没有「可反向验证的面」的声明。所以逐条比集合——漏登记报缺、多登记报多。
+    """
+    root = pathlib.Path(ctx["skill_dir"]) / "scripts"
+    target = root / "hooks.py"
+    if not target.is_file():
+        return False  # 目标仓库还没这套钩子：不算错，也不冒充通过
+    spec = importlib.util.spec_from_file_location("_target_hooks", target)
+    mod = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(mod)
+    except Exception as exc:  # 语法/导入错都要报，不能静默
+        findings.append(Finding("ERROR", NAME, 0, "LOOP002",
+                                f"读不了 scripts/hooks.py（{exc}）：钩子判不了，不能当通过"))
+        return True
+    for path in sorted((root / "scopes").glob("*.py")):
+        if path.stem in ("__init__", "common"):
+            continue
+        text = path.read_text(encoding="utf-8")
+        if "\ndef run(" not in text:
+            continue
+        name = path.stem
+        if not mod.plan(name):
+            findings.append(Finding("ERROR", NAME, 0, "LOOP002",
+                                    f"scope {name} 没登记 PLAN：它管什么，没人说得出来"))
+        declared = set(mod.reflect(name))
+        actual = set(CODE_LITERAL.findall(text))
+        if not declared:
+            findings.append(Finding("ERROR", NAME, 0, "LOOP004",
+                                    f"scope {name} 的 REFLECT 为空：没有可反向验证的面，"
+                                    "该合并或删——「空」不是通过"))
+        elif declared != actual:
+            lack = sorted(actual - declared)
+            extra = sorted(declared - actual)
+            findings.append(Finding("ERROR", NAME, 0, "LOOP004",
+                                    f"scope {name} 的 REFLECT 与源码对不上："
+                                    f"漏登记 {lack or '无'}、多登记 {extra or '无'}"))
+    return True
+
+
 def run(ctx, findings):
+    has_hooks = _check_hooks(ctx, findings)
     sections = _sections(ctx["text"].split("\n"))
     if not sections:
-        ctx.setdefault("not_applicable", []).append(NAME)
+        if not has_hooks:
+            ctx.setdefault("not_applicable", []).append(NAME)
         return
     for keyword, code in TARGETS:
         if keyword not in sections:
-            findings.append(Finding(
-                "ERROR", NAME, 0, code,
-                f"四段纪律缺「{keyword}」这一节：只要写了其中一节，四节就得齐——"
-                "只写一段的纪律不是纪律，是口号"))
+            findings.append(
+                Finding(
+                    "ERROR",
+                    NAME,
+                    0,
+                    code,
+                    f"四段纪律缺「{keyword}」这一节：只要写了其中一节，四节就得齐——只写一段的纪律不是纪律，是口号",
+                )
+            )
             continue
         body = sections[keyword]
         lacking = [m for m in MARKERS if m not in body]
         if lacking:
-            findings.append(Finding(
-                "ERROR", NAME, 0, code,
-                f"「{keyword}」节缺 {' / '.join(lacking)} 分列：一段纪律要么给出可判的机器判据，"
-                "要么明写「无断言」及强度来源——不标的那一种最坏，它看起来像有人守"))
+            findings.append(
+                Finding(
+                    "ERROR",
+                    NAME,
+                    0,
+                    code,
+                    f"「{keyword}」节缺 {' / '.join(lacking)} 分列：一段纪律要么给出可判的机器判据，"
+                    "要么明写「无断言」及强度来源——不标的那一种最坏，它看起来像有人守",
+                )
+            )

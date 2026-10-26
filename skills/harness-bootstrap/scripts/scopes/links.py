@@ -1,7 +1,8 @@
-"""links：外部链接（默认跳过）与相对链接 + 锚点（离线强断言）。
+"""links：外部链接与相对链接 + 锚点（离线强断言）。
 文件在、锚点错就是「重排后静默指向别处」（坑 #12）；内联外部链接是承诺
 （`--check-links` 才真查），脚注是引用出处不管。
 """
+
 import http.client
 import pathlib
 import re
@@ -10,7 +11,6 @@ import urllib.parse
 from .common import Finding, anchors_of
 
 NAME = "links"
-
 FENCE = re.compile(r"^\s*```")
 MD_LINK = re.compile(r"\[[^\]]*\]\((https?://[^)\s]+)\)")
 MD_LINK_REL = re.compile(r"\[[^\]]*\]\((?![a-z][a-z0-9+.-]*:|#)([^)\s]+)\)")

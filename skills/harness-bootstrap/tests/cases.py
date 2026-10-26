@@ -77,6 +77,8 @@ CASES = (
     ("bad-loop-plan", {"LOOP002"}, ()),
     ("bad-loop-act", {"LOOP003"}, ()),
     ("bad-loop-reflect", {"LOOP004"}, ()),
+    # 钩子对账：scope 有可报的 code，但 hooks.py 的 REFLECT 留空
+    ("bad-loop-hook", {"LOOP004"}, ()),
     # 锚点断链：文件在、锚点错（只判文件的门禁会放它过去）
     ("bad-anchor-link", {"LINK004"}, ()),
     # 交付物孤儿：文件在、内容对，但文档一次都没点名（「有了却没人说」）
