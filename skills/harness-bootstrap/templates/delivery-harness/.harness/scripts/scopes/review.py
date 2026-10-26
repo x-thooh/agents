@@ -40,10 +40,10 @@ def run(ctx, findings):
         lines = mr.get("lines_changed")
         if not num(lines):
             add(findings, "ERROR", NAME, rel, 1, "REV001", f"MR {mid!r} 的 lines_changed 必须是数字")
-        elif lines > max_lines:
-            if not (text(mr.get("split_justification")) and text(mr.get("approved_by"))):
-                add(findings, "ERROR", NAME, rel, 1, "REV001",
-                    f"MR {mid!r} 变更 {lines} 行 > {max_lines}，未拆分且无书面批准")
+        elif lines > max_lines and not (
+                text(mr.get("split_justification")) and text(mr.get("approved_by"))):
+            add(findings, "ERROR", NAME, rel, 1, "REV001",
+                f"MR {mid!r} 变更 {lines} 行 > {max_lines}，未拆分且无书面批准")
         reviewers = [r for r in as_list(mr.get("reviewers")) if text(r)]
         if mr.get("author") in reviewers:
             add(findings, "ERROR", NAME, rel, 1, "REV001", f"MR {mid!r} 作者不得自批")

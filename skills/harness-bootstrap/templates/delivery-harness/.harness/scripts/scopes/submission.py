@@ -39,10 +39,10 @@ def run(ctx, findings):
 
     manifest = as_dict(data.get("manifest"))
     check_fields(manifest, MANIFEST_KEYS, NAME, rel, findings, "SUB001", "manifest.")
-    if text(manifest.get("db_change")) and manifest.get("db_change") != "N/A":
-        if not text(manifest.get("db_rollback")):
-            add(findings, "ERROR", NAME, rel, 1, "SUB001",
-                "有数据库变更但缺少 db_rollback")
+    if (text(manifest.get("db_change")) and manifest.get("db_change") != "N/A"
+            and not text(manifest.get("db_rollback"))):
+        add(findings, "ERROR", NAME, rel, 1, "SUB001",
+            "有数据库变更但缺少 db_rollback")
 
     smoke = as_dict(data.get("smoke"))
     total = smoke.get("total")

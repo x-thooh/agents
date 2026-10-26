@@ -104,7 +104,7 @@ def main(argv=None):
 
     selected = SCOPES
     if args.scope:
-        selected = tuple(mod for mod in SCOPES if mod.NAME == args.scope)
+        selected = tuple(mod for mod in SCOPES if args.scope == mod.NAME)
         if not selected:
             names = ", ".join(mod.NAME for mod in SCOPES)
             print(f"verify: 未知 scope {args.scope!r}；可选: {names}", file=sys.stderr)

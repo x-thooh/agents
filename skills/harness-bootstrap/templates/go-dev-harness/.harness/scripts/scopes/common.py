@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 class Finding:
-    __slots__ = ("severity", "scope", "path", "line", "code", "message")
+    __slots__ = ("code", "line", "message", "path", "scope", "severity")
 
     def __init__(self, severity, scope, path, line, code, message):
         self.severity = severity
@@ -38,6 +38,17 @@ def text(value):
 
 def num(value):
     return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def number(value):
+    """数字则返回它，否则 None——把「是不是数字」和「值是多少」合成一次判定。
+
+    为什么必须有它：`num(x)` 只回 True/False，判定之后仍然拿原来的 `x` 做算术，
+    读代码的人（和类型检查器）都无法确定 x 已被验证过。实测这在模板里攒出 12 条
+    reportOptionalOperand（`None < 8`、`None * 1.2`），全是「先判后算」的同一形态。
+    写法改成 `value = number(raw)` + `if value is None` 之后，分支本身就是证据。
+    """
+    return value if isinstance(value, (int, float)) and not isinstance(value, bool) else None
 
 
 def as_list(value):
@@ -94,10 +105,7 @@ def check_fields(obj, required, scope, path, findings, code, prefix=""):
             ok = False
             continue
         value = obj[key]
-        if isinstance(value, str) and not value.strip():
-            add(findings, "ERROR", scope, path, 1, code, f"{prefix}{key} 不能为空")
-            ok = False
-        elif isinstance(value, list) and not value:
+        if (isinstance(value, str) and not value.strip()) or (isinstance(value, list) and not value):
             add(findings, "ERROR", scope, path, 1, code, f"{prefix}{key} 不能为空")
             ok = False
     return ok
@@ -336,7 +344,7 @@ def git_clean(root, targets=()):
 
     def git(*args):
         return subprocess.run(
-            ["git", "-C", str(root), *args], capture_output=True, text=True
+            ["git", "-C", str(root), *args], check=False, capture_output=True, text=True
         )
 
     inside = git("rev-parse", "--is-inside-work-tree")

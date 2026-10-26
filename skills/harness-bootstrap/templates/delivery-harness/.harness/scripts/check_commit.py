@@ -46,14 +46,14 @@ def check(text):
     if not match:
         problems.append((
             "CM001",
-            "首行不符合 `type(scope): 描述`（scope 与 ! 可省）："
-            f"{subject[:60]!r}",
+            ("首行不符合 `type(scope): 描述`（scope 与 ! 可省）："
+             f"{subject[:60]!r}"),
         ))
     elif match.group(1) not in TYPES:
         problems.append((
             "CM002",
-            f"type {match.group(1)!r} 不在允许集 {sorted(TYPES)}："
-            "自定类型要同步改 check_commit.py 的 TYPES",
+            (f"type {match.group(1)!r} 不在允许集 {sorted(TYPES)}："
+             "自定类型要同步改 check_commit.py 的 TYPES"),
         ))
     if len(subject) > SUBJECT_MAX:
         problems.append((
@@ -70,8 +70,8 @@ def check(text):
         if MULTI_PURPOSE.match(line):
             problems.append((
                 "CM006",
-                f"第 {idx} 行以并列连接词起头（{line.strip()[:30]!r}）：一个提交只做一件事，"
-                "拆成两个提交。判据收窄到行首+标点，句中出现不算",
+                (f"第 {idx} 行以并列连接词起头（{line.strip()[:30]!r}）：一个提交只做一件事，"
+                 "拆成两个提交。判据收窄到行首+标点，句中出现不算"),
             ))
 
     # #12：BREAKING CHANGE 必须全大写（BREAKING-CHANGE 是它的同义写法，#16）

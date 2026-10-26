@@ -42,7 +42,7 @@ def verify(root, strict=False):
     cmd = [sys.executable, str(root / ".harness/scripts/verify.py")]
     if strict:
         cmd.append("--strict")
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    proc = subprocess.run(cmd, check=False, capture_output=True, text=True)
     return proc.returncode, proc.stdout + proc.stderr
 
 
@@ -63,7 +63,7 @@ def strip_examples(root):
 def regen_guide(root):
     gen = root / ".harness/scripts/gen_guide.py"
     if gen.is_file():
-        subprocess.run([sys.executable, str(gen)], capture_output=True, text=True)
+        subprocess.run([sys.executable, str(gen)], check=False, capture_output=True, text=True)
 
 
 def main():

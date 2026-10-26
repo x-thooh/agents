@@ -59,7 +59,7 @@ def run_verify(root, scope=None, fix=False):
         cmd.append("--fix")
     # 不写字节码：否则 __pycache__ 会让临时仓库变脏，--fix 的前置检查会误拒
     env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
-    proc = subprocess.run(cmd, capture_output=True, text=True, env=env)
+    proc = subprocess.run(cmd, check=False, capture_output=True, text=True, env=env)
     if not proc.stdout.strip() and proc.returncode == 2:
         # 前置条件不满足时 verify 只往 stderr 说话，没有 JSON——这是契约的一部分
         return {"findings": [], "summary": {"errors": 0, "warns": 0}, "stderr": proc.stderr}, 2
@@ -129,6 +129,7 @@ def check_guide_matches_head():
     def check(root, payload):
         proc = subprocess.run(
             ["git", "-C", str(root), "diff", "--quiet", "HEAD", "--", GUIDE_REL],
+            check=False,
             capture_output=True,
             text=True,
         )

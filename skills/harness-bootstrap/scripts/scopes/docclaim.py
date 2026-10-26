@@ -18,7 +18,6 @@
 不冒充通过（§七.2）。
 """
 import os
-import pathlib
 import re
 
 from .common import Finding

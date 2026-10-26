@@ -107,7 +107,12 @@ def check_flow(flow, findings):
         if stage.get("gate") in seen_gates:
             add(findings, "ERROR", NAME, FLOW, 1, "GATE001", f"gate 文件重复: {stage.get('gate')!r}")
         seen_gates.add(stage.get("gate"))
-    orders = sorted(s.get("order") for s in stages if isinstance(s.get("order"), int))
+    orders = []
+    for s in stages:
+        order = s.get("order")
+        if isinstance(order, int):
+            orders.append(order)
+    orders.sort()
     if orders != list(range(1, len(stages) + 1)):
         add(findings, "ERROR", NAME, FLOW, 1, "GATE001",
             f"stage.order 必须是 1..{len(stages)} 的连续整数，实际 {orders}")

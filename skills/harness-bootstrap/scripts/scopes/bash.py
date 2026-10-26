@@ -44,7 +44,7 @@ def bash_syntax_error(content):
         fh.write(content + "\n")
         tmp = fh.name
     try:
-        proc = subprocess.run(["/bin/bash", "-n", tmp], capture_output=True, text=True)
+        proc = subprocess.run(["/bin/bash", "-n", tmp], check=False, capture_output=True, text=True)
         if proc.returncode != 0:
             return (proc.stderr.strip().split("\n") or ["unknown error"])[0]
         return None

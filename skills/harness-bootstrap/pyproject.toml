@@ -1,0 +1,37 @@
+# Python 静态检查的唯一配置处（`make lint-python`）。
+#
+# 为什么需要它：本 skill 的自身门禁只审 SKILL.md 与派生物，审不到自己写的 Python。
+# 实测代价是同一份 `if empty:` 分支被逐字写了两遍、`tests/fixtures.py` 越过了自己
+# 定的 200 行，两者都能一路全绿。没有静态检查时，「代码质量」只是一句话。
+#
+# 不打包发布，所以这里只有工具配置：`[project]` 段故意不写。
+[tool.ruff]
+# 与 CI 的 setup-python 对齐：本地/CI 同一台解释器版本，判定才不漂。
+target-version = "py312"
+line-length = 120
+# 版本区间 = 判定不随工具升级而漂移；CI 与本地装同一个区间
+required-version = ">=0.17,<0.18"
+# 缓存与虚拟环境不属于载荷。
+extend-exclude = [".ruff_cache", "__pycache__", ".git"]
+
+[tool.ruff.lint]
+# 收窄到「真会出错的」，不用 select = ["ALL"]：
+# ALL 会把 RUF001–003（中文标点被判成歧义字符）和一堆文体偏好算成 error，
+# 一千多条噪声之后，门禁就变成「调规则」而不是「改代码」。
+select = [
+    "E4",   # import 相关错误
+    "E7",   # 语句级错误
+    "E9",   # 运行时错误（未定义名、语法）
+    "F",    # pyflakes
+    "B",    # bugbear（可变默认值、循环变量泄漏等）
+    "SIM",  # 可简化/可疑的控制流
+    "ISC",  # 隐式字符串拼接
+    "RUF",  # ruff 自己的确定性检查
+    "PLW",  # pylint 里少数「必然是 bug」的项（如 subprocess 缺 check）
+]
+# 中文正文必然含全角标点：这三条只在中英混排时才有意义，忽略。
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.isort]
+# 与既有 import 风格一致：先标准库，再一次本地相对导入。
+combine-as-imports = true

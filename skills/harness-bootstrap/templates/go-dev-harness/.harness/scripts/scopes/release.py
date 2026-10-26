@@ -1,7 +1,7 @@
 """release: 发布与观察（artifacts/release.json）：版本一致、回滚预案、冒烟、观察窗。"""
 from pathlib import Path
 
-from .common import add, as_dict, check_fields, load_json, num, quality_get, text, warn_example
+from .common import add, as_dict, check_fields, load_json, number, quality_get, text, warn_example
 
 NAME = "release"
 REL = ".harness/deliverables/artifacts/release.json"
@@ -46,9 +46,12 @@ def check_smoke(data, quality, findings):
     total = smoke.get("total")
     passed = smoke.get("passed")
     minimum = quality_get(quality, "release.smoke_min_total", 8)
-    if not (num(total) and num(passed)):
+    total_n = number(total)
+    passed_n = number(passed)
+    if total_n is None or passed_n is None:
         add(findings, "ERROR", NAME, REL, 1, "REL003", "smoke 需要 total 与 passed 两个数字")
         return
+    total, passed = total_n, passed_n
     if total < minimum:
         add(findings, "ERROR", NAME, REL, 1, "REL003",
             f"冒烟用例 {total} 条，少于要求的 {minimum}")
@@ -63,15 +66,16 @@ def check_observe(data, quality, findings):
     min_window = quality_get(quality, "release.observe_min_window_min", 30)
     max_error_rate = quality_get(quality, "release.max_error_rate", 1.0)
     max_p99 = quality_get(quality, "release.max_p99_ms", 300)
-    if not num(window) or window < min_window:
+    window_n = number(window)
+    if window_n is None or window_n < min_window:
         add(findings, "ERROR", NAME, REL, 1, "REL004",
             f"观察窗 {window!r} 分钟，少于要求的 {min_window}")
-    error_rate = observe.get("error_rate")
-    if not num(error_rate) or error_rate > max_error_rate:
+    error_rate = number(observe.get("error_rate"))
+    if error_rate is None or error_rate > max_error_rate:
         add(findings, "ERROR", NAME, REL, 1, "REL004",
             f"错误率 {error_rate!r}% 超过阈值 {max_error_rate}%")
-    p99 = observe.get("p99_ms")
-    if not num(p99) or p99 > max_p99:
+    p99 = number(observe.get("p99_ms"))
+    if p99 is None or p99 > max_p99:
         add(findings, "ERROR", NAME, REL, 1, "REL004",
             f"p99 {p99!r}ms 超过阈值 {max_p99}ms")
 
@@ -81,9 +85,9 @@ def check_gray(data, findings):
     if not gray:
         add(findings, "ERROR", NAME, REL, 1, "REL005", "缺 gray：放量比例与持续时间必须显式声明")
         return
-    percent = gray.get("percent")
-    duration = gray.get("duration_min")
-    if not num(percent) or not 0 < percent <= 100:
+    percent = number(gray.get("percent"))
+    duration = number(gray.get("duration_min"))
+    if percent is None or not 0 < percent <= 100:
         add(findings, "ERROR", NAME, REL, 1, "REL005", f"gray.percent = {percent!r}，应在 (0, 100]")
-    if not num(duration) or duration <= 0:
+    if duration is None or duration <= 0:
         add(findings, "ERROR", NAME, REL, 1, "REL005", f"gray.duration_min = {duration!r}，必须为正")

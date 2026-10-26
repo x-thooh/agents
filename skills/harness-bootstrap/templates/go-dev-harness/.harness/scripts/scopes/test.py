@@ -11,7 +11,7 @@ from .common import (
     go_package,
     go_src,
     load_json,
-    num,
+    number,
     quality_get,
     rel_to,
     warn_example,
@@ -40,9 +40,9 @@ def run(ctx, findings):
 def check_coverage(data, quality, findings):
     coverage = as_dict(data.get("coverage"))
     for key, threshold_key in (("total", "total_min"), ("core", "core_min")):
-        value = coverage.get(key)
+        value = number(coverage.get(key))
         minimum = quality_get(quality, f"coverage.{threshold_key}", 0)
-        if not num(value):
+        if value is None:
             add(findings, "ERROR", NAME, REL, 1, "TST002", f"coverage.{key} 必须是数字")
             continue
         if value < minimum:
@@ -61,9 +61,9 @@ def check_benchmarks(data, findings):
         if not isinstance(bench, dict):
             add(findings, "ERROR", NAME, REL, 1, "TST003", "benchmarks 条目必须是对象")
             continue
-        current = bench.get("ns_per_op")
-        baseline = bench.get("baseline_ns_per_op")
-        if not (num(current) and num(baseline)) or baseline <= 0:
+        current = number(bench.get("ns_per_op"))
+        baseline = number(bench.get("baseline_ns_per_op"))
+        if current is None or baseline is None or baseline <= 0:
             add(findings, "ERROR", NAME, REL, 1, "TST003",
                 f"benchmark {bench.get('name', '?')} 缺 ns_per_op / baseline_ns_per_op")
             continue

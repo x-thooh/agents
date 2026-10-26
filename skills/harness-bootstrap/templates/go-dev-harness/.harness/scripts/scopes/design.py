@@ -1,7 +1,7 @@
 """design: 方案证据（artifacts/design.json）：包职责、依赖无环、被否方案、失败模式。"""
 from pathlib import Path
 
-from .common import add, as_dict, as_list, check_fields, has_cycle, load_json, text, warn_example
+from .common import add, as_list, check_fields, has_cycle, load_json, text, warn_example
 
 NAME = "design"
 REL = ".harness/deliverables/artifacts/design.json"

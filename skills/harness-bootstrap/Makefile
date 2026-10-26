@@ -5,6 +5,8 @@
 #
 # 边界：check 不依赖 Go 工具链（verify 只做词法检查），
 #       需要编译器的检查单独放 check-sample，且缺工具链时报错而不是静默跳过。
+#       Python 静态检查（ruff）是 check-all 的一部分：本 skill 的自身门禁只审 SKILL.md
+#       与派生物，审不到自己写的 Python——实测代价是同一段 if 被逐字写了两遍。
 
 PY ?= python3
 GO ?= go
@@ -12,11 +14,11 @@ TPL := templates
 DELIVERY := $(TPL)/delivery-harness
 GODEV := $(TPL)/go-dev-harness
 
-.PHONY: help check check-all check-json check-skill fixtures check-templates check-boot selftest check-sample check-strict lint guide code-index
+.PHONY: help check check-all check-json check-skill fixtures check-templates check-boot selftest check-sample check-strict lint lint-python guide code-index
 
 help:
 	@echo "make check            核心门禁：技能自审 + fixture 断言表 + 两套模板 verify + 两套反向测试（不需要 Go）"
-	@echo "make check-all        全部：check + check-strict（不需要 Go）。CI 跑的就是这一条"
+	@echo "make check-all        全部：check + check-strict + check-boot + lint-python（不需要 Go）。CI 跑的就是这一条"
 	@echo "make check-json        只出三段 JSON：技能自审 + 两套模板（不含 fixtures/selftest/strict）"
 	@echo "make check-skill       只跑 scripts/audit.py"
 	@echo "make fixtures          全部反向 fixture 逐条比对期望的 code"
@@ -26,6 +28,7 @@ help:
 	@echo "make check-strict      断言 --strict 能拦下示例数据（模板自身的不变量）"
 	@echo "make check-sample      样例 Go 模块 vet + test（需要 Go 工具链）"
 	@echo "make lint              工具层：golangci-lint 跑样例模块（需要 Go 工具链）"
+	@echo "make lint-python       工具层：ruff 检查全部 Python（需要 ruff；配置在 pyproject.toml）"
 	@echo "make guide             重新生成两套 codebase-guide/index.json"
 	@echo "make code-index        重新生成 references/code-index.md（全部 code 清单）"
 
@@ -36,8 +39,8 @@ help:
 check: check-skill fixtures check-templates selftest
 	@echo "== check 通过：技能自审 + fixture 断言表 + 两套模板 + 两套反向测试 =="
 
-check-all: check check-strict check-boot
-	@echo "== check-all 通过：以上 + strict 不变量 + 模板装上后的行为 =="
+check-all: check check-strict check-boot lint-python
+	@echo "== check-all 通过：以上 + strict 不变量 + 模板装上后的行为 + Python 静态检查 =="
 
 check-json:
 	@$(PY) scripts/audit.py --json
@@ -64,6 +67,17 @@ selftest:
 	@$(PY) $(GODEV)/tests/reverse.py
 	@$(PY) $(GODEV)/tests/commit_msg.py
 	@$(PY) $(DELIVERY)/tests/commit_msg.py
+
+# Python 静态检查。为什么进 check-all 而不是「可选工具」：它抓到的是真缺陷
+# （重复分支、未使用导入、漏了 check 的 subprocess、集合里的隐式拼接），
+# 而不是文体偏好——不可选的检查才叫门禁。缺 ruff 时报错而不是静默跳过，
+# 否则「本地没装」会静默退化成「没有这条门禁」。
+# 规则集收窄在 pyproject.toml：select = ALL 会把中文标点算成 error，一千多条噪声
+# 之后门禁就变成调规则。版本区间也写在那里，避免判定随 ruff 升级而漂移。
+lint-python:
+	@$(PY) -c 'import ruff' 2>/dev/null || python3 -m ruff --version >/dev/null 2>&1 || { \
+	  echo "lint-python 需要 ruff：python3 -m pip install 'ruff>=0.17,<0.18'" >&2; exit 1; }
+	@$(PY) -m ruff check .
 
 # 工具层不在这里重写一遍：委托给模板自己的 lint 目标，
 # go_src 从模板的 config.json 读，路径不写第二份。

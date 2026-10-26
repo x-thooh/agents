@@ -71,10 +71,10 @@ def run(ctx, findings):
 
     env = as_dict(data.get("env"))
     check_fields(env, ("integration", "test"), NAME, rel, findings, "INT003", "env.")
-    if env.get("integration") != env.get("test"):
-        if not text(env.get("diff")) or env.get("diff_approved") is not True:
-            add(findings, "ERROR", NAME, rel, 1, "INT003",
-                "联调与测试环境版本不一致，且没有书面差异或批准")
+    if env.get("integration") != env.get("test") and (
+            not text(env.get("diff")) or env.get("diff_approved") is not True):
+        add(findings, "ERROR", NAME, rel, 1, "INT003",
+            "联调与测试环境版本不一致，且没有书面差异或批准")
 
     changes = as_list(data.get("changes"))
     for change in changes:

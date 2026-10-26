@@ -141,7 +141,7 @@ def run_case(fixture, extra):
         "--json",
         *extra,
     ]
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    proc = subprocess.run(cmd, check=False, capture_output=True, text=True)
     if not proc.stdout.strip():
         raise RuntimeError(f"audit 没输出 JSON（fixture={fixture}）：{proc.stderr.strip()}")
     return json.loads(proc.stdout)
@@ -158,13 +158,10 @@ def check_coverage():
     """
     by_module = declared_codes()
     if not by_module:
-        return ["没识别出任何 scope 模块（需同时有 `NAME` 常量与 `run(` 函数）——"
-                "提取器无从谈起，不能当通过"]
+        return [("没识别出任何 scope 模块（需同时有 `NAME` 常量与 `run(` 函数）——"
+                 "提取器无从谈起，不能当通过")]
     out = []
     empty = sorted(name for name, codes in by_module.items() if not codes)
-    if empty:
-        out.append("这些 scope 模块没抽出任何 code（提取器对它们失效，不是它们没有 code）："
-                   + " ".join(empty))
     if empty:
         out.append("这些 scope 模块没抽出任何 code（提取器对它们失效，不是它们没有 code）："
                    + " ".join(empty))

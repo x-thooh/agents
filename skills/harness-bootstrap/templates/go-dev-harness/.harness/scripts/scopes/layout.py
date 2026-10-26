@@ -107,7 +107,7 @@ def check_package_comment(root, src, findings):
             cursor -= 1
         if block and PACKAGE_COMMENT.match(block[-1]):
             add(findings, "ERROR", NAME, rel_to(root, path), pkg_idx + 1, "LAY010",
-                f"包注释与 package 子句之间有空行：godoc 不会把它算作包注释（要贴着写）")
+                "包注释与 package 子句之间有空行：godoc 不会把它算作包注释（要贴着写）")
 
 
 def check_gomod(gomod, rel_src, quality, findings):

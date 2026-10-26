@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 class Finding:
-    __slots__ = ("severity", "scope", "path", "line", "code", "message")
+    __slots__ = ("code", "line", "message", "path", "scope", "severity")
 
     def __init__(self, severity, scope, path, line, code, message):
         self.severity = severity
@@ -93,10 +93,7 @@ def check_fields(obj, required, scope, path, findings, code, prefix=""):
             ok = False
             continue
         value = obj[key]
-        if isinstance(value, str) and not value.strip():
-            add(findings, "ERROR", scope, path, 1, code, f"{prefix}{key} 不能为空")
-            ok = False
-        elif isinstance(value, list) and not value:
+        if (isinstance(value, str) and not value.strip()) or (isinstance(value, list) and not value):
             add(findings, "ERROR", scope, path, 1, code, f"{prefix}{key} 不能为空")
             ok = False
     return ok
@@ -228,7 +225,7 @@ def git_clean(root, targets=()):
 
     def git(*args):
         return subprocess.run(
-            ["git", "-C", str(root), *args], capture_output=True, text=True
+            ["git", "-C", str(root), *args], check=False, capture_output=True, text=True
         )
 
     inside = git("rev-parse", "--is-inside-work-tree")
