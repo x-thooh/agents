@@ -48,20 +48,21 @@ def run(ctx, findings):
         findings.append(Finding("ERROR", NAME, first, "FM005", "缺少 description 字段"))
     else:
         desc = field_value(fields["description"])
-        if not desc.strip():
-            findings.append(Finding("ERROR", NAME, fields["description"]["line"],
-                                    "FM005", "description 为空"))
-        elif len(desc) > 1024:
-            findings.append(Finding("ERROR", NAME, fields["description"]["line"],
-                                    "FM006", f"description 超长 {len(desc)} > 1024"))
-
         where = fields["description"]["line"]
-        if not any(t in desc for t in TRIGGER_MARKERS):
-            findings.append(Finding(
-                "ERROR", NAME, where, "FM009",
-                "description 没有触发条件（用于/适用于/使用时/Use when）——读的人不知道何时唤起它"))
-        hits = [p for p in PROCESS_MARKERS if p in desc]
-        if hits:
-            findings.append(Finding(
-                "ERROR", NAME, where, "FM008",
-                f"description 在总结流程 {hits}——读了流程摘要的 agent 会照摘要做而不读正文；只写触发条件与症状"))
+        if not desc.strip():
+            # 空值一个就够。再加一条 FM009（没有触发条件）是把同一个原因报两遍——
+            # 「没有触发条件」是因为它什么都没有，不是因为写法漏了触发语。
+            findings.append(Finding("ERROR", NAME, where, "FM005", "description 为空"))
+        else:
+            if len(desc) > 1024:
+                findings.append(Finding("ERROR", NAME, where,
+                                        "FM006", f"description 超长 {len(desc)} > 1024"))
+            if not any(t in desc for t in TRIGGER_MARKERS):
+                findings.append(Finding(
+                    "ERROR", NAME, where, "FM009",
+                    "description 没有触发条件（用于/适用于/使用时/Use when）——读的人不知道何时唤起它"))
+            hits = [p for p in PROCESS_MARKERS if p in desc]
+            if hits:
+                findings.append(Finding(
+                    "ERROR", NAME, where, "FM008",
+                    f"description 在总结流程 {hits}——读了流程摘要的 agent 会照摘要做而不读正文；只写触发条件与症状"))
