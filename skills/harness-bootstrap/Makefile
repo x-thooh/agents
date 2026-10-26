@@ -12,22 +12,30 @@ TPL := templates
 DELIVERY := $(TPL)/delivery-harness
 GODEV := $(TPL)/go-dev-harness
 
-.PHONY: help check check-json check-skill fixtures check-templates selftest check-sample check-strict lint guide
+.PHONY: help check check-all check-json check-skill fixtures check-templates selftest check-sample check-strict lint guide
 
 help:
-	@echo "make check            全部门禁：技能自审 + fixture 断言表 + 两套模板 + 两套反向测试（不需要 Go）"
-	@echo "make check-json       同上，输出 JSON"
-	@echo "make check-skill      只跑 scripts/audit.py"
-	@echo "make fixtures         全部反向 fixture 逐条比对期望的 code"
-	@echo "make check-templates  只跑两套模板的 .harness/scripts/verify.py"
-	@echo "make selftest         只跑两套 tests/reverse.py + 提交消息检查"
-	@echo "make check-sample     样例 Go 模块 vet + test（需要 Go 工具链）"
-	@echo "make lint             工具层：golangci-lint 跑样例模块（需要 Go 工具链）"
-	@echo "make check-strict     断言 --strict 能拦下示例数据（模板自身的不变量）"
-	@echo "make guide            重新生成两套 codebase-guide/index.json"
+	@echo "make check            核心门禁：技能自审 + fixture 断言表 + 两套模板 verify + 两套反向测试（不需要 Go）"
+	@echo "make check-all        全部：check + check-strict（不需要 Go）。CI 跑的就是这一条"
+	@echo "make check-json        同 check，输出 JSON（每段一份，不合并）"
+	@echo "make check-skill       只跑 scripts/audit.py"
+	@echo "make fixtures          全部反向 fixture 逐条比对期望的 code"
+	@echo "make check-templates   只跑两套模板的 .harness/scripts/verify.py"
+	@echo "make selftest          只跑两套 tests/reverse.py + 提交消息检查"
+	@echo "make check-strict      断言 --strict 能拦下示例数据（模板自身的不变量）"
+	@echo "make check-sample      样例 Go 模块 vet + test（需要 Go 工具链）"
+	@echo "make lint              工具层：golangci-lint 跑样例模块（需要 Go 工具链）"
+	@echo "make guide             重新生成两套 codebase-guide/index.json"
 
+# 两级：check 是跑得快的那一半，check-all 是全部门禁。
+# 为什么不是「check 就是全部」：跑完一条改就要等 strict 的两个模板全量，
+# 而 strict 验的是模板不变量，与本 skill 正文改动无关。分成两条，日常快、提交全。
+# 但**两地跑的必须是同一条**：CI 用 check-all，你在本地提交前也用它。
 check: check-skill fixtures check-templates selftest
 	@echo "== check 通过：技能自审 + fixture 断言表 + 两套模板 + 两套反向测试 =="
+
+check-all: check check-strict
+	@echo "== check-all 通过：以上 + strict 不变量 =="
 
 check-json:
 	@$(PY) scripts/audit.py --json

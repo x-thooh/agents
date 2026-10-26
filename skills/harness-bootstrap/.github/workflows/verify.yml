@@ -32,12 +32,10 @@ jobs:
 
       # 本 job 故意不装 Go：verify 只做词法检查，不依赖工具链。
       # 「不需要 Go」这句话在这里被真实执行，而不是写在 README 里。
-      - name: make check
-        run: make check
-
-      # 断言 --strict 真的在生效：模板自带 example: true，strict 必须判 ERROR。
-      - name: make check-strict
-        run: make check-strict
+      # 跑 check-all，不是 check + check-strict 两条：本地与 CI 必须是**同一条命令**，
+      # 否则「本地绿、CI 红」只是时间问题（Makefile 头注）。
+      - name: make check-all
+        run: make check-all
 
   sample:
     name: 样例 Go 模块

@@ -32,18 +32,22 @@ harness-bootstrap/
 这个仓库自己也是一份 harness——它管别人怎么建 harness，所以得先过自己的关。命令只从 `make` 走：
 
 ```bash
-make check          # 技能自审 + 两套模板 verify + 两套反向测试（不需要 Go）
+make check          # 核心：技能自审 + fixture 断言表 + 两套模板 verify + 两套反向测试
+make check-all      # 全部：check + check-strict。**提交前与 CI 都跑这一条**
 make check-strict   # 断言 --strict 能拦下模板自带的示例数据
 make check-sample   # 样例 Go 模块 vet + test（需要 Go 工具链）
 make lint           # 工具层：golangci-lint（需要 Go 工具链）
 make guide          # 重新生成两套 codebase-guide/index.json
 ```
 
+两级不是为了宽松，是为了「改一行还能快跑」：`check` 秒级，`check-all` 多两条模板不变量。
+但**提交前和 CI 必须是同一条**——否则「本地绿、CI 红」只是时间问题。
+
 `.github/workflows/verify.yml` 跑的是同一串命令。pre-commit 能被 `git commit --no-verify` 绕过，
 CI 不能——这是 CI 唯一的职责。它**不新增断言**：目录齐不齐由模板的 `GATE00x` 判，
 索引对不对由 `GUIDE001` 判；同一个断言写两处，就有两个地方会漂。CI 的两个 job 按依赖分：
 `gate` 故意不装 Go（「verify 只做词法检查」这句话在那里被真实执行），`sample` 装 Go 跑
-`check-sample` 与 `lint`。
+`check-sample` 与 `lint`。CI 的 `gate` job 跑 `make check-all`，与本地的提交前命令一致。
 
 反向测试里有两处需要说清，否则下一个人会以为门禁在偷工：
 
@@ -94,5 +98,5 @@ audit.py 不判语义一致性（机器判不了）；语义项在 `SKILL.md` §
 
 ## 维护
 
-改 SKILL.md：前后都跑 `make check`（0 ERROR 才算改完）；正文改动后按 §十 验收清单人工过一遍；概念变了先改 `SKILL.md` 再改用例，别反过来。
+改 SKILL.md：前后都跑 `make check-all`（0 ERROR 才算改完）；正文改动后按 §十 验收清单人工过一遍；概念变了先改 `SKILL.md` 再改用例，别反过来。
 改模板：先跑 `make check` 立基准，改完再跑，数字必须能解释——变了就是变了，不许「看起来还绿」。

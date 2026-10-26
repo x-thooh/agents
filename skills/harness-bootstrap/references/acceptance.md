@@ -42,6 +42,7 @@
 
 ### 目标仓库的 discovery 块（`.harness/INDEX.md` 顶部）
 
+```yaml
 # 不声明 conformance 级别：只弱借用「声明即承诺」，不取 UHP 的累计分级
 rules_version: YYYY-MM-DD     # 日期版本，不是 semver；90 天保质期
 scopes_live: [harness, folders, schema, links]   # 已上线断言域，与 verify 的 scope 一一对应
