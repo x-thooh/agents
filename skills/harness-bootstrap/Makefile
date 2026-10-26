@@ -17,7 +17,7 @@ GODEV := $(TPL)/go-dev-harness
 help:
 	@echo "make check            核心门禁：技能自审 + fixture 断言表 + 两套模板 verify + 两套反向测试（不需要 Go）"
 	@echo "make check-all        全部：check + check-strict（不需要 Go）。CI 跑的就是这一条"
-	@echo "make check-json        同 check，输出 JSON（每段一份，不合并）"
+	@echo "make check-json        只出三段 JSON：技能自审 + 两套模板（不含 fixtures/selftest/strict）"
 	@echo "make check-skill       只跑 scripts/audit.py"
 	@echo "make fixtures          全部反向 fixture 逐条比对期望的 code"
 	@echo "make check-templates   只跑两套模板的 .harness/scripts/verify.py"

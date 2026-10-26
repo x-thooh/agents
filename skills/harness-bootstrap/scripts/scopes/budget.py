@@ -8,7 +8,7 @@
 scopes 自己长多大没人管。规矩没有数值就是愿望。
 
 阈值为什么是 150/200：
-  200 是本仓库既有的上限（`layout.LIMIT`），不另发明新数；
+  200 是本仓库既有的上限，不另发明新数（现住 `common.CODE_LIMIT`，全仓一处）；
   150 是它的四分之三，与文档的 80/100（提前量 20%）同构——先给一段准备拆的余量，
   不要等到撞线才靠删内容腾地方。
   落地时三个文件正贴着这条线（audit.py 150、codeindex.py 149、layout_parity.py 149），
@@ -19,14 +19,12 @@ scopes 自己长多大没人管。规矩没有数值就是愿望。
 """
 import os
 
-from .common import Finding
+from .common import CODE_LIMIT, CODE_WARN, Finding, line_count
 
 NAME = "budget"
 
-WARN_AT = 150  # 准备拆
-LIMIT = 200    # 必须拆
-
-SKIP = {"audit.py"}  # 调度器由 LAYOUT001 管，见文件头
+# 数值不在这里：CODE_WARN / CODE_LIMIT 住在 common.py（全仓唯一事实源）。
+# 调度器也照这条线——它只该负责调度，但「多大算大」是同一把尺子。
 SKIP_DIRS = {"__pycache__"}
 
 
@@ -40,11 +38,9 @@ def _files(root):
                 continue
             full = os.path.join(dirpath, name)
             rel = os.path.relpath(full, root)
-            if rel in SKIP:
-                continue
             try:
                 with open(full, encoding="utf-8") as fh:
-                    n = len(fh.read().split("\n"))
+                    n = line_count(fh.read())
             except OSError as exc:
                 unreadable.append(f"{rel}（{exc.strerror}）")
                 continue
@@ -68,15 +64,15 @@ def run(ctx, findings):
         ctx.setdefault("not_applicable", []).append(f"{NAME}(scripts/ 下没有 .py，判不了)")
         return
     for rel, n in files:
-        if n > LIMIT:
+        if n > CODE_LIMIT:
             findings.append(Finding(
                 "ERROR", NAME, 0, "BUDGET001",
-                f"{n} 行 > {LIMIT} 行上限：必须拆——按职责分文件，"
+                f"{n} 行 > {CODE_LIMIT} 行上限：必须拆——按职责分文件，"
                 f"别等它长成那个「只会变大的单文件」",
                 path=f"scripts/{rel}"))
-        elif n > WARN_AT:
+        elif n > CODE_WARN:
             findings.append(Finding(
                 "WARN", NAME, 0, "BUDGET001",
-                f"{n} 行 > {WARN_AT} 行：准备拆——还有 {LIMIT - n} 行余地，"
-                f"现在就把职责边界分出去，别等撞到 {LIMIT} 行再靠删注释腾地方",
+                f"{n} 行 > {CODE_WARN} 行：准备拆——还有 {CODE_LIMIT - n} 行余地，"
+                f"现在就把职责边界分出去，别等撞到 {CODE_LIMIT} 行再靠删注释腾地方",
                 path=f"scripts/{rel}"))

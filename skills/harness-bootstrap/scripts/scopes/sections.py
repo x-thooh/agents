@@ -22,14 +22,12 @@ SECT001 判的是 `##` 节，不是整文件行数：整篇可以很长（它是
 import os
 import re
 
-from .common import Finding
+from .common import DOC_LIMIT, DOC_WARN, Finding, line_count
 
 NAME = "sections"
 
-WARN_AT = 80  # 准备拆。留 20 行余地：撞线前就该动手。
-LIMIT = 100   # 必须拆。单节 / 单文件两个对象共用这两个数。
-
-# 动任一常量=动额度，要单独一轮并在 decisions 写明理由（§二.5 额度只减不增）。
+# 数值不在这里：DOC_WARN / DOC_LIMIT 住在 common.py（全仓唯一事实源）。
+# 动额度要单独一轮并在 decisions 写明理由（§二.5 额度只减不增）。
 
 HEAD = re.compile(r"^(#{1,2})\s+\S")
 
@@ -57,16 +55,16 @@ def run(ctx, findings):
         for k, (idx, _level, title) in enumerate(heads):
             end = heads[k + 1][0] if k + 1 < len(heads) else len(lines)
             span = end - idx
-            if span > LIMIT:
+            if span > DOC_LIMIT:
                 findings.append(Finding(
                     "ERROR", NAME, idx + 1, "SECT001",
-                    f"「{title}」{span} 行 > {LIMIT} 行上限：必须拆——细节外置到 references/，"
+                    f"「{title}」{span} 行 > {DOC_LIMIT} 行上限：必须拆——细节外置到 references/，"
                     f"本节只留判据与链接（不是提限；提限要单独一轮并写明谁批的）"))
-            elif span > WARN_AT:
+            elif span > DOC_WARN:
                 findings.append(Finding(
                     "WARN", NAME, idx + 1, "SECT001",
-                    f"「{title}」{span} 行 > {WARN_AT} 行：准备拆——还有 {LIMIT - span} 行余地，"
-                    f"现在就把细节外置到 references/，别等撞到 {LIMIT} 行再靠删内容腾地方"))
+                    f"「{title}」{span} 行 > {DOC_WARN} 行：准备拆——还有 {DOC_LIMIT - span} 行余地，"
+                    f"现在就把细节外置到 references/，别等撞到 {DOC_LIMIT} 行再靠删内容腾地方"))
     else:
         ctx.setdefault("not_applicable", []).append(NAME)
 
@@ -85,7 +83,7 @@ def run(ctx, findings):
         path = os.path.join(ref_dir, name)
         try:
             with open(path, encoding="utf-8") as fh:
-                n = len(fh.read().split("\n"))
+                n = line_count(fh.read())
         except OSError as exc:
             # 断链、是目录、编码外的乱码：这条规则判不了。报错，别当 0 条发现。
             findings.append(Finding(
@@ -93,15 +91,15 @@ def run(ctx, findings):
                 f"读不了该文件（{exc.strerror}）：上限没法判，不能当通过——修文件或删条目",
                 path=f"references/{name}"))
             continue
-        if n > LIMIT:
+        if n > DOC_LIMIT:
             findings.append(Finding(
                 "ERROR", NAME, 0, "SECT002",
-                f"共 {n} 行 > {LIMIT} 行上限：必须拆——按主题分成多个文件，"
+                f"共 {n} 行 > {DOC_LIMIT} 行上限：必须拆——按主题分成多个文件，"
                 f"别把手册整本搬到 references/ 里当第二个手册",
                 path=f"references/{name}"))
-        elif n > WARN_AT:
+        elif n > DOC_WARN:
             findings.append(Finding(
                 "WARN", NAME, 0, "SECT002",
-                f"共 {n} 行 > {WARN_AT} 行：准备拆——还有 {LIMIT - n} 行余地，按主题预分，"
-                f"别等撞到 {LIMIT} 行再拆",
+                f"共 {n} 行 > {DOC_WARN} 行：准备拆——还有 {DOC_LIMIT - n} 行余地，按主题预分，"
+                f"别等撞到 {DOC_LIMIT} 行再拆",
                 path=f"references/{name}"))

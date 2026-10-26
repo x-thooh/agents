@@ -12,7 +12,7 @@ python3 tests/fixtures.py                 # 反向断言 + 覆盖闸（每个 co
 python3 scripts/audit.py --skill-dir tests/fixtures/ok-minimal   # 正对照：0 ERROR 0 WARN
 ```
 
-`make check-all` 是本文件四段命令的超集；上面单独列出，是为了改一处时不必等全量。
+`make check-all` 包含上面这些命令，另加两套模板的 `--strict` 不变量；单独列出那几条，是为了改一处时不必等全量。
 
 **期望清单只有一处**：`tests/fixtures.py` 的 `CASES` 表。它逐条写明每个 fixture 该报哪个 code，
 跑 `make check-all` 时一起执行。这里不再抄一份——抄出来的第二份表迟早和第一份不一致，

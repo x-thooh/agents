@@ -73,6 +73,25 @@ def as_int(digits, default=0):
         return default
 
 
+# ── 额度常量：全仓唯一事实源。references/doc-budgets.md 只解释语义，不写数字 ──
+# 文档：单节 / 参考材料单文件。撞 DOC_WARN 准备拆，超 DOC_LIMIT 必须拆。
+DOC_WARN, DOC_LIMIT = 80, 100
+# 代码：scripts/ 下每个文件（含调度器）。150 是 200 的四分之三，留准备拆的余量。
+CODE_WARN, CODE_LIMIT = 150, 200
+
+
+def line_count(text):
+    """按「编辑器里的行数」数行，等价于 wc -l（文件以换行结尾时）。
+
+    为什么要专门一个函数：len(text.split("\\n")) 在文件以换行结尾时会多算 1，
+    于是「80 行上限」实际在 wc 的 79 就触发，而报错里打印的 N 也和编辑器对不上。
+    同一个词「行」被三种算法解释时，读者第一个反应是不信这个门禁。
+    """
+    if not text:
+        return 0
+    return text.count("\n") if text.endswith("\n") else text.count("\n") + 1
+
+
 def build_sections(lines):
     """letter -> {"line": 标题行, "subs": {条目号}}，支持 §X 与 §X.Y。"""
     secs = {}
