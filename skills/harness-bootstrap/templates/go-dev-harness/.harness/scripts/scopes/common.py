@@ -2,6 +2,7 @@
 import datetime
 import json
 import re
+import subprocess
 from pathlib import Path
 
 
@@ -317,3 +318,40 @@ def check_lessons(content, scope, path, findings, code):
         for key in LESSON_KEYS:
             if f"{key}:" not in body and f"{key}：" not in body:
                 add(findings, "ERROR", scope, path, 1, code, f"{title} 缺「{key}」一段")
+
+
+# --- --fix 前置条件 ---------------------------------------------------------
+
+
+def git_clean(root, targets=()):
+    """`--fix` 的前置条件：在 git 仓库内，且**除目标文件外**工作区干净。
+
+    返回 None = 可以修；否则返回给人看的原因。
+
+    目标文件必须排除，有两个理由：
+      1. 派生数据的本地改动本来就是缺陷（GUIDE001 就是来抓它的），不算「你的工作」；
+      2. 「提交被拦 → 修 → 再提交」这条最自然的恢复路径，正好卡在目标文件是脏的。
+    没有回滚点就改文件比不改更坏：改坏了分不清哪部分是脚本干的。
+    """
+
+    def git(*args):
+        return subprocess.run(
+            ["git", "-C", str(root), *args], capture_output=True, text=True
+        )
+
+    inside = git("rev-parse", "--is-inside-work-tree")
+    if inside.returncode != 0 or inside.stdout.strip() != "true":
+        return "需要 git 仓库（没有回滚点就不许改文件）：先 git init 并提交一次"
+    # 只看 root 子树：harness 可能只是某个大仓库里的一个目录，
+    # 仓库别处的脏文件跟这次修复无关，不该拦。
+    pathspec = [".", *[f":!{target}" for target in targets]]
+    status = git("status", "--porcelain", "--", *pathspec)
+    if status.returncode != 0:
+        return f"git status 失败：{status.stderr.strip()}"
+    dirty = status.stdout.strip()
+    if dirty:
+        return (
+            "工作区不干净（`--fix` 会重写的派生文件除外），先提交或 stash——"
+            "否则修完分不清哪些是你改的、哪些是脚本改的\n" + dirty
+        )
+    return None

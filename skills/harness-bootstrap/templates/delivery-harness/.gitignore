@@ -1,0 +1,10 @@
+# verify 运行时产生（不写字节码更好，但别人跑起来拦不住）
+__pycache__/
+*.pyc
+
+# 失败过程留痕：SKILL.md §五 允许不入库（体积大、含临时路径）
+.harness/memory/trace/*
+!.harness/memory/trace/.gitkeep
+
+# Go 构建产物
+*.test

@@ -1,4 +1,4 @@
-.PHONY: init check check-json check-strict selftest
+.PHONY: init check check-json check-strict fix selftest
 
 init:
 	@git config core.hooksPath .harness/git-hooks
@@ -13,6 +13,9 @@ check-json:
 
 check-strict:
 	@python3 .harness/scripts/verify.py --strict
+
+fix:
+	@python3 .harness/scripts/verify.py --fix
 
 selftest:
 	@python3 tests/reverse.py

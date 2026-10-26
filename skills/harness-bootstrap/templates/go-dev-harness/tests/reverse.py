@@ -5,6 +5,7 @@ Usage: python3 tests/reverse.py
 Exit 0 only when the positive control and every reverse case pass.
 """
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -36,7 +37,7 @@ def append_text(root, rel, extra):
     path.write_text(path.read_text(encoding="utf-8") + extra, encoding="utf-8")
 
 
-def run_verify(root, scope=None):
+def run_verify(root, scope=None, fix=False):
     cmd = [
         sys.executable,
         str(root / ".harness/scripts/verify.py"),
@@ -46,7 +47,14 @@ def run_verify(root, scope=None):
     ]
     if scope:
         cmd.extend(["--scope", scope])
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    if fix:
+        cmd.append("--fix")
+    # 不写字节码：否则 __pycache__ 会让临时仓库变脏，--fix 的前置检查会误拒
+    env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
+    proc = subprocess.run(cmd, capture_output=True, text=True, env=env)
+    if not proc.stdout.strip() and proc.returncode == 2:
+        # 前置条件不满足时 verify 只往 stderr 说话，没有 JSON——这是契约的一部分
+        return {"findings": [], "summary": {"errors": 0, "warns": 0}, "stderr": proc.stderr}, 2
     try:
         payload = json.loads(proc.stdout)
     except json.JSONDecodeError:
@@ -55,6 +63,97 @@ def run_verify(root, scope=None):
         print(proc.stderr, file=sys.stderr)
         raise
     return payload, proc.returncode
+
+
+# --- --fix 相关 -------------------------------------------------------------
+
+GUIDE_REL = ".harness/codebase-guide/index.json"
+GATE_DELIVERABLE = ".harness/deliverables/artifacts/contract.json"
+
+
+def git_init(root):
+    """临时仓库自带身份，不依赖全局 git 配置。"""
+    ident = ["-c", "user.name=reverse", "-c", "user.email=reverse@example.invalid"]
+    for step in (["init", "-q", "-b", "main"], ["add", "-A"], ["commit", "-q", "-m", "base"]):
+        subprocess.run(["git", *ident, *step], cwd=root, check=True, capture_output=True)
+
+
+def mutate_guide(root):
+    """把索引清空：GUIDE001 必报，且能被 --fix 复原成正确内容。"""
+    edit_json(root, GUIDE_REL, lambda data: data.update({"entries": []}))
+
+
+def guide_entries(root):
+    return len(json.loads((root / GUIDE_REL).read_text(encoding="utf-8"))["entries"])
+
+
+def codes_of(payload):
+    return [finding["code"] for finding in payload["findings"]]
+
+
+def check_guide_regenerated():
+    """--fix 之后 GUIDE001 必须消失，且索引真的被重新生成了（不是只把报错藏掉）。"""
+
+    def check(root, payload):
+        if "GUIDE001" in codes_of(payload):
+            raise AssertionError(f"GUIDE001 仍在：{codes_of(payload)}")
+        if guide_entries(root) == 0:
+            raise AssertionError("索引没被重新生成（entries 仍为空）")
+
+    return check
+
+
+def check_still_broken(code, rel):
+    """非派生类 ERROR 必须原样留着，且不许脚本替人补文件。"""
+
+    def check(root, payload):
+        if code not in codes_of(payload):
+            raise AssertionError(f"期望 {code} 仍报，实际 {codes_of(payload)}")
+        if (root / rel).exists():
+            raise AssertionError(f"{rel} 被自动创建了：这不是派生数据，不该由脚本代劳")
+
+    return check
+
+
+def check_guide_matches_head():
+    """前置条件不满足时一个字都不许改：索引必须还等于 HEAD 里的版本。"""
+
+    def check(root, payload):
+        proc = subprocess.run(
+            ["git", "-C", str(root), "diff", "--quiet", "HEAD", "--", GUIDE_REL],
+            capture_output=True,
+            text=True,
+        )
+        if proc.returncode != 0:
+            raise AssertionError("索引被改动了：前置条件不满足时不该动手")
+
+    return check
+
+
+def check_guide_untouched():
+    """非 git 场景下没法用 git 比对，改看内容：mutate_guide 把 entries 清空了。"""
+
+    def check(root, payload):
+        if guide_entries(root) != 0:
+            raise AssertionError("索引被改动了：前置条件不满足时不该动手")
+
+    return check
+
+
+def fix_case(name, setup, expect_rc, check):
+    with tempfile.TemporaryDirectory(prefix="go-fix-") as tmp:
+        root = copy_root(tmp)
+        setup(root)
+        payload, rc = run_verify(root, fix=True)
+        if rc != expect_rc:
+            raise AssertionError(
+                f"{name}: 期望退出码 {expect_rc}，实际 {rc}；findings={codes_of(payload)}"
+            )
+        try:
+            check(root, payload)
+        except AssertionError as exc:
+            raise AssertionError(f"{name}: {exc}") from None
+        print(f"PASS {name}: exit {rc}")
 
 
 def positive_control():
@@ -195,6 +294,36 @@ def main():
             ".harness/codebase-guide/index.json",
             lambda data: data["entries"].pop(0),
         ),
+    )
+
+    # --- --fix：只修派生数据；不越界、不猜、没有回滚点就不动手 ---
+
+    fix_case(
+        "fix: 派生数据自动修好（GUIDE001，目标文件脏也能修）",
+        lambda root: (git_init(root), mutate_guide(root)),
+        0,
+        check_guide_regenerated(),
+    )
+    fix_case(
+        "fix: 不越界（GATE006 不代劳补文件）",
+        lambda root: ((root / GATE_DELIVERABLE).unlink(), git_init(root)),
+        1,
+        check_still_broken("GATE006", GATE_DELIVERABLE),
+    )
+    fix_case(
+        "fix: 无关文件脏时拒绝动手",
+        lambda root: (
+            git_init(root),
+            (root / "scratch.txt").write_text("wip\n", encoding="utf-8"),
+        ),
+        2,
+        check_guide_matches_head(),
+    )
+    fix_case(
+        "fix: 非 git 仓库拒绝动手",
+        mutate_guide,
+        2,
+        check_guide_untouched(),
     )
 
     print("ALL REVERSE TESTS PASSED")

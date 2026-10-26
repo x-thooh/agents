@@ -12,8 +12,13 @@ make init           # 装 pre-commit 钩子（一次；之后每次提交自动�
 make check          # 全量校验；0 ERROR 才可交付
 make check-json     # 原始 JSON，便于 CI
 make check-strict   # 示例数据 = ERROR；真实交付必须绿
+make fix            # 自动修派生数据（目前只有 GUIDE001 索引），修完重跑
 make selftest       # 每个 scope 的反向测试
 ```
+
+`--fix` 只动派生数据——重新生成一遍就能复原的东西。写证据、选版本、补理由一律不修：
+脚本代劳等于伪造。前置条件是 git 工作区除目标文件外干净，否则退出码 2 且一个字都不改；
+目标文件排除在外，所以「提交被拦 → `make fix` → 再提交」这条路走得通。
 
 ## 阶段路由
 
@@ -61,7 +66,7 @@ make selftest       # 每个 scope 的反向测试
 
 ```text
 AGENTS.md                        本文件（地图）
-Makefile                         make init / check / check-json / check-strict / selftest
+Makefile                         make init / check / check-json / check-strict / fix / selftest
 .harness/config.json             阈值（覆盖率、main 行数、MR、发布观察窗）+ go_src
 .harness/workflow/flow.json      阶段唯一事实源（顺序/门记录/交付物/scope）
 .harness/workflow/transitions.json  结果状态机
@@ -75,7 +80,7 @@ Makefile                         make init / check / check-json / check-strict /
 .harness/memory/lessons.md       踩坑记忆（现象/根因/断言）
 .harness/memory/decisions.md     全仓级决策
 .harness/codebase-guide/index.json  代码库索引（脚本生成，禁手改）
-.harness/scripts/verify.py       调度器（只做注册表与输出）
+.harness/scripts/verify.py       调度器（注册表 / 排序 / 退出码 / --fix 编排）
 .harness/scripts/scopes/         一个 scope 一个文件
 .harness/scripts/gen_guide.py    生成 codebase-guide/index.json
 .harness/git-hooks/pre-commit    提交前跑 check（make init 安装）

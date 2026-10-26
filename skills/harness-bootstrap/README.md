@@ -33,7 +33,8 @@ CI 不能——这是 CI 唯一的职责。它**不新增断言**：目录齐不
 | `templates/delivery-harness/` | 交付流程：需求 → 方案 → 开发 → 联调 → 自测 → CR → 自洽 → 提测 | 8 / 9 |
 | `templates/go-dev-harness/` | Golang 研发的日常：契约 → 设计 → 编码（形状/错误/并发）→ 测试 → 评审 → 发布 | 6 / 9 |
 
-两者都自带 `tests/reverse.py`（每个 scope 一条违规样本）和 `make check-strict`（示例数据判 ERROR），
+两者都自带 `tests/reverse.py`（每个 scope 一条违规样本，外加 `--fix` 的四条边界样本，各 15 例）、
+`make check-strict`（示例数据判 ERROR）和 `make fix`（只修派生数据，前置条件按目标文件排除）。
 阶段定义只在 `.harness/workflow/flow.json` 一处。它们与 `SKILL.md` 单向无关：模板不引用正文，
 正文也不描述模板的具体规则。
 

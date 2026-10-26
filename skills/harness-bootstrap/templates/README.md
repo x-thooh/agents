@@ -33,12 +33,14 @@ AGENTS.md                       地图：命令 + 硬规则（每条带 scope �
 .harness/git-hooks/             pre-commit：提交前跑 make check
 .harness/stack-templates/       门记录与产物骨架
 .harness/config.json            单一根配置（阈值、模块根）
-tests/reverse.py                每个 scope 一条违规样本
-Makefile                        init / check / check-json / check-strict / selftest
+tests/reverse.py                每个 scope 一条违规样本 + --fix 的四条边界样本
+Makefile                        init / check / check-json / check-strict / fix / selftest
 ```
 
-四条一致的约定：`example: true` 的示例数据在 `--strict` 下判 ERROR；退出码 0 = 无 ERROR；
-反向测试与 scope 一一对应，新增 scope 必须同批加一条；**阶段只写在 `flow.json`，脚本与散文都不许再抄一份**。
+五条一致的约定：`example: true` 的示例数据在 `--strict` 下判 ERROR；退出码 0 = 无 ERROR；
+反向测试与 scope 一一对应，新增 scope 必须同批加一条；**阶段只写在 `flow.json`，脚本与散文都不许再抄一份**；
+**`--fix` 只修派生数据**（可修清单与断言同住 `FIXERS`），且前置条件按目标文件排除——
+否则「提交被拦 → fix → 再提交」会被自己的前置条件卡死。
 
 ## 加第三套模板
 

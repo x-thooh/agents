@@ -267,3 +267,24 @@ def check_state(root, stage_ids, findings):
     if current != build_guide(root):
         add(findings, "ERROR", NAME, GUIDE, 1, "GUIDE001",
             "索引与磁盘不一致（人手改过或忘了重新生成）：跑 gen_guide.py")
+
+
+# --- 自动修（--fix）---------------------------------------------------------
+#
+# 只有派生数据能自动修：重新生成一遍就复原，不涉及任何判断。
+# 其余一概不修——写证据、选版本、补理由都要人做，脚本代劳等于伪造。
+# 修复函数与它负责的 code 放在同一个文件里：code 只有一处定义。
+
+
+def fix_guide(root):
+    """GUIDE001：重新生成 codebase-guide/index.json。"""
+    path = Path(root) / GUIDE
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(build_guide(root), ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return f"重新生成 {GUIDE}"
+
+
+FIXERS = {"GUIDE001": (fix_guide, GUIDE)}
