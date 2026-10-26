@@ -28,7 +28,6 @@ EXTRAS = {
     "templates": "生成物模板，拷进目标仓库用，不是参考文档",
     ".gitignore": "git 忽略清单",
     ".github": "CI 门禁（pre-commit 可被 --no-verify 绕过）",
-    ".workbuddy-ai": "工程层工作记忆",
     ".git": "版本库",
 }
 

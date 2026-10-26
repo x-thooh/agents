@@ -27,6 +27,20 @@ harness-bootstrap/
 「额外」不是随便加的：每一个都在 `scripts/scopes/struct.py` 的 `EXTRAS` 里带一句理由。
 `reference/`（单数）、`script/`、`agent/` 这类近似拼写一律按错报——名字一歪，谁也不知道该往哪找。
 
+### 分发边界：这个目录会被整体链接到四个 agent
+
+magpie 把本目录**整体软链**到 `~/.pi/agent/skills`、`~/.qoder/skills`、`~/.workbuddy-ai/skills`、
+`~/.lmstudio/skills`。所以「提交什么」与「分发出去什么」不是同一件事：
+
+| 目录 | 在 git 里 | 跟着软链分发 | 处理 |
+| --- | --- | --- | --- |
+| `.git/` | — | 是 | 已知污染：不在仓库内另写副本，接受它被看到 |
+| `.idea/`、`.ruff_cache/`、`__pycache__/` | 否 | 是 | 同上；`.gitignore` 只防提交，防不了软链 |
+| `.workbuddy-ai/` | 曾是 | 是 | **已移出**（存档在 `~/.agents/archive/`）：本地工作记忆不属于 skill 载荷 |
+
+规矩一句话：**只为本机服务的目录，不进这个目录。** 工程层工作记忆、会话日志、临时笔记一律放在仓库之外——
+`STRUCT001` 不再为 `.workbuddy-ai` 开豁免，它回来就会报错。
+
 ## 本仓库自己的门禁
 
 这个仓库自己也是一份 harness——它管别人怎么建 harness，所以得先过自己的关。命令只从 `make` 走：
