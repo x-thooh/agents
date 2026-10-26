@@ -1,8 +1,8 @@
-"""xrefdoc：reference/ 文件里的跨文件 §X.Y 引用（断言坑 #12：裸编号跨文件）。
+"""xrefdoc：references/ 文件里的跨文件 §X.Y 引用（断言坑 #12：裸编号跨文件）。
 
-SKILL.md 内部的 §X.Y 由 xref scope 管。reference/*.md 里的 §X.Y 指向 ../SKILL.md 的
+SKILL.md 内部的 §X.Y 由 xref scope 管。references/*.md 里的 §X.Y 指向 ../SKILL.md 的
 章节，audit.py 此前完全不读它们——Q7 事故（SKILL.md 写了不存在的 §七.10）若发生在
-reference/ 里会静默烂掉。
+references/ 里会静默烂掉。
 
 边界（如实）：这是**存在性检查**——答不了「重排后 §X.Y 是不是原来那一节」（#12
 原文：存在性检查答不了「是不是原来那一节」，重排同号静默指向别处仍属人判）。
@@ -16,7 +16,7 @@ from .common import CJK_NUM, Finding, as_int, build_sections
 
 NAME = "xrefdoc"
 
-REF_DIR = "reference"
+REF_DIR = "references"
 INTERNAL_XREF = re.compile(r"§([" + CJK_NUM + r"]+)(?:\.(\d+))?")
 
 # 两条报错共用的边界说明：存在性检查抓得到改号，抓不到重排同号。

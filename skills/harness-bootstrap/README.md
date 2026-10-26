@@ -4,9 +4,30 @@
 （workflow / specs / deliverables / tasks / memory / codebase-guide / scripts / git-hooks / stack-templates / config.json）。
 
 - 正文：`SKILL.md`（修改三段纪律、设计思想、UHP 六条原则与章节对照、DSH 三形状、五阶段、记忆树、断言规范、移植清单）
-- 自身门禁：`scripts/audit.py` + `tests/fixtures/`——审本 SKILL.md（frontmatter / bash 围栏 / 交叉引用 / 相对链接 / 基线记账 / 版本保质期 / 宿主实测 / 双向对账 / 规范用语 / 调度器体征）+ reference/*.md 里的跨文件 §X 引用（存在性），不依赖 git，不碰其他 skill；实现按 scope 分文件住 `scripts/scopes/`
-- `reference/`：SKILL.md 放不下也没必要放的东西（坑清单、笔记骨架、验收命令），按 §二.5 阈值外置，入口只留判据与链接
+- 自身门禁：`scripts/audit.py` + `tests/fixtures/`——审本 SKILL.md（frontmatter / bash 围栏 / 交叉引用 / 相对链接 / 基线记账 / 版本保质期 / 宿主实测 / 双向对账 / 规范用语 / 调度器体征 / 目录形状）+ references/*.md 里的跨文件 §X 引用（存在性），不依赖 git，不碰其他 skill；实现按 scope 分文件住 `scripts/scopes/`
+- `references/`：SKILL.md 放不下也没必要放的东西（坑清单、笔记骨架、验收命令），按 §二.5 阈值外置，入口只留判据与链接
 - 评测：`evals/`（skill-up 套件，custom local 引擎直连 magpie，脚本判分）——验「按 SKILL.md 干活」的行为，不验 SKILL.md 自身的文字合规
+
+## 目录形状
+
+标准四件照 skill 规范走，多出来的目录必须**声明理由**——没声明的目录会悄悄长成第二个入口，
+下一个人不知道该读哪个。这条由 `STRUCT001` 判，不是靠自觉：
+
+```
+harness-bootstrap/
+├── SKILL.md          标准：入口与元数据（必需）
+├── references/       标准：按需查的支撑文档，只放 .md，不建子目录（STRUCT002）
+├── scripts/          标准：可执行代码（audit.py + 一个 scope 一个文件）
+├── agents/           标准：子 Agent 定义（本 skill 目前没有，不建空目录）
+├── README.md         额外：维护者入口，给人看，不进 skill 上下文
+├── Makefile          额外：统一命令入口（所有命令从 make 走）
+├── evals/            额外：skill-up 评测套件，验行为不验文字
+├── tests/            额外：自身门禁的反向 fixture + 期望表
+└── templates/        额外：生成物模板，拷进目标仓库用，不是参考文档
+```
+
+「额外」不是随便加的：每一个都在 `scripts/scopes/struct.py` 的 `EXTRAS` 里带一句理由。
+`reference/`（单数）、`script/`、`agent/` 这类近似拼写一律按错报——名字一歪，谁也不知道该往哪找。
 
 ## 本仓库自己的门禁
 
@@ -47,27 +68,15 @@ python3 scripts/audit.py                    # 0 ERROR 才算改完（WARN 可接
 python3 scripts/audit.py --check-links      # 真查外部链接，默认只报一条未检查 WARN
 ```
 
-反向 fixture 一件一个缺陷，code 必须精确对上；末尾那条是正对照（证明「0 条发现」不等于「检查器没跑」）：
+反向 fixture 一件一个缺陷，code 必须精确对上；第一条是正对照（证明「0 条发现」不等于「检查器没跑」）：
 
 ```bash
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-frontmatter   # 期待且仅期待 FM004
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-bash-block    # 期待且仅期待 BASH001
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-xref          # 期待且仅期待 XREF001
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-xref-table    # 期待且仅期待 XREF002
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-description      # 期待且仅期待 FM008
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-description-trigger  # 期待且仅期待 FM009
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-relative-link  # 期待且仅期待 LINK004
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-baseline-rule  # 期待且仅期待 BASE001
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-host-loading  # 期待且仅期待 HOST001
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-dual-ledger  # 期待且仅期待 DUAL001
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-scope-grading  # 期待且仅期待 SCOPE001
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-zero-baseline  # 期待且仅期待 BASE003
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-expiry-decor  # 期待且仅期待 BASE004
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-version-ungated  # 期待且仅期待 VER001
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-xref-ext  # 期待且仅期待 XREFDOC002（跨文件引用指向不存在的条目）
-python3 scripts/audit.py --skill-dir tests/fixtures/ok-minimal --dispatch tests/fixtures/bad-inline-scope/scripts/audit.py  # 期待且仅期待 LAYOUT001
-python3 scripts/audit.py --skill-dir tests/fixtures/ok-minimal   # 正对照：0 ERROR 0 WARN
+make fixtures       # = python3 tests/fixtures.py：全部 fixture 逐条比对期望的 code
 ```
+
+期望清单只有一处——`tests/fixtures.py` 的 `CASES` 表，它跑在 `make check` 里。
+README 和 `references/acceptance.md` 都不再抄第二份：抄出来的表迟早和第一份不一致，
+而「表说这条规则有人守」的信用就建立在这上面。新增 scope 时改那张表。
 
 audit.py 不判语义一致性（机器判不了）；语义项在 `SKILL.md` §六 的「判据」列标注为人判。
 
@@ -84,7 +93,7 @@ skill-up run ./evals/eval.yaml --output-dir /tmp/skillup-harness
 
 两条容易踩的评测机制（都实测踩过）：
 
-- `skills.include` 只收 glob，**不收目录**：写 `reference` 不会打包，必须写 `reference/*`。漏了不报错，只在沙箱里留一堆悬空链接，agent 会跑去找。SKILL.md 新增外部引用时必须同步这里。
+- `skills.include` 只收 glob，**不收目录**：写 `references` 不会打包，必须写 `references/*`。漏了不报错，只在沙箱里留一堆悬空链接，agent 会跑去找。SKILL.md 新增外部引用时必须同步这里。
 - `run_shell` 的围栏在引擎里，不在 skill-up 里：`contain_violation()` 只放行工作区内路径（加 `/dev/null` 类白名单），挡 `..` 路径段与 `~`。第一轮没这道栅时，被测 agent 读到了 `evals/cases` 和 judge 脚本本身，那一轮结果作废。判分前先确认轨迹里没出现 skill 真身目录。
 - 模型选型（实测踩过）：OpenRouter 中转模型会撞 HTTP 402（余额只够 8k tokens，引擎默认请求 65536）；workbuddy/opencode-zen 直连源被 429 全封；`nvidia/z-ai/glm-5.3-flash` 每步约 10 分钟，40 分钟超时只走了 4 步。目前可用且够快的是 `ollama-cloud/nemotron-3-ultra`（约 4s/步）和 `groq/qwen/qwen3.8-27b`（约 1s/步）。换模型前先拿一条带 tools 的小请求探延迟。
 

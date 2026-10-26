@@ -3,8 +3,8 @@
 
 边界（不要越界）：
   * 只审一个 skill 目录（默认 = 本脚本所在 skill），不扫描 ~/.pi/agent/skills 下其他 skill；
-  * 读取面 = SKILL.md 全文 + reference/*.md 里的 §X.Y 引用（仅存在性，xrefdoc scope）——
-    不对 reference 做全文审查，也不改写它们；
+  * 读取面 = SKILL.md 全文 + skill 根目录与 references/ 的条目名（struct）+ references/*.md
+    里的 §X.Y 引用（仅存在性，xrefdoc）——不对 references 做全文审查，也不改写它们；
   * 只读，不写文件；不依赖 git；同输入同输出（可重复执行）；
   * 不审目标仓库的 harness —— 那是目标仓库自己的 verify.py 的事。
 
@@ -36,6 +36,7 @@ from scopes import (  # noqa: E402  （必须先修好 sys.path 再导入）
     layout,
     ledger,
     links,
+    struct,
     terms,
     version,
     xref,
@@ -43,7 +44,8 @@ from scopes import (  # noqa: E402  （必须先修好 sys.path 再导入）
 )
 
 # 注册表：顺序 = 跑的顺序（输出还会按 severity/scope/line/code 再排序）
-SCOPES = (frontmatter, bash, baseline, host, layout, ledger, terms, version, xref, xrefdoc, links)
+SCOPES = (frontmatter, bash, baseline, host, layout, struct, ledger, terms, version,
+          xref, xrefdoc, links)
 
 
 def run_all(text, path, skill_dir, check_links, dispatch=None):
@@ -98,7 +100,8 @@ def main(argv=None):
     else:
         rel = os.path.relpath(skill_md, skill_dir)
         for f in findings:
-            print(f"{f.severity:<5} {f.scope:<11} {rel}:{f.line}  {f.code:<7} {f.message}")
+            loc = f"{f.path or rel}:{f.line}" if f.line else (f.path or rel)
+            print(f"{f.severity:<5} {f.scope:<11} {loc}  {f.code:<7} {f.message}")
         print(f"{len(errors)} ERROR, {len(warns)} WARN  "
               f"({'links 已检查' if args.check_links else 'links 未检查'})  "
               + (f"scope 未适用: {','.join(na)}  " if na else "")

@@ -12,20 +12,21 @@ TPL := templates
 DELIVERY := $(TPL)/delivery-harness
 GODEV := $(TPL)/go-dev-harness
 
-.PHONY: help check check-json check-skill check-templates selftest check-sample check-strict guide
+.PHONY: help check check-json check-skill fixtures check-templates selftest check-sample check-strict guide
 
 help:
-	@echo "make check            全部门禁：技能自审 + 两套模板 verify + 两套反向测试（不需要 Go）"
+	@echo "make check            全部门禁：技能自审 + fixture 断言表 + 两套模板 + 两套反向测试（不需要 Go）"
 	@echo "make check-json       同上，输出 JSON"
 	@echo "make check-skill      只跑 scripts/audit.py"
+	@echo "make fixtures         全部反向 fixture 逐条比对期望的 code"
 	@echo "make check-templates  只跑两套模板的 .harness/scripts/verify.py"
 	@echo "make selftest         只跑两套 tests/reverse.py"
 	@echo "make check-sample     样例 Go 模块 vet + test（需要 Go 工具链）"
 	@echo "make check-strict     断言 --strict 能拦下示例数据（模板自身的不变量）"
 	@echo "make guide            重新生成两套 codebase-guide/index.json"
 
-check: check-skill check-templates selftest
-	@echo "== check 通过：技能自审 + 两套模板 + 两套反向测试 =="
+check: check-skill fixtures check-templates selftest
+	@echo "== check 通过：技能自审 + fixture 断言表 + 两套模板 + 两套反向测试 =="
 
 check-json:
 	@$(PY) scripts/audit.py --json
@@ -34,6 +35,9 @@ check-json:
 
 check-skill:
 	@$(PY) scripts/audit.py
+
+fixtures:
+	@$(PY) tests/fixtures.py
 
 check-templates:
 	@$(PY) $(DELIVERY)/.harness/scripts/verify.py

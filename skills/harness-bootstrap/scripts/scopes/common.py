@@ -6,19 +6,24 @@ PLACEHOLDER = "\u2026"
 
 
 class Finding:
-    __slots__ = ("severity", "scope", "line", "code", "message")
+    """一条发现。`path` 默认 None = 就在 SKILL.md 里（多数 scope 如此）；
+    判的是根目录条目或别的文件时，才显式给 path，免得报错位置指错地方。"""
 
-    def __init__(self, severity, scope, line, code, message):
+    __slots__ = ("severity", "scope", "line", "code", "message", "path")
+
+    def __init__(self, severity, scope, line, code, message, path=None):
         self.severity = severity
         self.scope = scope
         self.line = line
         self.code = code
         self.message = message
+        self.path = path
 
     def as_dict(self):
         return {
             "severity": self.severity,
             "scope": self.scope,
+            "path": self.path,
             "line": self.line,
             "code": self.code,
             "message": self.message,

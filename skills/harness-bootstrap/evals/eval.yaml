@@ -8,7 +8,7 @@ skills:
     path: .
     include:
       - SKILL.md
-      - reference/*
+      - references/*
 
 # 直连 magpie：skill-up -> 本地 adapter -> magpie /v1/chat/completions
 engine:

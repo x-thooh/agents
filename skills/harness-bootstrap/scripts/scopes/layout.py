@@ -38,4 +38,5 @@ def run(ctx, findings):
         findings.append(Finding(
             "ERROR", NAME, 1, "LAYOUT001",
             "调度器里长出了 scope 实现：" + "；".join(hits)
-            + "——scope 实现搬进 scripts/scopes/<name>.py，调度器只留注册表与输出"))
+            + "——scope 实现搬进 scripts/scopes/<name>.py，调度器只留注册表与输出",
+            path=os.path.relpath(path, ctx["skill_dir"])))

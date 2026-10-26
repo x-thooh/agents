@@ -1,12 +1,12 @@
 ---
 name: bad-xref-ext
-description: 用于反向测试：reference/ 里的跨文件引用指向不存在的条目，该被 xrefdoc 抓住。
+description: 用于反向测试：references/ 里的跨文件引用指向不存在的条目，该被 xrefdoc 抓住。
 license: MIT
 ---
 
 # bad-xref-ext
 
-反向样本。它测的是跨文件裸编号：`reference/notes.md` 引了 §一 里并不存在的第 5 条，而 §一 只有两条——SKILL.md 内部的同类错误 xref 早就管了，这份样本证明跨到 reference/ 的另一半也有人管。
+反向样本。它测的是跨文件裸编号：`references/notes.md` 引了 §一 里并不存在的第 5 条，而 §一 只有两条——SKILL.md 内部的同类错误 xref 早就管了，这份样本证明跨到 references/ 的另一半也有人管。
 
 ## 用法
 

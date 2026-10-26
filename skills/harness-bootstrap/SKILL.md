@@ -110,7 +110,7 @@ AGENTS.md                 入口（地图，不是手册）
 
 | 对象 | 特征 | 阈值 | 超了怎么办 |
 | --- | --- | --- | --- |
-| 参考材料（坑清单、字段表、验收命令） | 要用时去查，不按顺序读 | 单文件 **100 行** | 外置到 `reference/`，入口只留判据与链接 |
+| 参考材料（坑清单、字段表、验收命令） | 要用时去查，不按顺序读 | 单文件 **100 行** | 外置到 `references/`，入口只留判据与链接 |
 | 流程手册（本 SKILL.md） | 必须整篇读完才能干对活 | 不设总行数，但**单节 100 行** | 把该节细节外置，保留标题与判据 |
 
 100 行这个数来自外部成熟实践（skill 的 heavy reference 规则），不是拍的；换了就写明为什么换。判归属只问一句：**这东西是「要用时去查」还是「按顺序读」？** 查的外置，读的留在手册里——但任何一节都不许长成第二个手册。
@@ -133,7 +133,7 @@ AGENTS.md                 入口（地图，不是手册）
 | `.harness/specs/notes/implemented/` | 已拍板（禁 Proposal / Plan / Migration plan / Acceptance criteria——计划腔不算现实） |
 | `.harness/specs/notes/rejected/` | 被否掉，判定写在 `Status: rejected — <理由>` |
 
-判据（骨架、头五行、模块与 `scope` 的全套规矩见 [`reference/notes-convention.md`](reference/notes-convention.md)）：
+判据（骨架、头五行、模块与 `scope` 的全套规矩见 [`references/notes-convention.md`](references/notes-convention.md)）：
 
 - **一篇一个决策**：改结论不改旧篇，新写一篇并互相链接（`supersedes`），作废不删
 - **写入门槛**：代码能推出的不写；每篇必须有 `## 不显然之处` 段，段在但空着即 ERROR
@@ -150,7 +150,7 @@ AGENTS.md                 入口（地图，不是手册）
 
 硬边界：**约定管形状，不管归属**。目录名、文件名、头五行、`summary` 长度都能约定成默认；`scope`、`status`、`supersedes` 这类**归属声明必须显式写**——把「没写」推定成「全仓」就是拿约定冒充事实，直接违反 §三 原则 4（缺失不是空）。约定减少的是重复劳动，不是声明义务。
 
-本 skill 自己照此办事：`python3 scripts/audit.py` 不带参数就审自己（约定），`--skill-dir` 才是配置；反向 fixture 按约定住在 `tests/fixtures/<对应缺陷>/`，不需要一张表告诉你它们在哪。调度器同理：`scripts/audit.py` 只剩注册表与输出，每个 scope 各自住 `scripts/scopes/<name>.py`（见 §六 verify 脚本规范的「一个 scope 一个文件」，调度器体征由 LAYOUT001 机检）。读取面不止 SKILL.md 一个文件：`reference/*.md` 里指向本文件的 §X.Y 引用也检（XREFDOC001/002，只查存在性）——外置之后引用不跟着改，正是 Q7 亲手撞过一次的失败类。
+本 skill 自己照此办事：`python3 scripts/audit.py` 不带参数就审自己（约定），`--skill-dir` 才是配置；反向 fixture 按约定住在 `tests/fixtures/<对应缺陷>/`，不需要一张表告诉你它们在哪。调度器同理：`scripts/audit.py` 只剩注册表与输出，每个 scope 各自住 `scripts/scopes/<name>.py`（见 §六 verify 脚本规范的「一个 scope 一个文件」，调度器体征由 LAYOUT001 机检）。读取面不止 SKILL.md 一个文件：`references/*.md` 里指向本文件的 §X.Y 引用也检（XREFDOC001/002，只查存在性）——外置之后引用不跟着改，正是 Q7 亲手撞过一次的失败类。
 
 反面例子（真出现过）：把硬约束的条数写成「三条」而实际列了六条。数字一写死就跟内容漂移，所以这里不写条数——**能用结构表达的，不要用计数表达。**
 
@@ -275,7 +275,7 @@ find . -name AGENTS.md | wc -l                        # 已有规则文件数
 
 ## 七、断言设计通用坑（按代价排序）
 
-12 条全部在 [`reference/assertion-pitfalls.md`](reference/assertion-pitfalls.md)，写断言前后各过一遍。三条最先付学费的：
+12 条全部在 [`references/assertion-pitfalls.md`](references/assertion-pitfalls.md)，写断言前后各过一遍。三条最先付学费的：
 
 1. **基线必须带消息指纹**。只按（域, 路径）记，同一文件里的新问题照样通过。
 2. **扫到 0 个样本要报错**。路径写错、glob 失效、目录改名，三种病状和「全绿」长得一模一样。
@@ -330,7 +330,7 @@ make check     # 全库回归，非零退出即有 ERROR
 make check -- --json    # 原始计数，不看降级后的
 ```
 
-本 skill 自身的门禁（改 SKILL.md 前后都要跑，0 ERROR 才算改完）：命令、六个反向断言、规则↔断言对照表全在 [`reference/acceptance.md`](reference/acceptance.md)。
+本 skill 自身的门禁（改 SKILL.md 前后都要跑，0 ERROR 才算改完）：命令、反向断言表、规则↔断言对照表全在 [`references/acceptance.md`](references/acceptance.md)。
 
 人工只核两件事：入口地图上每个入口文件真实存在（覆盖断言是弱断言）；每条硬规则在断言表里有对应行，没有的写明「无断言」及强度来源。
 

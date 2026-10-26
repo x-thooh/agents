@@ -12,25 +12,14 @@ make check -- --json     # 原始计数，不看降级后的
 **本 skill 自身的门禁**（改 SKILL.md 前后都要跑，0 ERROR 才算改完）：
 
 ```bash
-python3 scripts/audit.py                                              # 审本 SKILL.md
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-frontmatter   # 反向测试，期待且仅期待 FM004
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-bash-block    # 期待且仅期待 BASH001
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-xref          # 期待且仅期待 XREF001
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-xref-table    # 期待且仅期待 XREF002（表格行也算条目）
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-description      # 期待且仅期待 FM008
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-description-trigger  # 期待且仅期待 FM009
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-relative-link  # 期待且仅期待 LINK004
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-baseline-rule  # 期待且仅期待 BASE001
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-host-loading  # 期待且仅期待 HOST001
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-dual-ledger  # 期待且仅期待 DUAL001
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-scope-grading  # 期待且仅期待 SCOPE001
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-zero-baseline  # 期待且仅期待 BASE003（零基线 / accepted / 只减不增）
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-expiry-decor  # 期待且仅期待 BASE004（豁免无保质期）
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-version-ungated  # 期待且仅期待 VER001（rules_version 无到期行为）
-python3 scripts/audit.py --skill-dir tests/fixtures/bad-xref-ext  # 期待且仅期待 XREFDOC002（跨文件引用指向不存在的条目）
-python3 scripts/audit.py --skill-dir tests/fixtures/ok-minimal --dispatch tests/fixtures/bad-inline-scope/scripts/audit.py  # 期待且仅期待 LAYOUT001（实现塞回调度器）
-python3 scripts/audit.py --skill-dir tests/fixtures/ok-minimal   # 正对照：0 ERROR 0 WARN（没它就跟不上「检查器没跑」区分）
+python3 scripts/audit.py                  # 审本 SKILL.md
+python3 tests/fixtures.py                 # 全部反向断言：每个 fixture 一件缺陷，code 精确对上
+python3 scripts/audit.py --skill-dir tests/fixtures/ok-minimal   # 正对照：0 ERROR 0 WARN
 ```
+
+**期望清单只有一处**：`tests/fixtures.py` 的 `CASES` 表。它逐条写明每个 fixture 该报哪个 code，
+跑 `make check` 时一起执行。这里不再抄一份——抄出来的第二份表迟早和第一份不一致，
+而「表说某条规则有人守」这句话的信用就建立在这上面。新增 scope 时改那张表，不是改这里。
 
 反向测试的断言集合：每个 fixture 只含一个缺陷，audit.py 对它各报且仅报一个 ERROR、code 精确对上——不是「某条规则报了」，是「这条规则报的」（§六 verify 规范：每个 scope 上线前跑一次反向测试）。audit.py 不审语义一致性（机器判不了），语义项由上表「判据」列标注为人判，按 §二.2 计入「无断言」并写明强度来源。
 
@@ -45,9 +34,10 @@ python3 scripts/audit.py --skill-dir tests/fixtures/ok-minimal   # 正对照：0
 
 | 规则组 | 断言载体 | 强度 |
 | --- | --- | --- |
+| skill 目录形状（`SKILL.md` + `references/` + `scripts/` + `agents/`；根下每个条目要么是标准四件，要么在 `EXTRAS` 里写明理由） | audit.py STRUCT001（近似拼写 `reference`/`script`/`agent` 与未声明条目）/ STRUCT002（`references/` 只放 `.md`，不建子目录）+ `tests/fixtures.py` 三例 | 强 |
 | 基线记账与收敛（条数制 / 零基线 / accepted 只减不增 + 保质期） | audit.py BASE001/BASE003/BASE004 + verify `scope=baseline` | 强 |
 | 规则集版本保质期（`rules_version` 90 天未重新确认即 ERROR；基线不设刷新日期字段） | audit.py VER001（提到它的那一行必须同时写明天数与到期行为） | 强 |
-| reference/*.md 里的跨文件 §X.Y 引用指向存在的章节/条目（断言坑 #12 的存在性半边） | audit.py XREFDOC001/XREFDOC002（改号/删节/外置后没跟着改；重排同号仍属人判） | 强（存在性半边）+ 人判（重排同号） |
+| references/*.md 里的跨文件 §X.Y 引用指向存在的章节/条目（断言坑 #12 的存在性半边） | audit.py XREFDOC001/XREFDOC002（改号/删节/外置后没跟着改；重排同号仍属人判） | 强（存在性半边）+ 人判（重排同号） |
 | 入口覆盖链、指针存在性 | verify `scope=folders` | 强 |
 | `description` 无流程摘要、有触发条件 | audit.py FM008/FM009（启发式：抓箭号与序号词，纯主题清单靠人判） | 机器+人判 |
 | 决策 `scope` 值 ⊆ 已批准的模块清单（锚点可定位；proposed 严格、implemented 降级） | verify 发现器 + `modules-confirmed` + `scope=notes` | 强（必做反向测试） |
