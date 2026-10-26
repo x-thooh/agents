@@ -12,8 +12,15 @@ NAME = "frontmatter"
 
 SPEC_FIELDS = {"name", "description", "license", "compatibility", "metadata", "allowed-tools"}
 NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
-TRIGGER_MARKERS = ("用于", "适用于", "使用时", "适用", "当", "Use when", "When ")
-PROCESS_MARKERS = ("\u2192", "->", "第一步", "第二步", "第三步", "然后", "接着", "最后再", "先…再")
+# 触发语：只认「什么时候唤起」。不认裸「当」——它连「当前」都能命中，等于没有断言。
+TRIGGER_MARKERS = ("用于", "适用于", "使用时", "适用", "当遇到", "当需要", "当你",
+                  "Use when", "When ")
+# 流程语：出现即按「在 description 里写流程摘要」判。箭头与序号词是第一种写法，
+# 交付物清单（「产出 / 交付物 / 步骤」+ 并列的产物名）是第二种——本 skill 自己就踩过：
+# 旧 description 把整层产物逐件列了一遍，而当时的 marker 只认箭头与序号，
+# 于是「规则写着不许」与「检查器报绿」同时成立。那比没写规则更坏：它给绿灯。
+PROCESS_MARKERS = ("\u2192", "->", "第一步", "第二步", "第三步", "然后", "接着", "最后再",
+                   "先…再", "产出", "交付物", "步骤")
 
 
 def run(ctx, findings):

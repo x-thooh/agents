@@ -64,6 +64,8 @@ CASES = (
     ("bad-frontmatter", {"FM004"}, ()),
     ("bad-bash-block", {"BASH001"}, ()),
     ("bad-description", {"FM008"}, ()),
+    # 产物清单也是流程摘要：只认箭头/序号时，这类写法一路绿灯（真实自欺）
+    ("bad-description-deliverable", {"FM008"}, ()),
     ("bad-description-trigger", {"FM009"}, ()),
     ("bad-baseline-rule", {"BASE001"}, ()),
     ("bad-zero-baseline", {"BASE003"}, ()),
@@ -107,6 +109,8 @@ CASES = (
     # 体量预算两档：两档都得真会响，否则「准备拆」只是句好听话
     ("bad-budget-warn", {"BUDGET001"}, ()),
     ("bad-budget-error", {"BUDGET001"}, ()),
+    # 总量额度：每节都合规、总量翻倍时也必须响——单节额度管不了加载成本
+    ("bad-skill-total", {"BUDGET002"}, ()),
     # code 级反向测试：下列每一个都曾从无 fixture（scope 级有机一条，code 级漏网），
     # 其中 LINK002/XREFDOC001 是 ERROR 级——一个从不执行的 ERROR 比 WARN 更坏。
     # LINK002/LINK003 靠 --link-status 把「取状态码」固定住，不靠公网。

@@ -78,6 +78,9 @@ def as_int(digits, default=0):
 DOC_WARN, DOC_LIMIT = 80, 100
 # 代码：scripts/ 下每个文件（含调度器）。150 是 200 的四分之三，留准备拆的余量。
 CODE_WARN, CODE_LIMIT = 150, 200
+# 手册总量：SKILL.md 是「按顺序读完才能干对活」的那一份，单节有额度不代表总量有。
+# 400 是 500 的五分之四（同「提前一段」的比例），500 是宿主侧的通用上限。
+SKILL_WARN, SKILL_LIMIT = 400, 500
 
 
 def line_count(text):

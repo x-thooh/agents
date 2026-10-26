@@ -1,6 +1,10 @@
-"""budget：`scripts/` 下每个文件的体量预算，两档。
+"""budget：脚本体量与手册总量，各两档。
 
-  BUDGET001 撞 150 行 WARN（准备拆）；超 200 行 ERROR（必须拆）
+  BUDGET001  `scripts/` 下单个 .py：撞 150 行 WARN，超 200 行 ERROR
+  BUDGET002  `SKILL.md` 总量：撞 400 行 WARN，超 500 行 ERROR
+
+为什么单有单节的 80/100 还不够：单节额度管的是「哪一段太长」，管不了「一共多长」。
+一节一节都合规而总量翻倍，读的人仍然要整篇读完——手册的加载成本按总量算，不按最大值算。
 
 为什么必须机检：§六 原话是「单文件长到改不动时，下一步就是写一次性补丁脚本打自己」，
 实测轨迹里十几次 `.fixN.py` 全部起于一个只会变大的单文件。但这句话此前没有断言——
@@ -19,7 +23,8 @@ scopes 自己长多大没人管。规矩没有数值就是愿望。
 """
 import os
 
-from .common import CODE_LIMIT, CODE_WARN, Finding, line_count
+from . import common
+from .common import Finding, line_count
 
 NAME = "budget"
 
@@ -48,7 +53,23 @@ def _files(root):
     return out, unreadable
 
 
+def _check_total(ctx, findings):
+    """SKILL.md 总量。与单节额度同时生效：超总量报 BUDGET002，不并进 SECT001。"""
+    total = line_count(ctx["text"])
+    if total > common.SKILL_LIMIT:
+        findings.append(Finding(
+            "ERROR", NAME, 1, "BUDGET002",
+            f"SKILL.md 共 {total} 行 > {common.SKILL_LIMIT} 行上限：外置细节，"
+            f"把「要用时去查」的部分挪进 references/，别靠删判据腾地方"))
+    elif total > common.SKILL_WARN:
+        findings.append(Finding(
+            "WARN", NAME, 1, "BUDGET002",
+            f"SKILL.md 共 {total} 行 > {common.SKILL_WARN} 行：准备外置——"
+            f"还有 {common.SKILL_LIMIT - total} 行余地，现在就把成段的细节搬走"))
+
+
 def run(ctx, findings):
+    _check_total(ctx, findings)
     root = os.path.join(ctx["skill_dir"], "scripts")
     if not os.path.isdir(root):
         ctx.setdefault("not_applicable", []).append(NAME)
@@ -64,15 +85,15 @@ def run(ctx, findings):
         ctx.setdefault("not_applicable", []).append(f"{NAME}(scripts/ 下没有 .py，判不了)")
         return
     for rel, n in files:
-        if n > CODE_LIMIT:
+        if n > common.CODE_LIMIT:
             findings.append(Finding(
                 "ERROR", NAME, 0, "BUDGET001",
-                f"{n} 行 > {CODE_LIMIT} 行上限：必须拆——按职责分文件，"
+                f"{n} 行 > {common.CODE_LIMIT} 行上限：必须拆——按职责分文件，"
                 f"别等它长成那个「只会变大的单文件」",
                 path=f"scripts/{rel}"))
-        elif n > CODE_WARN:
+        elif n > common.CODE_WARN:
             findings.append(Finding(
                 "WARN", NAME, 0, "BUDGET001",
-                f"{n} 行 > {CODE_WARN} 行：准备拆——还有 {CODE_LIMIT - n} 行余地，"
-                f"现在就把职责边界分出去，别等撞到 {CODE_LIMIT} 行再靠删注释腾地方",
+                f"{n} 行 > {common.CODE_WARN} 行：准备拆——还有 {common.CODE_LIMIT - n} 行余地，"
+                f"现在就把职责边界分出去，别等撞到 {common.CODE_LIMIT} 行再靠删注释腾地方",
                 path=f"scripts/{rel}"))

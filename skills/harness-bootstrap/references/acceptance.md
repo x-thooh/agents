@@ -24,7 +24,7 @@
 | 模板装到真仓库后仍然诚实（示例会被拦、`go_src` 还在扫 sample 会被点名） | `make check-boot`（`tests/template_boot.py`：拷进临时空仓库 → 验退出码与正文，含一次假绿灯的回归） | 强 |
 | `config.json` 的键名拼错不会被静默忽略 | 模板 `conf` scope CONF001（未知键 ERROR，键名闭集在 `conf.py` 的 `ALLOWED`） | 强 |
 | 入口覆盖链、指针存在性 | verify `scope=folders` | 强 |
-| `description` 无流程摘要、有触发条件 | audit.py FM008/FM009（启发式：抓箭号与序号词，纯主题清单靠人判） | 机器+人判 |
+| `description` 无流程摘要、有触发条件 | audit.py FM008/FM009（启发式：抓箭号、序号词与交付物清单；纯主题清单靠人判） | 机器+人判 |
 | 决策 `scope` 值 ⊆ 已批准的模块清单（锚点可定位；proposed 严格、implemented 降级） | verify 发现器 + `modules-confirmed` + `scope=notes` | 强（必做反向测试） |
 | 模块清单带 `modules-confirmed: <sha>`，且每条锚点全部命中 | verify 发现器（无指纹即 ERROR，防 AI 自悟入册） | 强 |
 | 头五行齐全、`summary` ≤ 120 字、无多余字段 | verify `scope=notes` | 强 |
@@ -36,7 +36,7 @@
 | 枚举闭集（分类/状态/kind） | verify 常量表 | 强 |
 | 语料位置 ↔ `Status:` 互校 | verify `scope=notes` | 强（必做反向测试） |
 | 索引派生一致性 | verify 重新生成比对 | 强 |
-| 额度（行数/篇数） | 常量住在 `scripts/scopes/common.py`；本仓库由 audit.py SECT001/SECT002（文档 80/100）与 BUDGET001（代码 150/200，含调度器）守 | 中 / 强 |
+| 额度（行数/篇数） | 常量住在 `scripts/scopes/common.py`；本仓库由 audit.py SECT001/SECT002（单节与单文件 80/100）、BUDGET001（代码 150/200，含调度器）、BUDGET002（SKILL.md 总量 400/500）守 | 中 / 强 |
 | discovery 双向对账 | verify `scope=skills` | 强 |
 | 归档笔记的 `Archived:` 日期 = 该笔记移动当次提交的日期（归档是事件驱动，不设时间阈值） | 目标仓库 verify `scope=archive`（读 `git log`；本仓库 audit.py 明说不依赖 git，故不在此处实现） | 强（有版本控制时）；无 git 的仓库降级为人判并显式标注 |
 | 围栏代码可执行（无占位符 U+2026、`bash -n` 通过） | audit.py BASH001 / BASH002 | 强 |

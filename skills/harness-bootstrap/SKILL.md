@@ -1,12 +1,9 @@
 ---
 name: harness-bootstrap
 description: >
-  用于给一个 git 仓库建立 .harness 工程层（harness project），或审查已有工程层
-  是否名实相符时。典型症状：仓库里没有给编码 agent 用的规则入口；规则写了却没人
-  守（无断言）；文档、脚本与实际状态互相漂移；改动不能回滚或不能重跑；换 host 或
-  换模型后 agent 行为不一致。产出是可执行的断言门禁（verify + 基线）、五层单向
-  分层、按模块标作用域的决策笔记和记忆树，对外对齐 UHP 与 DSH。
-  纪律（改前基准 / 改中条理 / 改后回归）。
+  用于给一个 git 仓库建立或审查 .harness 工程层（harness project）。症状：仓库里没有
+  给编码 agent 用的规则入口；规则写了却没人守（无断言）；文档、脚本与实际状态互相漂移；
+  改动不能回滚或不能重跑；换 host 或换模型后 agent 行为不一致。
   触发词：建 harness、初始化工程层、AGENTS.md、verify 脚本、移植 harness、
   UHP、conformance、DSH、记忆树。
 license: MIT
