@@ -49,7 +49,7 @@
 | 双向对账的两侧各点名一个载体（否则是派生品自比较） | audit.py DUAL001 | 强 |
 | frontmatter 齐全且合法（有 frontmatter / name / name 形状 / 有 description / 非空 / 长度 ≤ 1024 / 字段表外） | audit.py FM001 / FM002 / FM003 / FM004 / FM005 / FM006 / FM007（FM008/FM009 见上） | 强 |
 | 文件内 `§X` / `§X.Y` 引用指向存在的章节/条目 | audit.py XREF001 / XREF002 | 强 |
-| 外部链接：内联=承诺可查，脚注=引用不查 | audit.py LINK001（未检查）/ LINK002（4xx）/ LINK003（不可达降级）/ LINK004（相对链接必须存在）；外部三条需 `--check-links` 才真跑，相对链接离线强断言 | 强（相对）+ 中（外部） |
+| 外部链接：内联=承诺可查，脚注=引用不查 | audit.py LINK001（未检查）/ LINK002（4xx）/ LINK003（不可达降级）/ LINK004（相对链接必须存在，**带 `#fragment` 时锚点也必须存在**；扫描面 = `SKILL.md` + `references/*.md`，基址是文件所在目录）；外部三条需 `--check-links` 才真跑，相对链接与锚点离线强断言 | 强（相对+锚点）+ 中（外部） |
 | 布局表 ↔ 模板双向对账（表为根，产物不得反向定义规范） | audit.py LP001 / LP002 / LP003 | 强 |
 | 规范用语：`scope 分域` 不是分级 | audit.py SCOPE001 | 强 |
 | **文档描述必须与代码一致**，两个方向 | audit.py DOC001（代码里的每个 code 本文档都要有行）+ DOC002（本文档与 SKILL.md 点名的 code **与 scope 模块名**必须真存在，幻影即 ERROR；行写得对不对仍人判） | 强（覆盖 + 幻影）+ 人判（对应） |

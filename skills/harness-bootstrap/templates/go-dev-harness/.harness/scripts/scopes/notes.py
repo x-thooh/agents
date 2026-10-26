@@ -14,6 +14,7 @@
 
 零篇笔记是合法状态（新仓库还没决策），不按坑 #11 报错；但目录都不存在时记 not_applicable。
 """
+
 import re
 from pathlib import Path
 
@@ -61,20 +62,39 @@ def run(ctx, findings):
         try:
             text = path.read_text(encoding="utf-8")
         except OSError as exc:
-            add(findings, "ERROR", NAME, rel, 1, "NTS001",
-                f"读不了（{exc.strerror}）：笔记判不了，不能当通过")
+            add(findings, "ERROR", NAME, rel, 1, "NTS001", f"读不了（{exc.strerror}）：笔记判不了，不能当通过")
             continue
         match = STATUS.search(text)
         if not match:
-            add(findings, "ERROR", NAME, rel, 1, "NTS002",
-                "头五行缺 `status:`：状态是位置，字段只是投影，但投影不许缺——"
-                f"补成 `status: {name}`")
+            add(
+                findings,
+                "ERROR",
+                NAME,
+                rel,
+                1,
+                "NTS002",
+                f"头五行缺 `status:`：状态是位置，字段只是投影，但投影不许缺——补成 `status: {name}`",
+            )
         elif match.group(1).strip().strip("\"'") != name:
-            add(findings, "ERROR", NAME, rel, 1, "NTS002",
+            add(
+                findings,
+                "ERROR",
+                NAME,
+                rel,
+                1,
+                "NTS002",
                 f"`status: {match.group(1).strip()}` 与所在目录 `{name}/` 不一致："
-                "换状态用 git mv，只改字段会留下没有版本记录的错位")
+                "换状态用 git mv，只改字段会留下没有版本记录的错位",
+            )
         corpus = _corpus(root, path)
         if path.name not in corpus and rel not in corpus:
-            add(findings, "ERROR", NAME, rel, 1, "NTS001",
+            add(
+                findings,
+                "ERROR",
+                NAME,
+                rel,
+                1,
+                "NTS001",
                 "孤儿笔记：除了自己，没有任何文档（AGENTS.md / decisions.md / 其它笔记）"
-                "引用它。没人链进来 = 写了没人读得到，与「说了却没有」是同一处脱钩的两面")
+                "引用它。没人链进来 = 写了没人读得到，与「说了却没有」是同一处脱钩的两面",
+            )

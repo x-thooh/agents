@@ -1,13 +1,10 @@
 """links：外部链接（默认跳过）与相对链接 + 锚点（离线强断言）。
 
-相对链接指向的文件必须存在，带 `#fragment` 时锚点也必须存在——两者都是离线可判。
-文件在、锚点错，就是「重排后静默指向别处」那个失败态（断言坑 #12）；只判文件等于
-只守了一半。
-
-内联外部链接 vs 脚注里的 URL：前者是承诺（写了就该能查），后者是引用出处（不替它背书）。
-所以「降成脚注」不是关掉检查，是把承诺与引用分开。新增内联外部链接时要么真查
-（--check-links），要么降成脚注。
+相对链接的文件必须存在；带 `#fragment` 时锚点也必须存在——文件在、锚点错就是
+「重排后静默指向别处」那个失败态（断言坑 #12），只判文件等于只守了一半。
+内联外部链接是承诺（要么 `--check-links` 真查，要么降成脚注）；脚注是引用出处，不管。
 """
+
 import http.client
 import pathlib
 import re
@@ -20,6 +17,8 @@ NAME = "links"
 FENCE = re.compile(r"^\s*```")
 MD_LINK = re.compile(r"\[[^\]]*\]\((https?://[^)\s]+)\)")
 MD_LINK_REL = re.compile(r"\[[^\]]*\]\((?![a-z][a-z0-9+.-]*:|#)([^)\s]+)\)")
+
+
 def strip_code(text):
     """把围栏块与行内 code span 抹成空格，行号不变。
 
@@ -40,36 +39,51 @@ def strip_code(text):
 
 
 def run(ctx, findings):
+    root = pathlib.Path(ctx["skill_dir"]).resolve()
     text = strip_code(ctx["text"])
-    check_relative_links(text, ctx["skill_dir"], findings)
-    check_external_links(text, findings, ctx.get("check_links", False),
-                         ctx.get("link_status"))
+    check_relative_links(text, root, findings)
+    check_external_links(text, findings, ctx.get("check_links", False), ctx.get("link_status"))
+    # 参考材料里的链接也要查：它们同为文档面，且 §X 去编号化之后全靠锚点指路。
+    # 基址是**文件所在目录**，不是 skill 根——`./acceptance.md` 是 references/ 内的相对路径。
+    refs = root / "references"
+    if not refs.is_dir():
+        return
+    for path in sorted(refs.glob("*.md")):
+        rel = f"references/{path.name}"
+        try:
+            body = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            findings.append(Finding("ERROR", NAME, 0, "LINK004",
+                                   f"读不了（{exc.strerror}）：链接判不了，不能当通过", path=rel))
+            continue
+        check_relative_links(strip_code(body), refs, findings, source=rel)
 
 
-def check_relative_links(text, skill_dir, findings):
-    root = pathlib.Path(skill_dir).resolve()
+def check_relative_links(text, base, findings, source=None):
+    """base = 包含这段文字的那个文件所在目录。source = 报 finding 时用的相对路径。"""
+    def emit(line, code, message):
+        findings.append(Finding("ERROR", NAME, line, code, message, **(
+            {"path": source} if source else {})))
+
     for idx, ln in enumerate(text.split("\n")):
         for target in MD_LINK_REL.findall(ln):
             rel, _, frag = target.partition("#")
             rel = rel.split("?", 1)[0]
             if not rel:
                 continue
-            path = (root / rel).resolve()
+            path = (base / rel).resolve()
             if not path.exists():
-                findings.append(Finding("ERROR", NAME, idx + 1, "LINK004",
-                                        f"相对链接指向不存在的文件: {target}"))
+                emit(idx + 1, "LINK004", f"相对链接指向不存在的文件: {target}")
                 continue
             if not frag or path.suffix != ".md":
                 continue
             anchors = anchors_of(path)
             if anchors is None:
-                findings.append(Finding("ERROR", NAME, idx + 1, "LINK004",
-                                        f"链接目标读不了，锚点判不了（不能当通过）: {target}"))
+                emit(idx + 1, "LINK004", f"链接目标读不了，锚点判不了（不能当通过）: {target}")
             elif frag not in anchors:
-                findings.append(Finding(
-                    "ERROR", NAME, idx + 1, "LINK004",
-                    f"锚点在目标文件里不存在: {target}"
-                    "——文件在、锚点错，就是「重排后静默指向别处」那个形态"))
+                emit(idx + 1, "LINK004",
+                     f"锚点在目标文件里不存在: {target}——文件在、锚点错，"
+                     "就是「重排后静默指向别处」那个形态")
 
 
 def check_external_links(text, findings, do_check, status_override=None):
@@ -79,17 +93,16 @@ def check_external_links(text, findings, do_check, status_override=None):
     if not urls:
         return
     if not do_check:
-        findings.append(Finding("WARN", NAME, urls[0][0], "LINK001",
-                                f"外部链接 {len(urls)} 条未检查（--check-links 才真查）"))
+        findings.append(
+            Finding("WARN", NAME, urls[0][0], "LINK001", f"外部链接 {len(urls)} 条未检查（--check-links 才真查）")
+        )
         return
     for line, url in urls:
         code, err = _status(url, status_override)
         if code is None:
-            findings.append(Finding("WARN", NAME, line, "LINK003",
-                                    f"链接不可达（降级 WARN）: {url} ({err})"))
+            findings.append(Finding("WARN", NAME, line, "LINK003", f"链接不可达（降级 WARN）: {url} ({err})"))
         elif code >= 400:
-            findings.append(Finding("ERROR", NAME, line, "LINK002",
-                                    f"链接返回 {code}: {url}"))
+            findings.append(Finding("ERROR", NAME, line, "LINK002", f"链接返回 {code}: {url}"))
 
 
 def _status(url, override):
@@ -117,15 +130,18 @@ def http_status(url):
     path = parsed.path or "/"
     if parsed.query:
         path += "?" + parsed.query
-    conn_cls = (http.client.HTTPSConnection if parsed.scheme == "https"
-                else http.client.HTTPConnection)
+    conn_cls = http.client.HTTPSConnection if parsed.scheme == "https" else http.client.HTTPConnection
     conn = None
     try:
         conn = conn_cls(parsed.hostname, parsed.port, timeout=10)
-        conn.request("HEAD", path, headers={
-            "User-Agent": "harness-bootstrap-audit/1",
-            "Host": parsed.netloc,
-        })
+        conn.request(
+            "HEAD",
+            path,
+            headers={
+                "User-Agent": "harness-bootstrap-audit/1",
+                "Host": parsed.netloc,
+            },
+        )
         return conn.getresponse().status, None
     except Exception as exc:  # 网络/代理/证书问题一律降级，不冒充内容错误
         return None, type(exc).__name__

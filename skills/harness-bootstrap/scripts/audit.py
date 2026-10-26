@@ -13,14 +13,12 @@ scope 实现在 `scripts/scopes/<name>.py`，输出与退出码在 `scripts/repo
 （§六 verify 脚本规范：单文件长到一次只能改一处、改不动时，就该拆了）。
 拆分判据：拆分前后 `--json` 输出字节等同。
 
-语义一致性（如「阶段 0–2 没有 verify」）机器判不了 —— 那是人判项，
-由 SKILL.md §十 的「判据类型」列标注，本脚本不冒充。
-
-用法:
-  python3 scripts/audit.py [--skill-dir DIR] [--only a,b] [--check-links] [--json]
+语义一致性机器判不了——那是人判项，由 SKILL.md 的「判据类型」列标注，本脚本不冒充。
+用法: python3 scripts/audit.py [--skill-dir DIR] [--only a,b] [--check-links] [--json]
 
 退出码: 0 = 通过（可含 WARN）；1 = 有 ERROR；2 = 用法/环境错误
 """
+
 import argparse
 import os
 import sys
@@ -54,38 +52,66 @@ from scopes import (  # noqa: E402  （必须先修好 sys.path 再导入）
 )
 
 # 注册表：顺序 = 跑的顺序（输出还会按 severity/scope/line/code 再排序）
-SCOPES = (frontmatter, bash, baseline, host, layout, layout_parity, budget, sections, struct,
-          codeindex, docclaim, docphantom, deliverable, ledger, terms, version, xref, xrefdoc,
-          links)
+SCOPES = (
+    frontmatter,
+    bash,
+    baseline,
+    host,
+    layout,
+    layout_parity,
+    budget,
+    sections,
+    struct,
+    codeindex,
+    docclaim,
+    docphantom,
+    deliverable,
+    ledger,
+    terms,
+    version,
+    xref,
+    xrefdoc,
+    links,
+)
 
 
 def run_all(text, path, skill_dir, check_links, dispatch=None, link_status=None, scopes=None):
     findings = []
-    ctx = {"text": text, "path": path, "skill_dir": skill_dir,
-           "check_links": check_links, "dispatch": dispatch,
-           "link_status": link_status or {}}
+    ctx = {
+        "text": text,
+        "path": path,
+        "skill_dir": skill_dir,
+        "check_links": check_links,
+        "dispatch": dispatch,
+        "link_status": link_status or {},
+    }
     for mod in scopes or SCOPES:
         mod.run(ctx, findings)
     return findings, ctx.get("not_applicable", [])
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(
-        description="审 harness-bootstrap 这一个 skill 的 SKILL.md（不碰其他 skill）")
-    parser.add_argument("--skill-dir", default=None,
-                        help="skill 目录（默认 = 本脚本所在的 skill）")
-    parser.add_argument("--check-links", action="store_true",
-                        help="真的请求外部链接（默认只报一条未检查 WARN）")
-    parser.add_argument("--link-status", action="append", default=[],
-                        metavar="URL=CODE",
-                        help="测试缝：把某个 URL 的状态码固定成 CODE（整数）或 ERR（不可达）。\n"
-                             "只为反向测试 LINK002/LINK003 存在——公网结果不能用来判门禁。")
-    parser.add_argument("--only", default=None, metavar="SCOPE[,SCOPE]",
-                        help="只跑这些 scope（逗号分隔）；默认全跑。\n"
-                             "给别的 skill 复用时必须点名：有些 scope 判的是本仓库的约定")
+    parser = argparse.ArgumentParser(description="审 harness-bootstrap 这一个 skill 的 SKILL.md（不碰其他 skill）")
+    parser.add_argument("--skill-dir", default=None, help="skill 目录（默认 = 本脚本所在的 skill）")
+    parser.add_argument("--check-links", action="store_true", help="真的请求外部链接（默认只报一条未检查 WARN）")
+    parser.add_argument(
+        "--link-status",
+        action="append",
+        default=[],
+        metavar="URL=CODE",
+        help="测试缝：把某个 URL 的状态码固定成 CODE（整数）或 ERR（不可达）。\n"
+        "只为反向测试 LINK002/LINK003 存在——公网结果不能用来判门禁。",
+    )
+    parser.add_argument(
+        "--only",
+        default=None,
+        metavar="SCOPE[,SCOPE]",
+        help="只跑这些 scope（逗号分隔）；默认全跑。\n给别的 skill 复用时必须点名：有些 scope 判的是本仓库的约定",
+    )
     parser.add_argument("--json", action="store_true", help="输出 JSON")
-    parser.add_argument("--dispatch", default=None,
-                        help="调度器源码路径（默认 <skill-dir>/scripts/audit.py；只为反向测试存在）")
+    parser.add_argument(
+        "--dispatch", default=None, help="调度器源码路径（默认 <skill-dir>/scripts/audit.py；只为反向测试存在）"
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -108,8 +134,7 @@ def main(argv=None):
         print(f"audit: 读不了 {skill_md}: {exc}", file=sys.stderr)
         return 2
 
-    findings, na = run_all(text, skill_md, skill_dir, args.check_links, args.dispatch,
-                           link_status, scopes)
+    findings, na = run_all(text, skill_md, skill_dir, args.check_links, args.dispatch, link_status, scopes)
     return report.emit(
         as_json=args.json,
         skill_dir=skill_dir,

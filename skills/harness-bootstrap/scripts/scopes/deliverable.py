@@ -1,14 +1,8 @@
 """deliverable：交付物必须在文档里被点名——「有了却没人说」是文档与交付物脱钩。
 
-为什么不判反向（文档点名了、磁盘上没有）：那条路已经试过，不可行。文档里大量
-反引号路径是在**讲目标仓库的布局**（`.harness/INDEX.md`、`proposed/`、`skills/`），
-按本仓库基址去判会产出 26 条语义正确的误报；多基址猜测也救不回来，因为归属是
-「这一句在说谁的仓库」这类语义，机器判不了。这正是 §二.9 的边界：约定管形状，
-不管归属。
-
-所以反向只保留两个能判死的形态，都不在本 scope：
-  * 相对链接指向不存在 → `links` 的 LINK004（链接是承诺）
-  * 文档点名的 code / scope 模块不存在 → `docphantom` 的 DOC002（台账是清单）
+反方向（文档点名的路径必须存在）判不了：文档在用反引号讲**目标仓库**的布局，
+按本仓库基址判会产出 26 条语义正确的误报。归属是语义不是语法——详见断言坑 #19。
+反向只保留两个能判死的形态：`LINK004`（相对链接）与 `DOC002`（code / scope 名）。
 
 本 scope 只判一个方向，也只判一件事：**每一个交付物都至少被文档提过一次**。
 
@@ -27,6 +21,7 @@
 
 读不动的目录/文件一律显式报错，不静默跳过（坑 #11：漏掉的那个正好可能是没人说的那个）。
 """
+
 import os
 
 from .common import Finding
@@ -44,10 +39,15 @@ def _listdir(path, findings):
     try:
         return sorted(os.listdir(path))
     except OSError as exc:
-        findings.append(Finding(
-            "ERROR", NAME, 0, CODE,
-            f"读不了目录 {path}/（{exc.strerror}）：枚举不完整就不能当通过——"
-            "漏掉的那个正好可能是没人说过的那个"))
+        findings.append(
+            Finding(
+                "ERROR",
+                NAME,
+                0,
+                CODE,
+                f"读不了目录 {path}/（{exc.strerror}）：枚举不完整就不能当通过——漏掉的那个正好可能是没人说过的那个",
+            )
+        )
         return []
 
 
@@ -57,9 +57,11 @@ def _read(path, findings):
         with open(path, encoding="utf-8") as fh:
             return fh.read()
     except OSError as exc:
-        findings.append(Finding(
-            "ERROR", NAME, 0, CODE,
-            f"读不了 {path}（{exc.strerror}）：文档这一侧读不动，点名判不了，不能当通过"))
+        findings.append(
+            Finding(
+                "ERROR", NAME, 0, CODE, f"读不了 {path}（{exc.strerror}）：文档这一侧读不动，点名判不了，不能当通过"
+            )
+        )
         return ""
 
 
@@ -121,17 +123,27 @@ def run(ctx, findings):
     artifacts = _artifacts(skill_dir, findings)
     if not artifacts:
         # 有 scripts/ 却一个交付物都没枚举到：那是边界写坏了，不是「都没有」——坑 #11
-        findings.append(Finding(
-            "ERROR", NAME, 0, CODE,
-            "枚举到 0 个交付物：边界 `_artifacts` 失效了（这不是「没有交付物」，"
-            "是扫描面写错），不能当通过"))
+        findings.append(
+            Finding(
+                "ERROR",
+                NAME,
+                0,
+                CODE,
+                "枚举到 0 个交付物：边界 `_artifacts` 失效了（这不是「没有交付物」，是扫描面写错），不能当通过",
+            )
+        )
         return
     text = _documented(skill_dir, findings)
-    orphans = [rel for rel, _path in artifacts
-               if rel not in text and os.path.basename(rel) not in text]
+    orphans = [rel for rel, _path in artifacts if rel not in text and os.path.basename(rel) not in text]
     if orphans:
-        findings.append(Finding(
-            "ERROR", NAME, 0, CODE,
-            f"{len(orphans)} 个交付物在文档里一次都没被点名：{' '.join(orphans)}。"
-            "交付物只躺磁盘上、文档一句话不说，下一个人不知道它存在、也不知道它算数——"
-            "「有了却没人说」与「说了却没有」是同一处脱钩的两面"))
+        findings.append(
+            Finding(
+                "ERROR",
+                NAME,
+                0,
+                CODE,
+                f"{len(orphans)} 个交付物在文档里一次都没被点名：{' '.join(orphans)}。"
+                "交付物只躺磁盘上、文档一句话不说，下一个人不知道它存在、也不知道它算数——"
+                "「有了却没人说」与「说了却没有」是同一处脱钩的两面",
+            )
+        )
