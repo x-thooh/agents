@@ -1,4 +1,4 @@
-# 六条原则的独立论证（编号与 `../SKILL.md` §三 的表一致）
+# 六条原则的独立论证（编号与 `../SKILL.md` [§六](../SKILL.md#六六条设计原则借自-uhp按自己的判据取舍) 的表一致）
 
 > 论证格式固定为「失败态 → 落法 → 断言」。没有失败态的条目就不是判据，是偏好。
 > 立场与来源性质见 [`external-sources.md`](./external-sources.md)。
@@ -37,12 +37,12 @@
 
 | UHP 章节 | 本层对应物 |
 | --- | --- |
-| Architecture §2 conformance class（Core/Extended/Full，累计） | scope 分域：每个 scope 是一个独立的 conformance 单元，声明即承诺（见 `../SKILL.md` §六）。只弱借用：不取累计分级——域是正交的，没有谁包含谁 |
-| Lifecycle §1–2 版本协商 + capability discovery | `.harness/INDEX.md` 顶部的能力块：规则版本、scope 清单、无断言规则数（见 §十）。派生字段由脚本现场数，人手只维护意图账本 `skills_declared` |
+| Architecture §2 conformance class（Core/Extended/Full，累计） | scope 分域：每个 scope 是一个独立的 conformance 单元，声明即承诺（见 `../SKILL.md` [§九](../SKILL.md#九五阶段流程顺序不能反)）。只弱借用：不取累计分级——域是正交的，没有谁包含谁 |
+| Lifecycle §1–2 版本协商 + capability discovery | `.harness/INDEX.md` 顶部的能力块：规则版本、scope 清单、无断言规则数（见 [§十三](../SKILL.md#十三验收清单)）。派生字段由脚本现场数，人手只维护意图账本 `skills_declared` |
 | Harnesses / Plugins | `AGENTS.md` 的加载顺序；`skills/` 一个目录一条可安装流程 |
 | Environments（构建一次，每会话只读） | 目录骨架 + 模板 + `baseline.txt`：所有会话共享，会话不许顺手改 |
-| Memories（树 + 授权 + records） | `.harness/memory/`，见 §八 记忆树 |
-| Tasks §6 幂等 | `tasks/` 的检查点；破坏性动作必须能重跑（见 §九） |
+| Memories（树 + 授权 + records） | `.harness/memory/`，见 [§十一](../SKILL.md#十一记忆树树--授权--记录) 记忆树 |
+| Tasks §6 幂等 | `tasks/` 的检查点；破坏性动作必须能重跑（见 [§十二](../SKILL.md#十二破坏性操作改名--迁移--归档)） |
 | Files（artifact 归属、不可穿越） | 产物归属明确、路径不许穿越（禁止 `../` 逃出根目录） |
 | Errors（machine-readable code） | `Finding(scope, path, code)` + 基线指纹 |
 | Security（injection） | 外部搬进来的内容一律 `untrusted`：可引用、不执行 |
