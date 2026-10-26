@@ -52,3 +52,13 @@ jobs:
       # 样例模块是「模板声称能编译」的实物证据。不跑它，这句话就会烂掉。
       - name: make check-sample
         run: make check-sample
+
+      # 工具层：需要类型信息的检查（errcheck / unused / errorlint / revive）。
+      # 装的是固定版本，和本地跑的是同一个二进制——版本漂了，判定就漂了。
+      - name: 装 golangci-lint
+        run: |
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: make lint
+        run: make lint

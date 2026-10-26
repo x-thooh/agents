@@ -12,7 +12,7 @@ TPL := templates
 DELIVERY := $(TPL)/delivery-harness
 GODEV := $(TPL)/go-dev-harness
 
-.PHONY: help check check-json check-skill fixtures check-templates selftest check-sample check-strict guide
+.PHONY: help check check-json check-skill fixtures check-templates selftest check-sample check-strict lint guide
 
 help:
 	@echo "make check            全部门禁：技能自审 + fixture 断言表 + 两套模板 + 两套反向测试（不需要 Go）"
@@ -20,8 +20,9 @@ help:
 	@echo "make check-skill      只跑 scripts/audit.py"
 	@echo "make fixtures         全部反向 fixture 逐条比对期望的 code"
 	@echo "make check-templates  只跑两套模板的 .harness/scripts/verify.py"
-	@echo "make selftest         只跑两套 tests/reverse.py"
+	@echo "make selftest         只跑两套 tests/reverse.py + 提交消息检查"
 	@echo "make check-sample     样例 Go 模块 vet + test（需要 Go 工具链）"
+	@echo "make lint             工具层：golangci-lint 跑样例模块（需要 Go 工具链）"
 	@echo "make check-strict     断言 --strict 能拦下示例数据（模板自身的不变量）"
 	@echo "make guide            重新生成两套 codebase-guide/index.json"
 
@@ -46,6 +47,14 @@ check-templates:
 selftest:
 	@$(PY) $(DELIVERY)/tests/reverse.py
 	@$(PY) $(GODEV)/tests/reverse.py
+	@$(PY) $(GODEV)/tests/commit_msg.py
+
+# 工具层不在这里重写一遍：委托给模板自己的 lint 目标，
+# go_src 从模板的 config.json 读，路径不写第二份。
+lint:
+	@command -v golangci-lint >/dev/null 2>&1 || { \
+	  echo "lint 需要 golangci-lint：https://golangci-lint.run/welcome/install/" >&2; exit 1; }
+	@$(MAKE) -s -C $(GODEV) lint
 
 check-sample:
 	@command -v $(GO) >/dev/null 2>&1 || { \
