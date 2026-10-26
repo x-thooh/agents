@@ -12,6 +12,7 @@
   python3 scripts/retro.py --check    # 校验 archive/retro/*.md 的必填栏
 退出码: 0 = 通过 / 判不了；1 = 复盘缺栏；2 = 环境错误
 """
+
 import json
 import pathlib
 import re
@@ -69,12 +70,36 @@ def facts():
     return 0
 
 
+def _board():
+    """反思工单表：{id: status}。空表与「没建表」分开——后者判不了，不冒充通过。"""
+    path = RETRO / "tasks.json"
+    if not path.is_file():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return False
+    return {str(t.get("id")): t for t in data.get("tasks", []) if isinstance(t, dict)}
+
+
 def check():
+    """复盘两栏都必须可核验：拦到栏要点名 code，工单栏要指向表里真实存在的 id。
+
+    为什么要表：复盘里写「工单：无」最省事，而「无」恰恰是这条机制失效的样子。
+    有表之后，写「无」就必须解释，写 id 就必须真有人认领——两边都堵。
+    """
     files = sorted(RETRO.glob("*.md")) if RETRO.is_dir() else []
     if not files:
         print(f"retro: {RETRO} 下还没有复盘——判不了，不冒充通过")
         return 0
-    bad = []
+    board = _board()
+    if board is None:
+        print(f"retro: 缺 {RETRO}/tasks.json——工单栏无从核验，判不了", file=sys.stderr)
+        return 2
+    if board is False:
+        print("retro: tasks.json 不是合法 JSON", file=sys.stderr)
+        return 2
+    bad, cited = [], set()
     for path in files:
         text = path.read_text(encoding="utf-8")
         lack = [k for k in REQUIRED if k not in text]
@@ -84,11 +109,22 @@ def check():
         hit = text.split("拦到：", 1)[1].split("\n", 1)[0].strip()
         if hit != "0" and not CODE.search(hit):
             bad.append(f"{path.name}: 拦到一栏既不是 0，也没点名任何 code——那是感想不是台账")
+        ids = re.findall(r"\bR-\d+\b", text.split("工单：", 1)[1].split("\n", 1)[0])
+        if not ids:
+            bad.append(f"{path.name}: 工单栏没有指向任何 R-N——「无」不是默认值，要写就必须给理由")
+            continue
+        for tid in ids:
+            cited.add(tid)
+            if tid not in board:
+                bad.append(f"{path.name}: 工单 {tid} 不在 tasks.json 里")
+    orphan = sorted(set(board) - cited)
+    if orphan:
+        bad.append(f"tasks.json 里有没人引用的工单：{' '.join(orphan)}——那是死库存")
     if bad:
         for line in bad:
             print(f"FAIL {line}", file=sys.stderr)
         return 1
-    print(f"retro: {len(files)} 篇复盘通过（拦到栏要么点名 code、要么明确写 0）")
+    print(f"retro: {len(files)} 篇复盘通过；工单 {len(cited)} 条全部可追溯")
     return 0
 
 

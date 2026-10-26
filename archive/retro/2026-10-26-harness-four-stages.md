@@ -35,8 +35,8 @@
 
 ## 拦到：DLV001×3、LINK004×1、DOC001×1、CODEINDEX001×1、STRUCT003×1、BUDGET001×4、LOOP004×1
 
-## 工单：无
+## 工单：R-1
 
-本 skill 自己没有 `tasks/board.json`（那是它生成给目标仓库的），所以工单栏填不了结构化 id。
+本 skill 自己没有 `tasks/board.json`（故工单改记在 `archive/retro/tasks.json`）（那是它生成给目标仓库的），所以工单栏填不了结构化 id。
 这是 `origin=reflect` 机制在本仓库**落不了地**的那一格——若要落地，需要给 ~/.agents 也建一个看板，
 或在复盘里改用自由文本待办。此处如实记下，不假装有工单。

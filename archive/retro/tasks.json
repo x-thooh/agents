@@ -1,0 +1,11 @@
+{
+  "tasks": [
+    {
+      "id": "R-1",
+      "status": "done",
+      "title": "给 archive/retro 建工单表，让复盘的工单栏从自由文本变成可核验引用",
+      "origin": "reflect",
+      "retro": "2026-10-26-harness-four-stages.md"
+    }
+  ]
+}
