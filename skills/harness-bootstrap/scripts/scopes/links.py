@@ -1,13 +1,11 @@
-"""links：外部链接（默认跳过）与相对链接（离线强断言）。
+"""links：外部链接（默认跳过）与相对链接 + 锚点（离线强断言）。
 
-相对链接指向的文件必须存在——离线可判，所以声明失败时是 ERROR 不是降级
-（§七.12：跨文件一律相对链接，所以它得被查）。
+相对链接指向的文件必须存在，带 `#fragment` 时锚点也必须存在——两者都是离线可判。
+文件在、锚点错，就是「重排后静默指向别处」那个失败态（断言坑 #12）；只判文件等于
+只守了一半。
 
-**内联外部链接 vs 脚注里的 URL**：前者是承诺——写了就该能查，所以默认报一条
-LINK001 提醒「还没查」。后者（`[^x]: <https://…>`）是引用他人材料的出处，
-我们不需要也不应该替它背书；把它写成内联链接只会换来一条永久 WARN。
-所以「降成脚注」不是关掉检查，是把承诺与引用分开：内联 = 承诺可查，
-脚注 = 仅供追溯，本 scope 不管。新增内联外部链接时，要么真去查
+内联外部链接 vs 脚注里的 URL：前者是承诺（写了就该能查），后者是引用出处（不替它背书）。
+所以「降成脚注」不是关掉检查，是把承诺与引用分开。新增内联外部链接时要么真查
 （--check-links），要么降成脚注。
 """
 import http.client
@@ -15,21 +13,18 @@ import pathlib
 import re
 import urllib.parse
 
-from .common import Finding
+from .common import Finding, anchors_of
 
 NAME = "links"
 
 FENCE = re.compile(r"^\s*```")
 MD_LINK = re.compile(r"\[[^\]]*\]\((https?://[^)\s]+)\)")
 MD_LINK_REL = re.compile(r"\[[^\]]*\]\((?![a-z][a-z0-9+.-]*:|#)([^)\s]+)\)")
-
-
 def strip_code(text):
     """把围栏块与行内 code span 抹成空格，行号不变。
 
-    为什么必须抹：文档里讲「链接语法」时写的 `[示例](url)` 不是链接，是**教材**。
-    不抹的话，教一次写法就换来一条 LINK004——而修法只有两种：把教材删掉，或者
-    给它编个真实路径。两种都让文档变差。判据要判的是**真的链接**。
+    文档讲「链接语法」时写的 `[示例](url)` 是**教材**不是链接；不抹的话，
+    教一次写法就换来一条 LINK004，修法只剩删教材或编假路径，两种都让文档变差。
     """
     out, in_fence = [], False
     for line in text.split("\n"):
@@ -55,12 +50,26 @@ def check_relative_links(text, skill_dir, findings):
     root = pathlib.Path(skill_dir).resolve()
     for idx, ln in enumerate(text.split("\n")):
         for target in MD_LINK_REL.findall(ln):
-            rel = target.split("#", 1)[0].split("?", 1)[0]
+            rel, _, frag = target.partition("#")
+            rel = rel.split("?", 1)[0]
             if not rel:
                 continue
-            if not (root / rel).resolve().exists():
+            path = (root / rel).resolve()
+            if not path.exists():
                 findings.append(Finding("ERROR", NAME, idx + 1, "LINK004",
                                         f"相对链接指向不存在的文件: {target}"))
+                continue
+            if not frag or path.suffix != ".md":
+                continue
+            anchors = anchors_of(path)
+            if anchors is None:
+                findings.append(Finding("ERROR", NAME, idx + 1, "LINK004",
+                                        f"链接目标读不了，锚点判不了（不能当通过）: {target}"))
+            elif frag not in anchors:
+                findings.append(Finding(
+                    "ERROR", NAME, idx + 1, "LINK004",
+                    f"锚点在目标文件里不存在: {target}"
+                    "——文件在、锚点错，就是「重排后静默指向别处」那个形态"))
 
 
 def check_external_links(text, findings, do_check, status_override=None):

@@ -117,3 +117,28 @@ def build_sections(lines):
         if mt:
             secs[cur]["subs"].add(as_int(mt.group(1)))
     return secs
+
+
+HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*$", re.M)
+
+
+def anchor(title):
+    """GitHub 锚点规则：小写、去标点（留中文/字母/数字/空格/连字符）、空格→连字符。
+
+    不合并连续连字符：`状态  +  门槛`在 GitHub 上得到两个，归一时也得是两个。
+    它住在 common 是因为这是**归一规则**，与具体 scope 无关；迁移器与校验器
+    共用一份实现，才不会各算一套。
+    """
+    t = title.strip().lower()
+    t = re.sub(r"[^\w\s-]", "", t)
+    return t.strip().replace(" ", "-")
+
+
+def anchors_of(path):
+    """目标文件里所有标题的锚点集合；读不动返回 None（与「一个都没有」分开）。"""
+    try:
+        with open(path, encoding="utf-8") as fh:
+            body = fh.read()
+    except OSError:
+        return None
+    return {anchor(m.group(1)) for m in HEADING.finditer(body)}
