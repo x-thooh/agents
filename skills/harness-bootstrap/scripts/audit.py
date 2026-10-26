@@ -8,8 +8,10 @@
   * 只读，不写文件；不依赖 git；同输入同输出（可重复执行）；
   * 不审目标仓库的 harness —— 那是目标仓库自己的 verify.py 的事。
 
-本文件只做调度：每个 scope 一个文件，实现在 scripts/scopes/<name>.py
+本文件只做调度：读入 → 跑注册表里的 scope → 把结果交给 `report.py`。
+scope 实现在 `scripts/scopes/<name>.py`，输出与退出码在 `scripts/report.py`
 （§六 verify 脚本规范：单文件长到一次只能改一处、改不动时，就该拆了）。
+拆分判据：拆分前后 `--json` 输出字节等同。
 
 语义一致性（如「阶段 0–2 没有 verify」）机器判不了 —— 那是人判项，
 由 SKILL.md §十 的「判据类型」列标注，本脚本不冒充。
@@ -20,7 +22,6 @@
 退出码: 0 = 通过（可含 WARN）；1 = 有 ERROR；2 = 用法/环境错误
 """
 import argparse
-import json
 import os
 import sys
 
@@ -28,6 +29,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 if _HERE not in sys.path:
     sys.path.insert(0, _HERE)
 
+import report  # noqa: E402  （同目录，sys.path 已就位）
 from scopes import (  # noqa: E402  （必须先修好 sys.path 再导入）
     baseline,
     bash,
@@ -122,30 +124,15 @@ def main(argv=None):
 
     findings, na = run_all(text, skill_md, skill_dir, args.check_links, args.dispatch,
                            link_status)
-    findings.sort(key=lambda f: (f.severity != "ERROR", f.scope, f.line, f.code))
-    errors = [f for f in findings if f.severity == "ERROR"]
-    warns = [f for f in findings if f.severity == "WARN"]
-
-    if args.json:
-        print(json.dumps({
-            "skill_dir": skill_dir,
-            "findings": [f.as_dict() for f in findings],
-            "summary": {"errors": len(errors), "warns": len(warns),
-                        "scopes": [m.NAME for m in SCOPES],
-                        "not_applicable": na,
-                        "links_checked": bool(args.check_links)},
-        }, ensure_ascii=False, indent=2))
-    else:
-        rel = os.path.relpath(skill_md, skill_dir)
-        for f in findings:
-            loc = f"{f.path or rel}:{f.line}" if f.line else (f.path or rel)
-            print(f"{f.severity:<5} {f.scope:<11} {loc}  {f.code:<7} {f.message}")
-        print(f"{len(errors)} ERROR, {len(warns)} WARN  "
-              f"({'links 已检查' if args.check_links else 'links 未检查'})  "
-              + (f"scope 未适用: {','.join(na)}  " if na else "")
-              + "语义一致性=人判，不在本脚本范围")
-
-    return 1 if errors else 0
+    return report.emit(
+        as_json=args.json,
+        skill_dir=skill_dir,
+        skill_md=skill_md,
+        findings=findings,
+        scope_names=[m.NAME for m in SCOPES],
+        na=na,
+        links_checked=args.check_links,
+    )
 
 
 if __name__ == "__main__":

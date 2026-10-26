@@ -16,7 +16,8 @@
 harness-bootstrap/
 ├── SKILL.md          标准：入口与元数据（必需）
 ├── references/       标准：按需查的支撑文档，只放 .md，不建子目录（STRUCT002）
-├── scripts/          标准：可执行代码（audit.py + 一个 scope 一个文件）
+├── scripts/          标准：可执行代码（audit.py 调度 + report.py 输出 + scopes/ 一个 scope 一个文件
+│                     + gen_code_index.py 生成清单 + check_strict.sh 判 strict）
 ├── agents/           标准：子 Agent 定义（本 skill 目前没有，不建空目录）
 ├── README.md         额外：维护者入口，给人看，不进 skill 上下文
 ├── Makefile          额外：统一命令入口（所有命令从 make 走）

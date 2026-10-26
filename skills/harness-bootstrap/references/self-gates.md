@@ -30,7 +30,7 @@ python3 scripts/audit.py --skill-dir tests/fixtures/ok-minimal   # 正对照：0
 
 | 层 | 守什么 | 入口 | 验不了的 |
 | --- | --- | --- | --- |
-| 文本形状 | 规范自身写得对不对（code 是否都有样本、引用是否断、清单一不一致） | `scripts/audit.py` + `tests/fixtures.py` | 模板装到真仓库里说什么 |
+| 文本形状 | 规范自身写得对不对（code 是否都有样本、引用是否断、清单一不一致、文档有没有漏 code） | `scripts/audit.py`（调度）+ `scripts/report.py`（输出）+ `scopes/` + `tests/fixtures.py` | 模板装到真仓库里说什么 |
 | 派生一致 | `references/code-index.md` 与源码逐字节相同 | `codeindex` scope | 清单里的行对不对得上规则 |
 | 行为 | 模板拷进空仓库后**仍然诚实**（示例会被拦、还在扫 sample 会被点名） | `tests/template_boot.py`（`make check-boot`） | 真实业务仓库的语义 |
 
