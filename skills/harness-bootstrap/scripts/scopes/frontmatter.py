@@ -14,7 +14,8 @@ NAME = "frontmatter"
 SPEC_FIELDS = {"name", "description", "license", "compatibility", "metadata", "allowed-tools"}
 NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 # 触发语：只认「什么时候唤起」。不认裸「当」——它连「当前」都能命中，等于没有断言。
-TRIGGER_MARKERS = ("用于", "适用于", "使用时", "适用", "当遇到", "当需要", "当你", "Use when", "When ")
+TRIGGER_MARKERS = ("用于", "适用于", "使用时", "适用", "当遇到", "当需要", "当你",
+                  "当用户", "触发词", "Use when", "When ")
 # 流程语：出现即按「在 description 里写流程摘要」判。箭头与序号词是第一种写法，
 # 交付物清单（「产出 / 交付物 / 步骤」+ 并列的产物名）是第二种——本 skill 自己就踩过：
 # 旧 description 把整层产物逐件列了一遍，而当时的 marker 只认箭头与序号，

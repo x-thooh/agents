@@ -63,6 +63,8 @@ CASES = (
     # 每个 scope 至少一条
     ("bad-frontmatter", {"FM004"}, ()),
     ("bad-bash-block", {"BASH001"}, ()),
+    # --only 过滤：同一份坏样本，只跑 links 时不该报 FM008（证明选择真的生效）
+    ("bad-description", set(), ("--only", "links")),
     ("bad-description", {"FM008"}, ()),
     # 产物清单也是流程摘要：只认箭头/序号时，这类写法一路绿灯（真实自欺）
     ("bad-description-deliverable", {"FM008"}, ()),
@@ -185,8 +187,23 @@ def check_coverage():
     return out
 
 
+def check_cli():
+    """入口契约：`--only` 里拼错 scope 必须退出码 2——静默少跑一条检查是最坏的绿灯。"""
+    proc = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "audit.py"), "--only", "no-such-scope"],
+        check=False, capture_output=True, text=True,
+    )
+    if proc.returncode != 2:
+        return [f"--only 未知 scope 应退出 2，实际 {proc.returncode}"]
+    if "Traceback" in proc.stderr:
+        return ["--only 未知 scope 不应 traceback：那是崩溃，不是用法错误"]
+    if "可选" not in proc.stderr:
+        return ["--only 未知 scope 应列出可选项，实际：" + proc.stderr.strip()[:120]]
+    return []
+
+
 def main():
-    failures = list(check_coverage())
+    failures = list(check_coverage()) + check_cli()
     for fixture, expected, extra in CASES:
         label = fixture + (" " + " ".join(extra) if extra else "")
         try:

@@ -19,12 +19,33 @@ from .common import Finding
 
 NAME = "links"
 
+FENCE = re.compile(r"^\s*```")
 MD_LINK = re.compile(r"\[[^\]]*\]\((https?://[^)\s]+)\)")
 MD_LINK_REL = re.compile(r"\[[^\]]*\]\((?![a-z][a-z0-9+.-]*:|#)([^)\s]+)\)")
 
 
+def strip_code(text):
+    """把围栏块与行内 code span 抹成空格，行号不变。
+
+    为什么必须抹：文档里讲「链接语法」时写的 `[示例](url)` 不是链接，是**教材**。
+    不抹的话，教一次写法就换来一条 LINK004——而修法只有两种：把教材删掉，或者
+    给它编个真实路径。两种都让文档变差。判据要判的是**真的链接**。
+    """
+    out, in_fence = [], False
+    for line in text.split("\n"):
+        if FENCE.match(line):
+            in_fence = not in_fence
+            out.append(" " * len(line))
+            continue
+        if in_fence:
+            out.append(" " * len(line))
+            continue
+        out.append(re.sub(r"`[^`]*`", lambda m: " " * len(m.group(0)), line))
+    return "\n".join(out)
+
+
 def run(ctx, findings):
-    text = ctx["text"]
+    text = strip_code(ctx["text"])
     check_relative_links(text, ctx["skill_dir"], findings)
     check_external_links(text, findings, ctx.get("check_links", False),
                          ctx.get("link_status"))

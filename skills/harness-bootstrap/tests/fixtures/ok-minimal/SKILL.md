@@ -19,6 +19,10 @@ python3 scripts/audit.py --skill-dir tests/fixtures/ok-minimal
 
 判据是 0 ERROR 且 0 WARN。任何一条 WARN 都说明这份样本被污染了，正对照随之失效。
 
+这条样本还兼一个反误报的证：下面这段是**教材**，写在行内 code span 里，
+不是真链接——`[示例](not/a/real/path.md)`。links scope 若不遮掉代码，
+每教一次写法就多一条假 LINK004。
+
 ## 基线机制
 
 - 基线按条数记，逐条输出，不许只报「基线内 N 条」。

@@ -17,7 +17,7 @@ scope 实现在 `scripts/scopes/<name>.py`，输出与退出码在 `scripts/repo
 由 SKILL.md §十 的「判据类型」列标注，本脚本不冒充。
 
 用法:
-  python3 scripts/audit.py [--skill-dir DIR] [--check-links] [--json]
+  python3 scripts/audit.py [--skill-dir DIR] [--only a,b] [--check-links] [--json]
 
 退出码: 0 = 通过（可含 WARN）；1 = 有 ERROR；2 = 用法/环境错误
 """
@@ -30,6 +30,7 @@ if _HERE not in sys.path:
     sys.path.insert(0, _HERE)
 
 import report  # noqa: E402  （同目录，sys.path 已就位）
+from cli import parse_link_status, select  # noqa: E402
 from scopes import (  # noqa: E402  （必须先修好 sys.path 再导入）
     baseline,
     bash,
@@ -56,36 +57,14 @@ SCOPES = (frontmatter, bash, baseline, host, layout, layout_parity, budget, sect
           codeindex, docclaim, docphantom, ledger, terms, version, xref, xrefdoc, links)
 
 
-def run_all(text, path, skill_dir, check_links, dispatch=None, link_status=None):
+def run_all(text, path, skill_dir, check_links, dispatch=None, link_status=None, scopes=None):
     findings = []
     ctx = {"text": text, "path": path, "skill_dir": skill_dir,
            "check_links": check_links, "dispatch": dispatch,
            "link_status": link_status or {}}
-    for mod in SCOPES:
+    for mod in scopes or SCOPES:
         mod.run(ctx, findings)
     return findings, ctx.get("not_applicable", [])
-
-
-def _parse_link_status(items):
-    """`--link-status URL=CODE` → {URL: int|'ERR'}。
-
-    在入口就把值验完：写错值时报用法错误（退出码 2），而不是让 links 拿到一个
-    字符串去 int() 然后在某个 fixture 里 traceback。
-    """
-    out = {}
-    for item in items:
-        url, sep, value = item.rpartition("=")
-        if not sep or not url:
-            raise ValueError(f"--link-status 要写成 URL=CODE：{item!r}")
-        if value == "ERR":
-            out[url] = "ERR"
-            continue
-        try:
-            out[url] = int(value)
-        except ValueError:
-            raise ValueError(
-                f"--link-status 的 CODE 必须是整数或 ERR：{value!r}") from None
-    return out
 
 
 def main(argv=None):
@@ -99,13 +78,17 @@ def main(argv=None):
                         metavar="URL=CODE",
                         help="测试缝：把某个 URL 的状态码固定成 CODE（整数）或 ERR（不可达）。\n"
                              "只为反向测试 LINK002/LINK003 存在——公网结果不能用来判门禁。")
+    parser.add_argument("--only", default=None, metavar="SCOPE[,SCOPE]",
+                        help="只跑这些 scope（逗号分隔）；默认全跑。\n"
+                             "给别的 skill 复用时必须点名：有些 scope 判的是本仓库的约定")
     parser.add_argument("--json", action="store_true", help="输出 JSON")
     parser.add_argument("--dispatch", default=None,
                         help="调度器源码路径（默认 <skill-dir>/scripts/audit.py；只为反向测试存在）")
     args = parser.parse_args(argv)
 
     try:
-        link_status = _parse_link_status(args.link_status)
+        link_status = parse_link_status(args.link_status)
+        scopes = select({mod.NAME: mod for mod in SCOPES}, args.only)
     except ValueError as exc:
         parser.error(str(exc))  # 退出码 2，与「用法错误」一致，不带 traceback
 
@@ -124,13 +107,13 @@ def main(argv=None):
         return 2
 
     findings, na = run_all(text, skill_md, skill_dir, args.check_links, args.dispatch,
-                           link_status)
+                           link_status, scopes)
     return report.emit(
         as_json=args.json,
         skill_dir=skill_dir,
         skill_md=skill_md,
         findings=findings,
-        scope_names=[m.NAME for m in SCOPES],
+        scope_names=[m.NAME for m in scopes],
         na=na,
         links_checked=args.check_links,
     )
