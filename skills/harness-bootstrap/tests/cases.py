@@ -69,6 +69,9 @@ CASES = (
     ("bad-doc-phantom-code", {"DOC002"}, ()),
     # 幻影的另一个方向：正文（SKILL.md）替不存在的 code 背书
     ("bad-skill-phantom-code", {"DOC002"}, ()),
+    # 幻影的第三个方向：正文点名的 **scope 模块** 不存在。
+    # 只补 code 方向时这里全绿——而「拿别人家代码审谁守哪条」正是靠 scope 名指路的（v2 评审 §4-3）。
+    ("bad-phantom-scope", {"DOC002"}, ()),
     # 体量预算两档：两档都得真会响，否则「准备拆」只是句好听话
     ("bad-budget-warn", {"BUDGET001"}, ()),
     ("bad-budget-error", {"BUDGET001"}, ()),
