@@ -6,6 +6,7 @@
   #2  feat / fix 等 type 必须是已知的 noun   → CM002（本文件用 allowlist）
   #6  body 与 description 之间必须空一行     → CM003
   #12 BREAKING CHANGE 必须全大写             → CM004
+  本项目自定：一个提交只做一件事              → CM006（启发式，见 MULTI_PURPOSE）
 
 不判：description 写得好不好、body 讲清没讲清——那是人的事。
 
@@ -23,6 +24,12 @@ TYPES = {
 SUBJECT = re.compile(r"^([a-z]+)(\([^)]+\))?(!)?: (\S.*)$")
 BREAKING_FOOTER = re.compile(r"^breaking[ -]change:", re.I)
 SUBJECT_MAX = 72
+
+# 一个提交只做一件事：正文里以并列连接词另起一件事，就是在合并多功能提交。
+# 这只是启发式——机器判不了「两处改动算不算同一件事」。所以判据刻意收窄：
+# 必须在行首（可带列表符）且紧跟标点；句子中间出现「同时」不算。
+# 判不了的那部分是人判：这条规则只负责把最明显的合并标出来。
+MULTI_PURPOSE = re.compile(r"^\s*(?:[-*]\s*)?(顺带|另外|附带|同时|此外)\s*(?:[:：]|，|,)")
 
 
 def check(text):
@@ -57,6 +64,15 @@ def check(text):
     # #6：body 必须与 description 之间空一行
     if len(lines) > 1 and lines[1].strip() != "":
         problems.append(("CM003", "description 与 body 之间必须空一行"))
+
+    # 一个提交只做一件事（启发式）：正文行首出现并列连接词即为信号
+    for idx, line in enumerate(lines[2:], 3):
+        if MULTI_PURPOSE.match(line):
+            problems.append((
+                "CM006",
+                f"第 {idx} 行以并列连接词起头（{line.strip()[:30]!r}）：一个提交只做一件事，"
+                "拆成两个提交。判据收窄到行首+标点，句中出现不算",
+            ))
 
     # #12：BREAKING CHANGE 必须全大写（BREAKING-CHANGE 是它的同义写法，#16）
     for idx, line in enumerate(lines[1:], 2):
