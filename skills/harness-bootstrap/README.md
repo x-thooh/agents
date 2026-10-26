@@ -22,7 +22,7 @@ harness-bootstrap/
 ├── agents/           标准：子 Agent 定义（本 skill 目前没有，不建空目录）
 ├── README.md         额外：维护者入口，给人看，不进 skill 上下文
 ├── Makefile          额外：统一命令入口（所有命令从 make 走）
-├── tests/            额外：自身门禁的反向 fixture + 期望表
+├── tests/            额外：自身门禁的引擎（`fixtures.py`）+ 期望表（`cases.py`）+ 三道闸（`coverage.py`）+ 反向 fixture
 └── templates/        额外：生成物模板，拷进目标仓库用，不是参考文档
 ```
 
@@ -128,7 +128,7 @@ python3 scripts/audit.py --check-links      # 真查外部链接，默认只报�
 make fixtures       # = python3 tests/fixtures.py：全部 fixture 逐条比对期望的 code
 ```
 
-期望清单只有一处——`tests/fixtures.py` 的 `CASES` 表，它跑在 `make check` 里。
+期望清单只有一处——`tests/cases.py` 的 `CASES` 表，它跑在 `make check` 里。
 README 和 `references/self-gates.md` 都不再抄第二份：抄出来的表迟早和第一份不一致，
 而「表说这条规则有人守」的信用就建立在这上面。新增 scope 时改那张表。
 

@@ -14,7 +14,7 @@ python3 scripts/audit.py --skill-dir tests/fixtures/ok-minimal   # 正对照：0
 
 `make check-all` 包含上面这些命令，另加两套模板的 `--strict` 不变量；单独列出那几条，是为了改一处时不必等全量。
 
-**期望清单只有一处**：`tests/fixtures.py` 的 `CASES` 表。它逐条写明每个 fixture 该报哪个 code，
+**期望清单只有一处**：`tests/cases.py` 的 `CASES` 表。它逐条写明每个 fixture 该报哪个 code，
 跑 `make check-all` 时一起执行。这里不再抄一份——抄出来的第二份表迟早和第一份不一致，
 而「表说某条规则有人守」这句话的信用就建立在这上面。新增 scope 时改那张表，不是改这里。
 
@@ -30,7 +30,7 @@ python3 scripts/audit.py --skill-dir tests/fixtures/ok-minimal   # 正对照：0
 
 | 层 | 守什么 | 入口 | 验不了的 |
 | --- | --- | --- | --- |
-| 文本形状 | 规范自身写得对不对（code 是否都有样本、引用是否断、清单一不一致、文档漏没漏 code、有没有替不存在的 code 背书） | `scripts/audit.py`（调度）+ `scripts/report.py`（输出）+ `scopes/` + `tests/fixtures.py` | 模板装到真仓库里说什么 |
+| 文本形状 | 规范自身写得对不对（code 是否都有样本、引用是否断、清单一不一致、文档漏没漏 code、有没有替不存在的 code 或 scope 背书） | `scripts/audit.py`（调度）+ `scripts/report.py`（输出）+ `scopes/` + `tests/cases.py`（期望表）+ `tests/coverage.py`（三道闸）+ `tests/fixtures.py`（引擎） | 模板装到真仓库里说什么 |
 | 派生一致 | `references/code-index.md` 与源码逐字节相同 | `codeindex` scope | 清单里的行对不对得上规则 |
 | 行为 | 模板拷进空仓库后**仍然诚实**（示例会被拦、还在扫 sample 会被点名） | `tests/template_boot.py`（`make check-boot`） | 真实业务仓库的语义 |
 
