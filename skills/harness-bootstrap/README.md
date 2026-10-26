@@ -19,6 +19,7 @@ harness-bootstrap/
 ├── references/       标准：按需查的支撑文档，只放 .md，不建子目录（STRUCT002）
 ├── scripts/          标准：可执行代码（audit.py 调度 + report.py 输出 + cli.py 解析入口参数
 │                     + hooks.py 每 scope 的 plan/reflect + round.py 一轮=一次提交的行为级对照
+│                     + retro.py 复盘的事实底板（数字先算，AI 只许在数字上写）
 │                     + scopes/ 一个 scope 一个文件
 │                     + gen_code_index.py 生成清单 + check_strict.sh 判 strict）
 ├── agents/           标准：子 Agent 定义（本 skill 目前没有，不建空目录）

@@ -12,6 +12,7 @@
   `git stash` 会动用户的工作树，脚本不该替人保管未提交的改动；worktree 是只读旁路，
   失败时删掉即可，当前树一个字节都不动。
 """
+
 import json
 import pathlib
 import subprocess
@@ -27,20 +28,21 @@ def audit(cwd):
     target = cwd / "scripts" / "audit.py"
     if not target.is_file():
         return None
-    proc = subprocess.run([sys.executable, str(target), "--json"],
-                          cwd=str(cwd), capture_output=True, text=True, check=False)
+    proc = subprocess.run(
+        [sys.executable, str(target), "--json"], cwd=str(cwd), capture_output=True, text=True, check=False
+    )
     try:
         summary = json.loads(proc.stdout)["summary"]
     except (json.JSONDecodeError, KeyError):
-        print(f"round: {cwd} 下 audit 没给出可解析的 JSON：{proc.stderr.strip()[:200]}",
-              file=sys.stderr)
+        print(f"round: {cwd} 下 audit 没给出可解析的 JSON：{proc.stderr.strip()[:200]}", file=sys.stderr)
         return None
     return summary["errors"], summary["warns"]
 
 
 def repo_root():
-    proc = subprocess.run(["git", "-C", str(SKILL), "rev-parse", "--show-toplevel"],
-                          capture_output=True, text=True, check=False)
+    proc = subprocess.run(
+        ["git", "-C", str(SKILL), "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=False
+    )
     return pathlib.Path(proc.stdout.strip()) if proc.returncode == 0 else None
 
 
@@ -56,16 +58,24 @@ def main(argv):
         return 2
     with tempfile.TemporaryDirectory(prefix="round-") as tmp:
         tree = pathlib.Path(tmp) / "base"
-        add = subprocess.run(["git", "-C", str(root), "worktree", "add", "--detach",
-                              str(tree), base], capture_output=True, text=True, check=False)
+        add = subprocess.run(
+            ["git", "-C", str(root), "worktree", "add", "--detach", str(tree), base],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
         if add.returncode != 0:
             print(f"round: 取基准 {base} 失败：{add.stderr.strip()[:300]}", file=sys.stderr)
             return 2
         try:
             before = audit(tree / rel)
         finally:
-            subprocess.run(["git", "-C", str(root), "worktree", "remove", "--force", str(tree)],
-                           capture_output=True, text=True, check=False)
+            subprocess.run(
+                ["git", "-C", str(root), "worktree", "remove", "--force", str(tree)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
     if before is None:
         print(f"round: 基准 {base} 下没有可跑的 audit", file=sys.stderr)
         return 2
@@ -73,8 +83,11 @@ def main(argv):
     c_err, c_warn = current
     print(f"round: {base} = {b_err} ERROR / {b_warn} WARN  →  当前 = {c_err} ERROR / {c_warn} WARN")
     if c_err > b_err:
-        print(f"round: ERROR 上升 {c_err - b_err} 条——说不出原因不许交付"
-              "（§〇 感知 / §三 反思：与改前基准逐项对照，任何上升都要归因）", file=sys.stderr)
+        print(
+            f"round: ERROR 上升 {c_err - b_err} 条——说不出原因不许交付"
+            "（§〇 感知 / §三 反思：与改前基准逐项对照，任何上升都要归因）",
+            file=sys.stderr,
+        )
         return 1
     print("round: 锚点未恶化")
     return 0

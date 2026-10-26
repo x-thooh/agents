@@ -42,7 +42,13 @@ check: check-skill fixtures check-templates selftest
 round:
 	@$(PY) scripts/round.py
 
-check-all: check check-strict check-boot lint-python
+retro:
+	@$(PY) scripts/retro.py
+
+retro-check:
+	@$(PY) scripts/retro.py --check
+
+check-all: check check-strict check-boot lint-python retro-check
 	@echo "== check-all 通过：以上 + strict 不变量 + 模板装上后的行为 + Python 静态检查 =="
 
 check-json:

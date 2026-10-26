@@ -18,8 +18,7 @@
 | --- | --- | --- |
 | skill 目录形状（`SKILL.md` + `references/` + `scripts/` + `agents/`；根下每个条目要么是标准四件，要么在 `EXTRAS` 里写明理由） | audit.py STRUCT001（近似拼写 `reference`/`script`/`agent` 与未声明条目）/ STRUCT002（`references/` 只放 `.md`，不建子目录）+ `tests/fixtures.py` 三例 | 强 |
 | 基线机制写全了（条数制 / 逐条 / 零基线 / accepted / 只减不增 / 保质期 / 到期行为） | audit.py BASE001/BASE003/BASE004（只判正文有没有写全） | 强（文本） |
-| 基线机制真的在跑（账本格式 / 豁免过期 / 总数上升 / 可刷新；账本内降 WARN、账本外仍 ERROR） | 模板 verify 的 `scope=baseline`：BASE011 / BASE012 / BASE013 / BASE014 | 强（执行）+ 人判（指纹是否抹对了） |
-| 基线可单查（`--scope baseline` 时上游没跑，不得编造「老账已修掉一部分」） | 模板 `baseline._upstream_ran` 守卫：单查记 not_applicable 并明说「这不是通过」；反向测试 `baseline_solo_case` | 强（执行） |
+| 基线机制真的在跑且可单查（账本格式 / 豁免过期 / 总数上升 / 可刷新；账本内降 WARN、账本外仍 ERROR；单查时上游没跑必须记 not_applicable，不许编造「老账已修掉一部分」） | 模板 verify 的 `scope=baseline`：BASE011 / BASE012 / BASE013 / BASE014；`baseline._upstream_ran` 守卫 + 反向测试 `baseline_solo_case` | 强（执行）+ 人判（指纹是否抹对了） |
 | 规则集版本保质期（`rules_version` 90 天未重新确认即 ERROR；基线不设刷新日期字段） | audit.py VER001（提到它的那一行必须同时写明天数与到期行为） | 强 |
 | references/*.md 里的跨文件 §X.Y 引用指向存在的章节/条目（断言坑 #12 的存在性半边） | audit.py XREFDOC001/XREFDOC002（改号/删节/外置后没跟着改；重排同号仍属人判） | 强（存在性半边）+ 人判（重排同号） |
 | 「每条硬规则在断言表里有对应行」有人核得动 | audit.py CODEINDEX001（`references/code-index.md` 与源码逐字节一致；`make code-index` 重生成） | 强（清单本身）+ 人判（行到底对应得对不对） |
@@ -53,6 +52,7 @@
 | 布局表 ↔ 模板双向对账（表为根，产物不得反向定义规范） | audit.py LP001 / LP002 / LP003 | 强 |
 | 规范用语：`scope 分域` 不是分级 | audit.py SCOPE001 | 强 |
 | **文档描述必须与代码一致**，两个方向 | audit.py DOC001（代码里的每个 code 本文档都要有行）+ DOC002（本文档与 SKILL.md 点名的 code **与 scope 模块名**必须真存在，幻影即 ERROR；行写得对不对仍人判） | 强（覆盖 + 幻影）+ 人判（对应） |
+| 需求复盘：拦到栏必须点名 code 或明确写 0，工单栏必须填 | `scripts/retro.py --check`（`make retro-check`，进 `check-all`）；复盘正文的数字一律由 `scripts/retro.py` 先算 | 强（形状与数字来源）+ 人判（结论是否成立） |
 | **行为级**：一轮（一次提交）之后审计计数不许上升 | `scripts/round.py`（把 `HEAD~1` 检出到临时 worktree 跑一遍 audit，与当前工作树比计数；上升即 exit 1）；`make round` | 强（执行） |
 | 四段纪律的每一节都留下可判的痕（感知 / 规划 / 行动 / 反思） | audit.py LOOP001 / LOOP002 / LOOP003 / LOOP004（各节必须有「机器判：」与「人判：」分列；写了其中一节就得四节齐；一节都没有则记 not_applicable）。分列里点到的 code 由 DOC002 交叉校验存在。**scope 层的落点**：`scripts/hooks.py` 的 PLAN / REFLECT 必须与各 scope 源码里的 code 集逐条对得上（漏登记 / 多登记 / 空即 ERROR） | 强（分列形状）+ 人判（判据本身是否成立） |
 | **交付物必须在文档里被点名**（有了却没人说 = 文档与交付物脱钩） | audit.py DLV001（`scripts/*.py` / `tests/*.py` / `references/*.md` / 根文件 / 每套模板的四个文件：相对路径或文件名至少出现一次；`scripts/scopes/*.py` 不在内，它们已由 `code-index.md` 逐个点名） | 强（存在性）+ 人判（点到的位置对不对） |
