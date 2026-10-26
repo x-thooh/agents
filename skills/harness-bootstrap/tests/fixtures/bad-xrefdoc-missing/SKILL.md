@@ -12,3 +12,4 @@ license: MIT
 
 正文没有编号章节。
 
+参考：`references/x.md`。

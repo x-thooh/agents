@@ -4,9 +4,12 @@
 `scripts/`（可执行代码）、`agents/`（子 Agent 定义）。多出来的目录不算错，但必须
 **声明**——没声明的目录会悄悄长成第二个入口，下一个人不知道该读哪个。
 
-所以本 scope 只判两件机器判得了的事：
+所以本 scope 只判三件机器判得了的事：
   1. 拼写：`reference` / `script` / `agent` 这类近似名一律按错报（标准是复数）；
-  2. 声明：根下每个条目必须落在 STANDARD、EXTRAS（带理由）或 TOOL_JUNK 里。
+  2. 声明：根下每个条目必须落在 STANDARD、EXTRAS（带理由）或 TOOL_JUNK 里；
+  3. 可达：`references/` 下的每个 .md 必须被 SKILL.md 或另一个参考文件链到（STRUCT003）。
+     密度改造会把细节搬进 references/，搬完忘了在入口加链接，这份内容就没人读得到——
+     它不报错、不计入任何额度，只是安静地变成死重量。
 
 不判：目录里放什么、层级多深、内容质量——那些是别的 scope 与人判的事。
 """
@@ -77,6 +80,39 @@ def run(ctx, findings):
         )
 
     check_references(skill_dir, findings)
+    check_reachability(skill_dir, findings)
+
+
+def check_reachability(skill_dir, findings):
+    """STRUCT003：references/ 里每一份都得有人链——外置内容没人链，等于没外置。"""
+    ref_dir = os.path.join(skill_dir, REF_DIR)
+    if not os.path.isdir(ref_dir):
+        return
+    names = [n for n in sorted(os.listdir(ref_dir)) if n.endswith(REF_SUFFIX)]
+    if not names:
+        return
+    sources = [os.path.join(skill_dir, "SKILL.md")]
+    sources += [os.path.join(ref_dir, n) for n in names]
+    texts = {}
+    for src in sources:
+        try:
+            with open(src, encoding="utf-8") as fh:
+                texts[src] = fh.read()
+        except OSError as exc:
+            findings.append(Finding(
+                "ERROR", NAME, 0, "STRUCT003",
+                f"读不了 {os.path.relpath(src, skill_dir)}（{exc.strerror}）："
+                "可达性判不了，不能当通过"))
+            return
+    for name in names:
+        others = [os.path.basename(src) for src in sources if os.path.basename(src) != name]
+        if any(name in texts[src] for src in sources if os.path.basename(src) != name):
+            continue
+        findings.append(Finding(
+            "ERROR", NAME, 0, "STRUCT003",
+            f"references/{name} 没有被任何入口链到（SKILL.md 与其它参考文件都没提它）："
+            f"外置内容没人链就没人读得到，等于没外置。可链的入口：{', '.join(others[:4])}…" ,
+            path=f"{REF_DIR}/{name}"))
 
 
 def check_references(skill_dir, findings):

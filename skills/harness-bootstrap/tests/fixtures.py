@@ -82,6 +82,8 @@ CASES = (
     ("bad-struct-extra", {"STRUCT001"}, ()),
     ("bad-struct-singular", {"STRUCT001"}, ()),
     ("bad-struct-refs-content", {"STRUCT002"}, ()),
+    # 外置内容没人链：文件在、内容对，但谁也读不到（密度改造的副作用）
+    ("bad-struct-orphan-ref", {"STRUCT003"}, ()),
     # 单节 100 行上限：超了要拆，不是提限
     ("bad-section-long", {"SECT001"}, ()),
     # 参考材料单文件 100 行上限：同一条规则的另一半

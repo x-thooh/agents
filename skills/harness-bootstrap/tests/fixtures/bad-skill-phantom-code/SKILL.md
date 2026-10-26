@@ -9,3 +9,5 @@ license: MIT
 反向样本：正文说「`scripts/scopes/demo.py` 的 `DEMO001` 与 `ZZ001` 一起守这条规则」，
 但 `ZZ001` 在本仓库任何 `.py` 里都不存在。`references/acceptance.md` 已经把
 `DEMO001` 点了名，所以 DOC001 满足——唯一缺陷是文档 → 源码方向的幻影。除此之外不含缺陷。
+
+参考：`references/acceptance.md`、`references/code-index.md`。

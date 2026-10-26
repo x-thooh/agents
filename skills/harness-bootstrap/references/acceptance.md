@@ -41,6 +41,7 @@
 | discovery 双向对账 | verify `scope=skills` | 强 |
 | 归档笔记的 `Archived:` 日期 = 该笔记移动当次提交的日期（归档是事件驱动，不设时间阈值） | 目标仓库 verify `scope=archive`（读 `git log`；本仓库 audit.py 明说不依赖 git，故不在此处实现） | 强（有版本控制时）；无 git 的仓库降级为人判并显式标注 |
 | 围栏代码可执行（无占位符 U+2026、`bash -n` 通过） | audit.py BASH001 / BASH002 | 强 |
+| 外置的参考文件必须有人链（没人链 = 没人读得到） | audit.py STRUCT003 | 强 |
 | 提了基线就要有基线小节 | audit.py BASE002 | 中 |
 | 宿主加载实测（承诺分层入口前必须先实测宿主真读子目录） | audit.py HOST001 / HOST002 | 强 |
 | 双向对账的两侧各点名一个载体（否则是派生品自比较） | audit.py DUAL001 | 强 |

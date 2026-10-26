@@ -8,3 +8,5 @@ license: MIT
 
 反向样本：`scripts/scopes/demo.py` 会报一个 code，而 `references/acceptance.md` 里没有它。
 除此之外不含缺陷。
+
+参考：`references/acceptance.md`、`references/code-index.md`。

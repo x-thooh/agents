@@ -8,3 +8,5 @@ license: MIT
 
 反向样本：源码里有一个 `DEMO001`，而 `references/code-index.md` 里没有它。
 除此之外不含缺陷。
+
+参考：`references/acceptance.md`、`references/code-index.md`。
