@@ -309,7 +309,7 @@ make check-json    # 原始计数，不看降级后的
 
 本 skill 自身的门禁（改 SKILL.md 前后都要跑，0 ERROR 才算改完）在 [`references/self-gates.md`](references/self-gates.md)；目标仓库该把每条规则挂到哪个断言载体上，在 [`references/acceptance.md`](references/acceptance.md)。两者不互相代替。
 
-人工只核两件事：入口地图上每个入口文件真实存在（覆盖断言是弱断言）；每条硬规则在断言表里有对应行，没有的写明「无断言」及强度来源。
+人工只核一件事：每条硬规则在断言表里有对应行，没有的写明「无断言」及强度来源。入口文件是否真的存在不靠人核——那是 `layout_parity` 的 `LP001`（表是根、模板是产物，对账走断言不走自觉）。
 
 ## 十一、移植清单
 
