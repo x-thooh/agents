@@ -4,16 +4,15 @@
 标准布局表为准——这里不抄第二份清单，抄出来的迟早和正文不一致。
 
 - 正文：`SKILL.md`（修改三段纪律、设计思想、UHP 六条原则与章节对照、DSH 三形状、五阶段、记忆树、断言规范、移植清单）
-- 自身门禁：`scripts/audit.py` + `tests/fixtures/`——审本 SKILL.md（frontmatter / bash 围栏 / 交叉引用 / 相对链接 / 基线记账 / 版本保质期 / 宿主实测 / 双向对账 / 规范用语 / 调度器体征 / 目录形状 / 节与参考材料的 100 行上限）+ references/*.md 里的跨文件 §X 引用（存在性），不依赖 git，不碰其他 skill；实现按 scope 分文件住 `scripts/scopes/`
+- 自身门禁：`scripts/audit.py` + `tests/fixtures/`——审本 SKILL.md（frontmatter / bash 围栏 / 交叉引用 / 相对链接 / 基线记账 / 版本保质期 / 宿主实测 / 双向对账 / 规范用语 / 调度器体征 / 目录形状 / 节与参考材料的 80/100 两档上限）+ references/*.md 里的跨文件 §X 引用（存在性），不依赖 git，不碰其他 skill；实现按 scope 分文件住 `scripts/scopes/`
 - `references/`：SKILL.md 放不下也没必要放的东西（坑清单、笔记骨架、验收命令），按 §二.5 阈值外置，入口只留判据与链接
-- 评测：`evals/`（skill-up 套件，custom local 引擎直连 magpie，脚本判分）——验「按 SKILL.md 干活」的行为，不验 SKILL.md 自身的文字合规
 
 ## 目录形状
 
 标准四件照 skill 规范走，多出来的目录必须**声明理由**——没声明的目录会悄悄长成第二个入口，
 下一个人不知道该读哪个。这条由 `STRUCT001` 判，不是靠自觉：
 
-```
+```text
 harness-bootstrap/
 ├── SKILL.md          标准：入口与元数据（必需）
 ├── references/       标准：按需查的支撑文档，只放 .md，不建子目录（STRUCT002）
@@ -21,7 +20,6 @@ harness-bootstrap/
 ├── agents/           标准：子 Agent 定义（本 skill 目前没有，不建空目录）
 ├── README.md         额外：维护者入口，给人看，不进 skill 上下文
 ├── Makefile          额外：统一命令入口（所有命令从 make 走）
-├── evals/            额外：skill-up 评测套件，验行为不验文字
 ├── tests/            额外：自身门禁的反向 fixture + 期望表
 └── templates/        额外：生成物模板，拷进目标仓库用，不是参考文档
 ```
@@ -89,33 +87,7 @@ README 和 `references/acceptance.md` 都不再抄第二份：抄出来的表迟
 
 audit.py 不判语义一致性（机器判不了）；语义项在 `SKILL.md` §六 的「判据」列标注为人判。
 
-## 跑评测
-
-```bash
-cd ~/.agents/skills/harness-bootstrap
-skill-up validate ./evals/eval.yaml
-skill-up run ./evals/eval.yaml --output-dir /tmp/skillup-harness
-```
-
-引擎约定见 `evals/fixtures/engine/magpie_agent.py`：读 SessionInput → 工具循环直调
-`$MAGPIE_BASE_URL/chat/completions` → 写 SessionResult。需要本地 magpie 网关在跑。
-
-两条容易踩的评测机制（都实测踩过）：
-
-- `skills.include` 只收 glob，**不收目录**：写 `references` 不会打包，必须写 `references/*`。漏了不报错，只在沙箱里留一堆悬空链接，agent 会跑去找。SKILL.md 新增外部引用时必须同步这里。
-- `run_shell` 的围栏在引擎里，不在 skill-up 里：`contain_violation()` 只放行工作区内路径（加 `/dev/null` 类白名单），挡 `..` 路径段与 `~`。第一轮没这道栅时，被测 agent 读到了 `evals/cases` 和 judge 脚本本身，那一轮结果作废。判分前先确认轨迹里没出现 skill 真身目录。
-- 模型选型（实测踩过）：OpenRouter 中转模型会撞 HTTP 402（余额只够 8k tokens，引擎默认请求 65536）；workbuddy/opencode-zen 直连源被 429 全封；`nvidia/z-ai/glm-5.3-flash` 每步约 10 分钟，40 分钟超时只走了 4 步。目前可用且够快的是 `ollama-cloud/nemotron-3-ultra`（约 4s/步）和 `groq/qwen/qwen3.8-27b`（约 1s/步）。换模型前先拿一条带 tools 的小请求探延迟。
-
-## 两个用例
-
-| case | 验什么 |
-| --- | --- |
-| `empty-bootstrap` | 空仓库从零建五层：结构断言 + 五阶段留痕 |
-| `harness-regression` | 已有 harness 改一条规则：改前基准、分批改、改后 `make check` 变绿、反向测试 |
-
-判分一律用 `evals/fixtures/scripts/*.sh`（script judge），不用 agent judge——同一引擎自评没有信号。
-
 ## 维护
 
-改 SKILL.md：前后都跑 `make check`（0 ERROR 才算改完）；正文改动后重跑评测；概念变了先改 `SKILL.md` 再改用例，别反过来。
+改 SKILL.md：前后都跑 `make check`（0 ERROR 才算改完）；正文改动后按 §十 验收清单人工过一遍；概念变了先改 `SKILL.md` 再改用例，别反过来。
 改模板：先跑 `make check` 立基准，改完再跑，数字必须能解释——变了就是变了，不许「看起来还绿」。

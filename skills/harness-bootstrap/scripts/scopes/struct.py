@@ -24,7 +24,6 @@ STANDARD = {"SKILL.md", "references", "scripts", "agents"}
 EXTRAS = {
     "README.md": "维护者入口，给人看，不进 skill 上下文",
     "Makefile": "统一命令入口（§十 自检项：所有命令从统一入口走）",
-    "evals": "skill-up 评测套件，验行为不验文字",
     "tests": "自身门禁的反向 fixture",
     "templates": "生成物模板，拷进目标仓库用，不是参考文档",
     ".gitignore": "git 忽略清单",

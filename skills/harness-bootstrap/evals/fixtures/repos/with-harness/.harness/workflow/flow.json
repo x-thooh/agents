@@ -1,6 +1,0 @@
-{
-  "version": "fixture-v1",
-  "stages": [
-    {"id": "docs", "order": 1, "name": "文档", "gate": "01-docs.json", "deliverable": "artifacts/docs.json", "scopes": ["docs"]}
-  ]
-}
