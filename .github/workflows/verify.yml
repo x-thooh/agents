@@ -1,5 +1,9 @@
 name: verify
 
+# 仓库根是 ~/.agents（技能中心），被测的是 skills/harness-bootstrap。
+# 为什么每个 job 都带 working-directory：workflow 必须在仓库根才能被 GitHub 读到，
+# 而 make check / make lint 的 Makefile 在技能目录里——两头不能只对一头。
+#
 # 为什么需要 CI：pre-commit 能被 `git commit --no-verify` 绕过，CI 不能。
 #
 # CI 只做本地做不到的事——不可绕过地跑同一串命令。它不新增断言：
@@ -23,6 +27,9 @@ jobs:
   gate:
     name: 门禁（技能自审 + 两套模板 + 反向测试）
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: skills/harness-bootstrap
     steps:
       - uses: actions/checkout@v4
 
@@ -40,12 +47,15 @@ jobs:
   sample:
     name: 样例 Go 模块
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: skills/harness-bootstrap
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
-          go-version-file: templates/go-dev-harness/sample/go.mod
+          go-version-file: skills/harness-bootstrap/templates/go-dev-harness/sample/go.mod
 
       # 样例模块是「模板声称能编译」的实物证据。不跑它，这句话就会烂掉。
       - name: make check-sample

@@ -59,7 +59,8 @@ make guide          # 重新生成两套 codebase-guide/index.json
 两级不是为了宽松，是为了「改一行还能快跑」：`check` 秒级，`check-all` 多两条模板不变量。
 但**提交前和 CI 必须是同一条**——否则「本地绿、CI 红」只是时间问题。
 
-`.github/workflows/verify.yml` 跑的是同一串命令。pre-commit 能被 `git commit --no-verify` 绕过，
+仓库根（`~/.agents`）的 `.github/workflows/verify.yml` 跑的是同一串命令，
+每个 job 的 `working-directory` 指向本目录——workflow 只能在仓库根被 GitHub 读到。pre-commit 能被 `git commit --no-verify` 绕过，
 CI 不能——这是 CI 唯一的职责。它**不新增断言**：目录齐不齐由模板的 `GATE00x` 判，
 索引对不对由 `GUIDE001` 判；同一个断言写两处，就有两个地方会漂。CI 的两个 job 按依赖分：
 `gate` 故意不装 Go（「verify 只做词法检查」这句话在那里被真实执行），`sample` 装 Go 跑

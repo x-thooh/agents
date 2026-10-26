@@ -2,6 +2,16 @@
 
 2026-10-22 起，分发权归 magpie，这里只剩「自写技能的真身 + magpie 不认识的 agent」。
 
+## 这一层就是 git 仓库的根
+
+`git remote` 指向 `github.com/x-thooh/agents`，仓库根 = `~/.agents`。技能是子目录，
+不是独立仓库：`skills/<名>/` 里没有 `.git`（`harness-bootstrap` 曾经有，2026-10-26 已重写历史并入本仓库）。
+
+- CI 在仓库根的 `.github/workflows/verify.yml`——GitHub 只读根目录那一个 `.github/`；
+  它每个 job 带 `working-directory: skills/harness-bootstrap`，因为 `make` 的入口在技能里。
+- `note-record-evals/` 是评测沙箱产物（33M），在 `.gitignore` 里：只留脚本，不留跑出来的东西。
+- 各技能自己的门禁仍在技能目录内跑：`cd skills/harness-bootstrap && make check-all`。
+
 ## 两块地界
 
 | 位置 | 放什么 |
