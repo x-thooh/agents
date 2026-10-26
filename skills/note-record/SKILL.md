@@ -232,7 +232,7 @@ make note P="<笔记路径>"
 
 ```bash
 make check                 # 全库
-make check-<域>            # 单域：areas / books / folders / harness / inbox / links / schema / single / stale / style
+make check-areas           # 单域：把 areas 换成 areas/books/folders/harness/inbox/links/schema/single/stale/style 之一
 ```
 
 必须 0 ERROR 才算完。红点判读见 `references/vault-checks.md`。**不要把预存的红点说成本次引入的**：改动前后各记一次「合计」，数字没变就是没引入；变了再看新增条目的路径是不是自己的文件。

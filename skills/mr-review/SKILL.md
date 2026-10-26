@@ -1,6 +1,7 @@
 ---
 name: mr-review
-version: 2.3.0
+metadata:
+  version: 2.3.0
 description: 审查代码合并请求（MR）。当用户要求"审查分支/审查 MR/review MR/跑 review-mr"等时触发。优先用 scripts/review-mr.sh 跑流水线，并在审查前提取 MR 元信息（远程分支、当前分支、提交、作者、文件统计）。MR 目标分支优先从提交历史自动推断。构建阶段联动项目 AGENTS.md：make all 负责生成依赖，make build 负责检查编译。流水线含 diff 安全检查（Phase 4.5 / scan-security.sh，对应状态机 CHECKING_SECURITY）。审查后可叠加云效 Codeup MCP 能力补充平台信息、校验 MR target，可选同步审查结论到 Codeup 评论，并可选发送钉钉群通知（scripts/send-dingtalk.sh）；钉钉 @ 对象默认为 **MR 发起人**，由 scripts/get-mr-author.sh 解析。
 ---
 
@@ -367,7 +368,7 @@ bash .pi/skills/mr-review/scripts/sync-codeup-comment.sh \
 
 > ⚠️ **平台限制（实测）**：云效**不提供**查询成员手机号的 API —— `search_organization_members` / `get_organization_member_info(_by_user_id)` / `list_organization_members` 用当前 token 一律 **403**（`Current token has no permission to api.`，原始 OpenAPI 亦然）；`list_commits` 只返回 `authorName/authorEmail`，**无手机号字段**。故手机号只能来自 username/email 内嵌或收件人映射文件。
 
-```bash
+```text
 # 1) 解析收件人手机号列表（审查通过时记得加 --with-tester → 追加测试人员潘婷）
 bash .pi/skills/mr-review/scripts/get-mr-author.sh --local-id 120 --repo-id 7289138 --with-tester
 #    输出: at_mobiles=15339891972,13678235158,15708432566

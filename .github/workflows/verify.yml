@@ -51,6 +51,19 @@ jobs:
       - name: make check-all
         run: make check-all
 
+  skills:
+    name: 跨技能通用子集（frontmatter / 围栏可跑 / 链接 / §引用）
+    runs-on: ubuntu-latest
+    # 这个 job 的 working-directory 是仓库根：它审的是**所有**技能，不只 harness-bootstrap。
+    # 为什么必须进 CI：兄弟技能的破链与跑不起来的围栏不会自己变好，而本地没人会去跑别的技能。
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: make audit-skills
+        run: make audit-skills
+
   sample:
     name: 样例 Go 模块
     runs-on: ubuntu-latest

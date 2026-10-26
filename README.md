@@ -49,7 +49,8 @@ lmstudio 单独一行是因为 **magpie 不认它**（`magpie ls` 只看到 pi/q
 ```bash
 make status                      # 四家对照表 + magpie 账本漂移检查
 make link                        # 只铺 lmstudio（改完技能跑一次）
-make check                       # 每个技能能否被加载（SKILL.md + frontmatter）
+make check        # 全部技能：加载校验 + 通用子集审查（frontmatter/围栏可跑/链接/§引用）
+make audit-skills # 只跑通用子集（上面那条的子集）
 make import SRC=~/Downloads/foo  # 收进仓库，并打印 magpie 登记步骤
 make unlink NAME=foo             # 解除共享，真身保留
 ```
