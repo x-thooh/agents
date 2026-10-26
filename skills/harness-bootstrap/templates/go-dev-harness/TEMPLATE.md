@@ -1,5 +1,8 @@
 # go-dev-harness
 
+> 本文件是**模板说明**，不是目标仓库的 README。拷进仓库时它叫 `TEMPLATE.md`，
+> 就是为了不覆盖你原来的 `README.md`（早期版本叫 `README.md`，拷一次就把人家的覆盖了）。
+
 Golang 软件开发工程师的业务 harness：把「接需求 → 定接口 → 设计 → 编码 → 测试 → 评审 → 发布」这条业务流
 写成可执行的断言。与 `delivery-harness` 的区别：那套管**交付流程**（PRD、联调、提测），这套管
 **一个 Go 研发每天在仓库里做的事**——代码形状、错误与并发纪律、测试与覆盖率、MR 与发布边界。
@@ -9,12 +12,12 @@ Golang 软件开发工程师的业务 harness：把「接需求 → 定接口 �
 
 - `AGENTS.md`：入口、命令、16 条硬规则（每条带 scope 或「无断言」）、目录地图。
 - `.harness/workflow/`：`flow.json`（阶段唯一事实源）、`transitions.json`（结果状态机）、
-  `contract.json`（门记录字段与账本位置）、`README.md`（6 阶段流程正文）。
+  `contract.json`（门记录字段与账本位置）、`README.md`（6 阶段流程正文，在 `workflow/` 下）。
 - `.harness/config.json`：阈值（覆盖率、main 行数、MR、发布观察窗）+ `go_src`。
 - `.harness/specs/standards.md`：Go 规范与断言对照表。
 - `.harness/deliverables/`：`gates/` 门记录、`artifacts/` 证据、`ledgers/` 变更与例外。
 - `.harness/tasks/board.json`、`.harness/memory/`、`.harness/codebase-guide/index.json`。
-- `.harness/scripts/`：`verify.py` 调度器 + 9 个 scope + `gen_guide.py`。
+- `.harness/scripts/`：`verify.py` 调度器 + 一组 scope（一个 scope 一个文件，见 `scopes/`）+ `gen_guide.py`。
 - `sample/`：能过全部断言的示例 Go 模块（`go_src` 指向它）。
 - `tests/reverse.py`：每个 scope 一条违规样本，验证真的会报 ERROR。
 
@@ -33,11 +36,12 @@ make check-strict   # 示例数据按 ERROR 处理；替换真实证据后应变
 make selftest       # 正对照 + 11 个反向测试
 ```
 
-## 9 个 scope
+## scope 一览（一个 scope 一个文件）
 
 | scope | 判什么 | 主要代码 |
 | --- | --- | --- |
 | `gates` | 流程契约（flow/transitions/contract）、门记录、交付物存在、账本、任务/记忆/索引 | GATE001–007、GUIDE001 |
+| `conf` | `config.json` 自身的诚实性：键名拼错、示例标记、`go_src` 是否还指着模板自带的 `sample/` | CONF001、CONF002、EXAMPLE001 |
 | `contract` | 接口六要素（方法/路径/请求/响应/错误码/幂等）、验收可测、NFR | CTR001–004 |
 | `design` | 包职责、依赖无环、被否方案、失败模式 | DES001–004 |
 | `layout` | `go.mod`、`cmd` 薄、包边界、导出符号 doc、接口大小 | LAY001–007 |

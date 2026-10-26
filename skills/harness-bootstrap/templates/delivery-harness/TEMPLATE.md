@@ -1,15 +1,18 @@
 # delivery-harness
 
+> 本文件是**模板说明**，不是目标仓库的 README。拷进仓库时它叫 `TEMPLATE.md`，
+> 就是为了不覆盖你原来的 `README.md`（早期版本叫 `README.md`，拷一次就把人家的覆盖了）。
+
 交付流程 v1.2 的可执行门禁模板，布局是 `.harness/` 十件套。
 
 - `AGENTS.md`：入口、命令、硬规则（每条带 scope 或「无断言」）、目录地图。
 - `.harness/workflow/`：`flow.json`（阶段唯一事实源）、`transitions.json`（结果状态机）、
-  `contract.json`（门记录字段与账本位置）、`README.md`（流程正文：RACI / 预期 / 执行 / 检查）。
+  `contract.json`（门记录字段与账本位置）、`README.md`（流程正文：RACI / 预期 / 执行 / 检查，在 `workflow/` 下）。
 - `.harness/config.json`：阈值（覆盖率、任务人天、MR 行数、冒烟通过率）。
 - `.harness/deliverables/`：`gates/` 门记录、`artifacts/` 证据、`ledgers/` 变更与例外、`reports/` 报告。
 - `.harness/tasks/board.json`：任务看板；`.harness/memory/`：踩坑记忆与决策。
 - `.harness/codebase-guide/index.json`：代码库索引，由 `scripts/gen_guide.py` 生成，禁手改。
-- `.harness/scripts/`：`verify.py` 调度器 + 9 个 scope（一个 scope 一个文件）+ `gen_guide.py`。
+- `.harness/scripts/`：`verify.py` 调度器 + 一组 scope（一个 scope 一个文件，见 `scopes/`）+ `gen_guide.py`。
 - `.harness/git-hooks/pre-commit`：提交前跑 `make check`。
 - `tests/reverse.py`：每个 scope 一条反向样本，验证真的会报 ERROR。
 

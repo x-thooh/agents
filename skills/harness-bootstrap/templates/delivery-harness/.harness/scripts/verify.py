@@ -19,6 +19,7 @@ if str(HERE) not in sys.path:
 
 from scopes import (  # noqa: E402
     coherence,
+    conf,
     design,
     dev,
     gates,
@@ -32,6 +33,7 @@ from scopes.common import git_clean, load_json  # noqa: E402
 
 SCOPES = (
     gates,
+    conf,
     requirements,
     design,
     dev,

@@ -49,6 +49,7 @@ magpie 把本目录**整体软链**到 `~/.pi/agent/skills`、`~/.qoder/skills`�
 make check          # 核心：技能自审 + fixture 断言表 + 两套模板 verify + 两套反向测试
 make check-all      # 全部：check + check-strict。**提交前与 CI 都跑这一条**
 make check-strict   # 断言 --strict 能拦下模板自带的示例数据
+make check-boot     # 把模板拷进临时空仓库，验它装上之后是否仍然诚实（行为层）
 make check-sample   # 样例 Go 模块 vet + test（需要 Go 工具链）
 make lint           # 工具层：golangci-lint（需要 Go 工具链）
 make guide          # 重新生成两套 codebase-guide/index.json

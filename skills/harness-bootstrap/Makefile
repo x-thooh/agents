@@ -12,7 +12,7 @@ TPL := templates
 DELIVERY := $(TPL)/delivery-harness
 GODEV := $(TPL)/go-dev-harness
 
-.PHONY: help check check-all check-json check-skill fixtures check-templates selftest check-sample check-strict lint guide code-index
+.PHONY: help check check-all check-json check-skill fixtures check-templates check-boot selftest check-sample check-strict lint guide code-index
 
 help:
 	@echo "make check            核心门禁：技能自审 + fixture 断言表 + 两套模板 verify + 两套反向测试（不需要 Go）"
@@ -20,7 +20,8 @@ help:
 	@echo "make check-json        只出三段 JSON：技能自审 + 两套模板（不含 fixtures/selftest/strict）"
 	@echo "make check-skill       只跑 scripts/audit.py"
 	@echo "make fixtures          全部反向 fixture 逐条比对期望的 code"
-	@echo "make check-templates   只跑两套模板的 .harness/scripts/verify.py"
+	@echo "make check-templates   只跑两套模板的 .harness/scripts/verify.py（自洽性）"
+	@echo "make check-boot        把模板拷进临时空仓库，验它装上之后是否仍然诚实（行为）"
 	@echo "make selftest          只跑两套 tests/reverse.py + 提交消息检查"
 	@echo "make check-strict      断言 --strict 能拦下示例数据（模板自身的不变量）"
 	@echo "make check-sample      样例 Go 模块 vet + test（需要 Go 工具链）"
@@ -35,8 +36,8 @@ help:
 check: check-skill fixtures check-templates selftest
 	@echo "== check 通过：技能自审 + fixture 断言表 + 两套模板 + 两套反向测试 =="
 
-check-all: check check-strict
-	@echo "== check-all 通过：以上 + strict 不变量 =="
+check-all: check check-strict check-boot
+	@echo "== check-all 通过：以上 + strict 不变量 + 模板装上后的行为 =="
 
 check-json:
 	@$(PY) scripts/audit.py --json
@@ -52,6 +53,11 @@ fixtures:
 check-templates:
 	@$(PY) $(DELIVERY)/.harness/scripts/verify.py
 	@$(PY) $(GODEV)/.harness/scripts/verify.py
+
+# 行为层：文本 fixture 验不了「模板拷进真仓库后说什么」。
+# 这一条就是那次假绿灯（strict 全绿而仓库代码里 panic 没被检查）的回归测试。
+check-boot:
+	@$(PY) tests/template_boot.py
 
 selftest:
 	@$(PY) $(DELIVERY)/tests/reverse.py

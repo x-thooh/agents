@@ -18,6 +18,7 @@ if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
 from scopes import (  # noqa: E402
+    conf,
     contract,
     design,
     gates,
@@ -32,6 +33,7 @@ from scopes.common import git_clean, load_json  # noqa: E402
 
 SCOPES = (
     gates,
+    conf,
     contract,
     design,
     layout,

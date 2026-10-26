@@ -220,6 +220,16 @@ def warn_case(name, scope, expected_code, mutate):
 def main():
     positive_control()
 
+    # conf：键名拼错必须报，不能静默忽略（静默忽略 = 整条扫描被关掉）
+    reverse_case(
+        "conf: 拼错的配置键不会被静默忽略",
+        "conf",
+        "CONF001",
+        lambda root: edit_json(
+            root, ".harness/config.json", lambda data: data.update({"go_srcx": "typo"})
+        ),
+    )
+
     reverse_case(
         "gates: reject blocks later stages",
         "gates",

@@ -21,6 +21,8 @@
 | 规则集版本保质期（`rules_version` 90 天未重新确认即 ERROR；基线不设刷新日期字段） | audit.py VER001（提到它的那一行必须同时写明天数与到期行为） | 强 |
 | references/*.md 里的跨文件 §X.Y 引用指向存在的章节/条目（断言坑 #12 的存在性半边） | audit.py XREFDOC001/XREFDOC002（改号/删节/外置后没跟着改；重排同号仍属人判） | 强（存在性半边）+ 人判（重排同号） |
 | 「每条硬规则在断言表里有对应行」有人核得动 | audit.py CODEINDEX001（`references/code-index.md` 与源码逐字节一致；`make code-index` 重生成） | 强（清单本身）+ 人判（行到底对应得对不对） |
+| 模板装到真仓库后仍然诚实（示例会被拦、`go_src` 还在扫 sample 会被点名） | `make check-boot`（`tests/template_boot.py`：拷进临时空仓库 → 验退出码与正文，含一次假绿灯的回归） | 强 |
+| `config.json` 的键名拼错不会被静默忽略 | 模板 `conf` scope CONF001（未知键 ERROR，键名闭集在 `conf.py` 的 `ALLOWED`） | 强 |
 | 入口覆盖链、指针存在性 | verify `scope=folders` | 强 |
 | `description` 无流程摘要、有触发条件 | audit.py FM008/FM009（启发式：抓箭号与序号词，纯主题清单靠人判） | 机器+人判 |
 | 决策 `scope` 值 ⊆ 已批准的模块清单（锚点可定位；proposed 严格、implemented 降级） | verify 发现器 + `modules-confirmed` + `scope=notes` | 强（必做反向测试） |
