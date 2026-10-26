@@ -220,6 +220,28 @@ def ledger_fingerprint(code, message):
     return f"{code}:{''.join('#' if ch.isdigit() else ch for ch in message or '')}"
 
 
+def baseline_solo_case(name, scope, rel, code):
+    """单查 baseline 不许编造建议：上游没跑时必须说「判不了」。
+
+    它读的是其它 scope 已经报出来的 findings。`--scope baseline` 时上游是空集，
+    「账本比现状多」会被算成正数——BASE014 于是把「上游没跑」误报成
+    「老账已修掉一部分，可以刷新账本」。那是一条假建议，而刷新方式是手改文件。
+    """
+    with tempfile.TemporaryDirectory(prefix="baseline-solo-") as tmp:
+        root = copy_root(tmp)
+        write_text(root, LEDGER_REL, ledger_line(scope, rel, f"{code}:x", 1))
+        payload, _rc = run_verify(root, "baseline")
+        codes = codes_of(payload)
+        if "BASE014" in codes:
+            raise AssertionError(
+                f"{name}: 上游没跑却报 BASE014（假建议：老账已修掉一部分）。"
+                "单查 baseline 时发现集恒为空，判定无从谈起")
+        na = payload["summary"].get("not_applicable") or []
+        if not any(str(item).startswith("baseline") for item in na):
+            raise AssertionError(f"{name}: 单查 baseline 应记 not_applicable，实际 {na}")
+        print(f"PASS {name}: 判不了，不冒充通过")
+
+
 def baseline_error_case(name, expected_code, setup):
     """账本本身出错（格式 / 过期 / 只减不增）：只跑 baseline scope，期望唯一 ERROR。"""
     with tempfile.TemporaryDirectory(prefix="go-base-") as tmp:
@@ -451,6 +473,9 @@ def main():
         "CONF001",
     )
     baseline_monotonic_case("baseline: 总数上升即 ERROR", "conf", ".harness/config.json", "CONF001")
+    baseline_solo_case(
+        "baseline: 单查不许编造「可以刷新账本」", "conf", ".harness/config.json", "CONF001"
+    )
 
     print("ALL REVERSE TESTS PASSED")
 

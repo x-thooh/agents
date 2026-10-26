@@ -48,17 +48,24 @@ SCOPES = (
 
 
 def collect(root, selected, strict):
-    """跑一遍全部 scope。--fix 前后各调一次，结论只认后一次。"""
+    """跑一遍选中的 scope。--fix 前后各调一次，结论只认后一次。
+
+    返回 (findings, not_applicable)。`not_applicable` 不是装饰：有些 scope 的判定依赖
+    别的 scope 已经报出来的 findings（`baseline` 就是），单查时上游是空集。那种情况
+    必须留一句话说明「这一域判不了」，否则 0 条发现会被读成通过——扫到 0 个样本和
+    全绿长得一模一样。
+    """
     findings = []
     quality = load_json(root, ".harness/config.json", "config", findings, "CFG001")
     ctx = {
         "root": str(root),
         "strict": strict,
         "quality": quality if isinstance(quality, dict) else {},
+        "selected": tuple(mod.NAME for mod in selected),
     }
     for mod in selected:
         mod.run(ctx, findings)
-    return findings
+    return findings, ctx.get("not_applicable", [])
 
 
 def fixers_of(selected):
@@ -119,14 +126,14 @@ def main(argv=None):
             print(f"verify --fix: {reason}", file=sys.stderr)
             return 2
 
-    findings = collect(root, selected, args.strict)
+    findings, not_applicable = collect(root, selected, args.strict)
 
     fixed = []
     if args.fix:
         fixed = apply_fixes(root, findings, fixers)
         if fixed:
             # 修完必须重跑：不能拿修前的结论凑数，也不能假设一定修好了
-            findings = collect(root, selected, args.strict)
+            findings, not_applicable = collect(root, selected, args.strict)
 
     findings.sort(
         key=lambda f: (f.severity != "ERROR", f.scope, f.path, f.line, f.code)
@@ -147,6 +154,7 @@ def main(argv=None):
                         "strict": args.strict,
                         "fixable": sorted(fixers),
                         "fixed": [{"code": c, "note": n} for c, n in fixed],
+                        "not_applicable": not_applicable,
                     },
                 },
                 ensure_ascii=False,
@@ -166,6 +174,11 @@ def main(argv=None):
                     f"其余 {len(manual)} 类需人判，未自动修：{', '.join(manual)}"
                 )
         mode = "strict" if args.strict else "normal"
+        if not_applicable:
+            print(
+                f"判不了（{len(not_applicable)}）: {', '.join(not_applicable)}"
+                "——这不是通过：先把它被依赖的那些 scope 一起跑"
+            )
         print(
             f"{len(errors)} ERROR, {len(warns)} WARN  "
             f"(scopes: {', '.join(mod.NAME for mod in selected)}; mode: {mode}"

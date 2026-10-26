@@ -20,6 +20,12 @@ bootstrap 当天的 ERROR 整表灌进来，那不是记账，是开张即免罪
 
 顺序：本 scope 必须最后跑（`verify.py` 的 SCOPES 末尾）。它读的是其它 scope 已经报出来
 的 findings，跑早了等于拿半个清单对账。
+
+单查也同理，而且更雕：`--scope baseline` 时上游一个都没跑，发现集恒为空，于是「账本比现状多」
+会被算成正数——BASE014 会把「上游没跑」误报成「老账已修掉一部分，可以刷新账本」。
+那是一条假建议（照它刷新不会丢信息：账本外的违规会重新报 ERROR，方向是 fail-safe），
+但这个 scope 自己给了一个不该存在的绿灯。所以单查时记 not_applicable，不冒充通过——
+坑 #11 对「扫到 0 个样本」是同一回事。
 """
 import datetime
 import json
@@ -165,12 +171,27 @@ def check_monotonic(root, ledger_total, findings):
             "只减不增——要新增一条 accepted，先修掉一条老账")
 
 
+def _upstream_ran(ctx):
+    """上游 scope 是否跑过。没有 `selected` 时按「全跑」处理——老调度器不该被静默降级。"""
+    selected = ctx.get("selected")
+    if selected is None:
+        return True
+    return bool(set(selected) - {NAME})
+
+
 def run(ctx, findings):
     root = Path(ctx["root"])
     ledger = read_baseline(root, findings)
     exempt = read_accepted(root, findings)
     if not ledger and not exempt:
         return  # 零基线：没有账，就没有要核的
+    # 只减不增与上游无关：它比的是账本与 git HEAD 里的旧账本，所以单查也判得了。
+    # 挡在外面的只能是「降级 / 新欠 / BASE014」——那三件事要读其它 scope 的 findings。
+    check_monotonic(root, sum(ledger.values()) + sum(exempt.values()), findings)
+    if not _upstream_ran(ctx):
+        ctx.setdefault("not_applicable", []).append(
+            f"{NAME}(只跑了 baseline 自己：降级与新欠要读其它 scope 的 findings，单查判不了)")
+        return
     allowed = dict(ledger)
     for key, count in exempt.items():
         allowed[key] = allowed.get(key, 0) + count
@@ -189,7 +210,6 @@ def run(ctx, findings):
         else:
             finding.message = f"新欠（账本 {allowed.get(key, 0)} 条）：{finding.message}"
 
-    check_monotonic(root, sum(ledger.values()) + sum(exempt.values()), findings)
     debt = sum(ledger.values()) + sum(exempt.values()) - sum(current.values())
     if debt > 0:
         add(findings, "WARN", NAME, BASELINE_REL, 1, "BASE014",
