@@ -1,16 +1,11 @@
-"""retro：需求复盘的事实底板——数字先算出来，AI 只许在数字上写。
+"""retro：需求复盘的事实底板——数字先算，AI 只许在数字上写。
 
-为什么脚本先算：让 AI 自己总结「这套机制拦到过几次」，它最容易写的就是「整体良好」。
-所以复盘正文里的每个结论都必须挂在本脚本打印的数字上；写不出数字的句子不算复盘。
+让 AI 自己总结「机制拦到过几次」，它最容易写「整体良好」。所以复盘正文的每个结论
+都必须挂在本脚本打印的数字上。数据放 `archive/retro/` 而非 skill 目录：那是本机维护
+历史、不是载荷（README 的分发边界），且 `references/` 受 SECT002 的 100 行限制。
 
-为什么复盘数据不放 skill 目录：它是**本机维护历史**，不是载荷。README 的「分发边界」
-写着「只为本机服务的目录，不进这个目录」；而 `references/` 受 `SECT002` 的 100 行限制，
-放进去只会把参考材料长成第二个手册。所以机制在 skill 里，数据在仓库根的 `archive/retro/`。
-
-用法:
-  python3 scripts/retro.py            # 打印本轮事实（给 AI 起草用）
-  python3 scripts/retro.py --check    # 校验 archive/retro/*.md 的必填栏
-退出码: 0 = 通过 / 判不了；1 = 复盘缺栏；2 = 环境错误
+用法: python3 scripts/retro.py [--check]   # 无参=打印事实；--check=校验复盘
+退出码: 0 = 通过 / 判不了；1 = 复盘不合规；2 = 环境错误
 """
 
 import json
@@ -24,8 +19,25 @@ SKILL = HERE.parent
 ROOT = SKILL.parents[1]
 RETRO = ROOT / "archive" / "retro"
 
-REQUIRED = ("拦到：", "工单：")
+REQUIRED, STATUS = ("拦到：", "工单："), ("open", "done")
 CODE = re.compile(r"\b[A-Z]{2,}[0-9]{3}\b")
+
+
+def _evidence_ok(raw):
+    """`commit:<sha>` 要真在历史里、`path:<相对路径>` 要真存在。
+
+    「已修复」三个字没有成本，一个真存在的 sha 或路径有——这就是「说做完了」与「做完了」。
+    """
+    if raw.startswith("commit:"):
+        sha = raw.split(":", 1)[1].strip()
+        if not sha:
+            return False
+        rc = _run(["git", "-C", str(ROOT), "cat-file", "-e", f"{sha}^{{commit}}"], ROOT)
+        return rc.returncode == 0
+    if raw.startswith("path:"):
+        rel = raw.split(":", 1)[1].strip()
+        return bool(rel) and (ROOT / rel).exists()
+    return False
 
 
 def _run(cmd, cwd):
@@ -64,7 +76,7 @@ def facts():
     print(f"fixtures: {fixtures_count()} 条 PASS")
     rc, line = round_delta()
     print(f"round   : exit {rc}  {line[0] if line else ''}")
-    print("\n复盘文件写到 `archive/retro/YYYY-MM-DD-<需求>.md`，必填栏见下：")
+    print("\n复盘写到 `archive/retro/YYYY-MM-DD-<需求>.md`，必填栏：")
     print("  拦到：<code 与次数；一次都没拦到就写 0，并说明为什么还留着>")
     print("  工单：<tasks/board.json 里的 id，或「无」>")
     return 0
@@ -83,21 +95,15 @@ def _board():
 
 
 def check():
-    """复盘两栏都必须可核验：拦到栏要点名 code，工单栏要指向表里真实存在的 id。
-
-    为什么要表：复盘里写「工单：无」最省事，而「无」恰恰是这条机制失效的样子。
-    有表之后，写「无」就必须解释，写 id 就必须真有人认领——两边都堵。
-    """
+    """两栏都必须可核验：拦到栏点名 code，工单栏指向表里有的 id 且完成态带证据。"""
     files = sorted(RETRO.glob("*.md")) if RETRO.is_dir() else []
     if not files:
         print(f"retro: {RETRO} 下还没有复盘——判不了，不冒充通过")
         return 0
     board = _board()
-    if board is None:
-        print(f"retro: 缺 {RETRO}/tasks.json——工单栏无从核验，判不了", file=sys.stderr)
-        return 2
-    if board is False:
-        print("retro: tasks.json 不是合法 JSON", file=sys.stderr)
+    if not board:  # None = 没建表；False = 坏 JSON。两种都判不了，不冒充通过
+        print(f"retro: {RETRO}/tasks.json 缺失或不是合法 JSON——工单栏无从核验",
+              file=sys.stderr)
         return 2
     bad, cited = [], set()
     for path in files:
@@ -117,6 +123,17 @@ def check():
             cited.add(tid)
             if tid not in board:
                 bad.append(f"{path.name}: 工单 {tid} 不在 tasks.json 里")
+    for tid, task in sorted(board.items()):
+        status = task.get("status")
+        if status not in STATUS:
+            bad.append(f"{tid}: status {status!r} 必须是 {list(STATUS)}")
+            continue
+        ev = str(task.get("evidence", "")).strip()
+        if status == "done" and not _evidence_ok(ev):
+            bad.append(f"{tid}: 标 done 却没给可核验证据（{ev or '空'}）——"
+                       "`commit:<sha>` 要真在历史里、`path:<相对路径>` 要真存在")
+        if status == "open" and ev:
+            bad.append(f"{tid}: 还没做完却写了 evidence——证据是完成态的凭据，不是打算")
     orphan = sorted(set(board) - cited)
     if orphan:
         bad.append(f"tasks.json 里有没人引用的工单：{' '.join(orphan)}——那是死库存")
