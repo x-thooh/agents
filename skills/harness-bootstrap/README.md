@@ -37,12 +37,15 @@ harness-bootstrap/
 make check          # 技能自审 + 两套模板 verify + 两套反向测试（不需要 Go）
 make check-strict   # 断言 --strict 能拦下模板自带的示例数据
 make check-sample   # 样例 Go 模块 vet + test（需要 Go 工具链）
+make lint           # 工具层：golangci-lint（需要 Go 工具链）
 make guide          # 重新生成两套 codebase-guide/index.json
 ```
 
 `.github/workflows/verify.yml` 跑的是同一串命令。pre-commit 能被 `git commit --no-verify` 绕过，
 CI 不能——这是 CI 唯一的职责。它**不新增断言**：目录齐不齐由模板的 `GATE00x` 判，
-索引对不对由 `GUIDE001` 判；同一个断言写两处，就有两个地方会漂。
+索引对不对由 `GUIDE001` 判；同一个断言写两处，就有两个地方会漂。CI 的两个 job 按依赖分：
+`gate` 故意不装 Go（「verify 只做词法检查」这句话在那里被真实执行），`sample` 装 Go 跑
+`check-sample` 与 `lint`。
 
 ## 模板（`templates/`）
 
@@ -54,10 +57,16 @@ CI 不能——这是 CI 唯一的职责。它**不新增断言**：目录齐不
 | `templates/delivery-harness/` | 交付流程：需求 → 方案 → 开发 → 联调 → 自测 → CR → 自洽 → 提测 | 8 / 9 |
 | `templates/go-dev-harness/` | Golang 研发的日常：契约 → 设计 → 编码（形状/错误/并发）→ 测试 → 评审 → 发布 | 6 / 9 |
 
-两者都自带 `tests/reverse.py`（每个 scope 一条违规样本，外加 `--fix` 的四条边界样本，各 15 例）、
+两者都自带 `tests/reverse.py`（每个 scope 至少一条违规样本，外加 `--fix` 的边界样本）、
 `make check-strict`（示例数据判 ERROR）和 `make fix`（只修派生数据，前置条件按目标文件排除）。
+`go-dev-harness` 另有 `.harness/scripts/check_commit.py` 与 `tests/commit_msg.py`（提交消息按
+Conventional Commits 判）、`.golangci.yml`（工具层，`make lint`）和可选的 `lefthook.yml`
+（调度层，只委托 `.harness/git-hooks/` 的脚本）。
 阶段定义只在 `.harness/workflow/flow.json` 一处。它们与 `SKILL.md` 单向无关：模板不引用正文，
 正文也不描述模板的具体规则。
+
+断言条数不在这里写：写死的数字迟早和文件不一致，数出来的值问文件自己
+（`python3 templates/go-dev-harness/tests/reverse.py | grep -c PASS`）。
 
 ## 改 SKILL.md 的门禁
 
