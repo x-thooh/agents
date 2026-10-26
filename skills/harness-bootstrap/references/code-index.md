@@ -8,7 +8,7 @@
 > 所以生成后要人眼看一遍，别把它当成定义——定义在代码里。
 > 箭头表示同一 code 有多档：`WARN → ERROR` 即「轻了报 WARN、重了报 ERROR」。
 
-共 37 个 code：31 个只报 ERROR、4 个只报 WARN、2 个分两档。
+共 38 个 code：31 个只报 ERROR、4 个只报 WARN、3 个分两档。
 
 | code | scope | 级别 |
 | --- | --- | --- |
@@ -18,6 +18,7 @@
 | `BASE004` | baseline | ERROR |
 | `BASH001` | bash | ERROR |
 | `BASH002` | bash | ERROR |
+| `BUDGET001` | budget | WARN → ERROR |
 | `CODEINDEX001` | codeindex | ERROR |
 | `FM001` | frontmatter | ERROR |
 | `FM002` | frontmatter | ERROR |

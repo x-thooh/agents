@@ -102,6 +102,9 @@ CASES = (
     ("bad-layout-no-table", {"LP003"}, ()),
     # 派生清单必须与源码逐字节一致；样本自带一份故意过时的 code-index.md
     ("bad-stale-code-index", {"CODEINDEX001"}, ()),
+    # 体量预算两档：两档都得真会响，否则「准备拆」只是句好听话
+    ("bad-budget-warn", {"BUDGET001"}, ()),
+    ("bad-budget-error", {"BUDGET001"}, ()),
     # code 级反向测试：下列每一个都曾从无 fixture（scope 级有机一条，code 级漏网），
     # 其中 LINK002/XREFDOC001 是 ERROR 级——一个从不执行的 ERROR 比 WARN 更坏。
     # LINK002/LINK003 靠 --link-status 把「取状态码」固定住，不靠公网。
