@@ -8,6 +8,21 @@
 - `reference/`：SKILL.md 放不下也没必要放的东西（坑清单、笔记骨架、验收命令），按 §二.5 阈值外置，入口只留判据与链接
 - 评测：`evals/`（skill-up 套件，custom local 引擎直连 magpie，脚本判分）——验「按 SKILL.md 干活」的行为，不验 SKILL.md 自身的文字合规
 
+## 本仓库自己的门禁
+
+这个仓库自己也是一份 harness——它管别人怎么建 harness，所以得先过自己的关。命令只从 `make` 走：
+
+```bash
+make check          # 技能自审 + 两套模板 verify + 两套反向测试（不需要 Go）
+make check-strict   # 断言 --strict 能拦下模板自带的示例数据
+make check-sample   # 样例 Go 模块 vet + test（需要 Go 工具链）
+make guide          # 重新生成两套 codebase-guide/index.json
+```
+
+`.github/workflows/verify.yml` 跑的是同一串命令。pre-commit 能被 `git commit --no-verify` 绕过，
+CI 不能——这是 CI 唯一的职责。它**不新增断言**：目录齐不齐由模板的 `GATE00x` 判，
+索引对不对由 `GUIDE001` 判；同一个断言写两处，就有两个地方会漂。
+
 ## 模板（`templates/`）
 
 模板是「某个业务域的答案」，不是通用解。拷进目标仓库后按真实阈值与证据替换示例数据。
@@ -23,6 +38,8 @@
 正文也不描述模板的具体规则。
 
 ## 改 SKILL.md 的门禁
+
+`make check` 里已经包含这一步；单独跑等价于：
 
 ```bash
 python3 scripts/audit.py                    # 0 ERROR 才算改完（WARN 可接受）
@@ -81,4 +98,5 @@ skill-up run ./evals/eval.yaml --output-dir /tmp/skillup-harness
 
 ## 维护
 
-改 SKILL.md：前后都跑 `python3 scripts/audit.py`，0 ERROR 才算改完；正文改动后重跑评测；概念变了先改 `SKILL.md` 再改用例，别反过来。
+改 SKILL.md：前后都跑 `make check`（0 ERROR 才算改完）；正文改动后重跑评测；概念变了先改 `SKILL.md` 再改用例，别反过来。
+改模板：先跑 `make check` 立基准，改完再跑，数字必须能解释——变了就是变了，不许「看起来还绿」。

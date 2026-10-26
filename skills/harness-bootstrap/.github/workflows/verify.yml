@@ -1,0 +1,54 @@
+name: verify
+
+# 为什么需要 CI：pre-commit 能被 `git commit --no-verify` 绕过，CI 不能。
+#
+# CI 只做本地做不到的事——不可绕过地跑同一串命令。它不新增断言：
+# 目录齐不齐由模板自己的 GATE00x 判，索引对不对由 GUIDE001 判。
+# 同一个断言写两处，就有两个地方会漂。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: 门禁（技能自审 + 两套模板 + 反向测试）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # 本 job 故意不装 Go：verify 只做词法检查，不依赖工具链。
+      # 「不需要 Go」这句话在这里被真实执行，而不是写在 README 里。
+      - name: make check
+        run: make check
+
+      # 断言 --strict 真的在生效：模板自带 example: true，strict 必须判 ERROR。
+      - name: make check-strict
+        run: make check-strict
+
+  sample:
+    name: 样例 Go 模块
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: templates/go-dev-harness/sample/go.mod
+
+      # 样例模块是「模板声称能编译」的实物证据。不跑它，这句话就会烂掉。
+      - name: make check-sample
+        run: make check-sample
