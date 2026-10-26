@@ -489,6 +489,23 @@ def main():
         ".harness/config.json",
         "CONF001",
     )
+    reverse_case(
+        "gates: 只有反思工单能写 stage='-'",
+        ".harness/tasks/board.json",
+        lambda d: d["tasks"].append(
+            {
+                "id": "T-999",
+                "title": "手写工单却把 stage 写成 -",
+                "owner": "dev-a",
+                "stage": "-",
+                "status": "todo",
+                "updated": "2026-10-26",
+                "origin": "manual",
+            }
+        ),
+        "gates",
+        "GATE007",
+    )
     notes_case(
         "notes: 孤儿笔记（没人链进来）",
         "NTS001",

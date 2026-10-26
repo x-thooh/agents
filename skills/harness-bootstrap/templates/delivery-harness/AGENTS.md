@@ -49,7 +49,7 @@ make selftest       # 每个 scope 的反向测试 + 提交消息检查的正反
 13. E2E 链路走通；PRD 跟踪矩阵每条有证据；受影响存量回归通过；NFR 有验收报告。`scope=coherence`
 14. 提测包 manifest 齐全；冒烟达到 `config.json` 阈值；版本 tag/commit/测试环境一致；QA 确认接收。`scope=submission`
 15. 变更必须记录类型、影响、审批人、通知、重新基线、回滚；例外必须有责任人、理由、批准人、到期日，到期即 ERROR。`scope=gates`
-16. 状态层三条：`tasks/board.json` 的 `stage` 必须在 `flow.json` 里、`status` 只能是 todo/doing/blocked/done；
+16. 状态层三条：`tasks/board.json` 的 `stage` 必须在 `flow.json` 里（**例外**：`origin=reflect` 的反思工单可写 `-`，且必须带 `origin_ref` 指向它补的缺口）、`status` 只能是 todo/doing/blocked/done；
     `memory/lessons.md` 每条必须有现象/根因/断言三段；`codebase-guide/index.json` 由 `scripts/gen_guide.py` 生成，
     人手改过即 ERROR。`scope=gates`
 17. 提交消息符合 Conventional Commits 1.0.0，且**一个提交只做一件事**（正文行首以「顺带/另外/同时/此外」另起一件即为信号）。断言来源：`.harness/git-hooks/commit-msg`（`make init` 安装后强制）+ `tests/commit_msg.py` 正反例；它不在 verify 的 scope 里，且可被 `git commit --no-verify` 绕过——绕过口是明的，没装钩子时这条规则退化为人工纪律。钩子丢了执行位即 GATE008 ERROR（git 会静默跳过）。

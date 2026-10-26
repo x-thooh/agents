@@ -64,8 +64,9 @@ def _check_hooks(ctx, findings):
     try:
         spec.loader.exec_module(mod)
     except Exception as exc:  # 语法/导入错都要报，不能静默
-        findings.append(Finding("ERROR", NAME, 0, "LOOP002",
-                                f"读不了 scripts/hooks.py（{exc}）：钩子判不了，不能当通过"))
+        findings.append(
+            Finding("ERROR", NAME, 0, "LOOP002", f"读不了 scripts/hooks.py（{exc}）：钩子判不了，不能当通过")
+        )
         return True
     for path in sorted((root / "scopes").glob("*.py")):
         if path.stem in ("__init__", "common"):
@@ -75,20 +76,31 @@ def _check_hooks(ctx, findings):
             continue
         name = path.stem
         if not mod.plan(name):
-            findings.append(Finding("ERROR", NAME, 0, "LOOP002",
-                                    f"scope {name} 没登记 PLAN：它管什么，没人说得出来"))
+            findings.append(Finding("ERROR", NAME, 0, "LOOP002", f"scope {name} 没登记 PLAN：它管什么，没人说得出来"))
         declared = set(mod.reflect(name))
         actual = set(CODE_LITERAL.findall(text))
         if not declared:
-            findings.append(Finding("ERROR", NAME, 0, "LOOP004",
-                                    f"scope {name} 的 REFLECT 为空：没有可反向验证的面，"
-                                    "该合并或删——「空」不是通过"))
+            findings.append(
+                Finding(
+                    "ERROR",
+                    NAME,
+                    0,
+                    "LOOP004",
+                    f"scope {name} 的 REFLECT 为空：没有可反向验证的面，该合并或删——「空」不是通过",
+                )
+            )
         elif declared != actual:
             lack = sorted(actual - declared)
             extra = sorted(declared - actual)
-            findings.append(Finding("ERROR", NAME, 0, "LOOP004",
-                                    f"scope {name} 的 REFLECT 与源码对不上："
-                                    f"漏登记 {lack or '无'}、多登记 {extra or '无'}"))
+            findings.append(
+                Finding(
+                    "ERROR",
+                    NAME,
+                    0,
+                    "LOOP004",
+                    f"scope {name} 的 REFLECT 与源码对不上：漏登记 {lack or '无'}、多登记 {extra or '无'}",
+                )
+            )
     return True
 
 

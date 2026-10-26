@@ -54,7 +54,7 @@ style/refactor/perf/test/build/ci/chore/revert。由 `commit-msg` 钩子判，�
 13. 每个非 main 包必须有 `_test.go`；覆盖率与 `-race` 按 `config.json` 判定；benchmark 退化超 20% 即 ERROR。`scope=test`
 14. MR 行数、评审人数按 `config.json`；超出需 `oversize_approved`；作者不得自批；意见必须全部 `closed`。`scope=review`
 15. 发布：`tag` 必须是 `v<version>`；`env` ∈ {dev, gray, prod}；回滚三要素齐全；冒烟全绿；观察窗与错误率/p99 在阈值内。`scope=release`
-16. 状态层三条：`tasks/board.json` 的 `stage` 必须在 `flow.json` 里、`status` 只能是 todo/doing/blocked/done；
+16. 状态层三条：`tasks/board.json` 的 `stage` 必须在 `flow.json` 里（**例外**：`origin=reflect` 的反思工单可写 `-`，且必须带 `origin_ref` 指向它补的缺口）、`status` 只能是 todo/doing/blocked/done；
     `memory/lessons.md` 每条必须有现象/根因/断言三段；`codebase-guide/index.json` 由 `scripts/gen_guide.py` 生成，
     人手改过即 ERROR。`scope=gates`
 17. 钩子只有一份实现：`.harness/git-hooks/` 下的脚本必须有执行位（没执行位 git 静默跳过），

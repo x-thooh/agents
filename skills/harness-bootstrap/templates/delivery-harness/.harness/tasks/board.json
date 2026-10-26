@@ -15,6 +15,16 @@
       "stage": "design",
       "status": "doing",
       "updated": "2026-10-26"
+    },
+    {
+      "id": "T-900",
+      "title": "补 RUNT001 的反向样本",
+      "owner": "dev-a",
+      "stage": "-",
+      "status": "todo",
+      "updated": "2026-10-26",
+      "origin": "reflect",
+      "origin_ref": "RUNT001 @ internal/order/service.go"
     }
   ]
 }

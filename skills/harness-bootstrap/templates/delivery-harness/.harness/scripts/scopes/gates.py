@@ -31,6 +31,7 @@ CONTRACT = f"{HARNESS}/workflow/contract.json"
 BOARD = f"{HARNESS}/tasks/board.json"
 LESSONS = f"{HARNESS}/memory/lessons.md"
 GUIDE = f"{HARNESS}/codebase-guide/index.json"
+ORIGINS = ("manual", "reflect")
 TASK_STATUS = ("todo", "doing", "blocked", "done")
 AGENTS_MAX_LINES = 150
 HOOKS_DIR = f"{HARNESS}/git-hooks"
@@ -242,9 +243,19 @@ def check_state(root, stage_ids, findings):
             if tid in seen:
                 add(findings, "ERROR", NAME, BOARD, 1, "GATE007", f"task id 重复: {tid!r}")
             seen.add(tid)
-            if task.get("stage") not in stage_ids:
+            origin = task.get("origin", "manual")
+            if origin not in ORIGINS:
                 add(findings, "ERROR", NAME, BOARD, 1, "GATE007",
-                    f"task {tid!r} 的 stage {task.get('stage')!r} 不在 flow.json 里")
+                    f"task {tid!r} 的 origin {origin!r} 必须是 {list(ORIGINS)}")
+            elif origin == "reflect":
+                # 反思产出的工单往往不属任何阶段，用 "-" 明示「没绑阶段」。
+                if not str(task.get("origin_ref", "")).strip():
+                    add(findings, "ERROR", NAME, BOARD, 1, "GATE007",
+                        f"task {tid!r} 是反思工单，必须带 origin_ref（指出它补哪个缺口）")
+            elif task.get("stage") not in stage_ids:
+                add(findings, "ERROR", NAME, BOARD, 1, "GATE007",
+                    f"task {tid!r} 的 stage {task.get('stage')!r} 不在 flow.json 里。"
+                    "只有 origin=reflect 的工单才允许 stage='-'")
             if task.get("status") not in TASK_STATUS:
                 add(findings, "ERROR", NAME, BOARD, 1, "GATE007",
                     f"task {tid!r} 的 status 必须是 {list(TASK_STATUS)}")
