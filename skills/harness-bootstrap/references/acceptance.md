@@ -53,6 +53,7 @@
 | 布局表 ↔ 模板双向对账（表为根，产物不得反向定义规范） | audit.py LP001 / LP002 / LP003 | 强 |
 | 规范用语：`scope 分域` 不是分级 | audit.py SCOPE001 | 强 |
 | **文档描述必须与代码一致**，两个方向 | audit.py DOC001（代码里的每个 code 本文档都要有行）+ DOC002（本文档与 SKILL.md 点名的 code **与 scope 模块名**必须真存在，幻影即 ERROR；行写得对不对仍人判） | 强（覆盖 + 幻影）+ 人判（对应） |
+| **行为级**：一轮（一次提交）之后审计计数不许上升 | `scripts/round.py`（把 `HEAD~1` 检出到临时 worktree 跑一遍 audit，与当前工作树比计数；上升即 exit 1）；`make round` | 强（执行） |
 | 四段纪律的每一节都留下可判的痕（感知 / 规划 / 行动 / 反思） | audit.py LOOP001 / LOOP002 / LOOP003 / LOOP004（各节必须有「机器判：」与「人判：」分列；写了其中一节就得四节齐；一节都没有则记 not_applicable）。分列里点到的 code 由 DOC002 交叉校验存在。**scope 层的落点**：`scripts/hooks.py` 的 PLAN / REFLECT 必须与各 scope 源码里的 code 集逐条对得上（漏登记 / 多登记 / 空即 ERROR） | 强（分列形状）+ 人判（判据本身是否成立） |
 | **交付物必须在文档里被点名**（有了却没人说 = 文档与交付物脱钩） | audit.py DLV001（`scripts/*.py` / `tests/*.py` / `references/*.md` / 根文件 / 每套模板的四个文件：相对路径或文件名至少出现一次；`scripts/scopes/*.py` 不在内，它们已由 `code-index.md` 逐个点名） | 强（存在性）+ 人判（点到的位置对不对） |
 | **提交是最小不可分割单位**（一个提交一件事，不合并多功能） | 两套模板的 `check_commit.py` CM006（行首并列连接词启发式；句中不算），由 `.harness/git-hooks/commit-msg` 强制、`tests/commit_msg.py` 正反例守；钩子丢执行位即 GATE008 | 机器（启发式 + 钩子）+ 人判（两处改动算不算一件事）；`git commit --no-verify` 可绕过，绕过口是明的 |

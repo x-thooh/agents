@@ -39,6 +39,9 @@ help:
 check: check-skill fixtures check-templates selftest
 	@echo "== check 通过：技能自审 + fixture 断言表 + 两套模板 + 两套反向测试 =="
 
+round:
+	@$(PY) scripts/round.py
+
 check-all: check check-strict check-boot lint-python
 	@echo "== check-all 通过：以上 + strict 不变量 + 模板装上后的行为 + Python 静态检查 =="
 
