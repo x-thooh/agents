@@ -7,6 +7,10 @@
       "kind": "dir"
     },
     {
+      "path": ".harness/accepted.json",
+      "kind": "file"
+    },
+    {
       "path": ".harness/codebase-guide",
       "kind": "dir"
     },

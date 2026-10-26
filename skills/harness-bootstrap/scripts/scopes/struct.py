@@ -60,16 +60,21 @@ def run(ctx, findings):
         if name in STANDARD or name in EXTRAS or name in TOOL_JUNK:
             continue
         if name in NEAR_MISS:
-            findings.append(Finding(
-                "ERROR", NAME, 0, "STRUCT001",
-                f"标准拼写是 {NEAR_MISS[name]}，不是 {name!r}",
-                path=name))
+            findings.append(
+                Finding("ERROR", NAME, 0, "STRUCT001", f"标准拼写是 {NEAR_MISS[name]}，不是 {name!r}", path=name)
+            )
             continue
-        findings.append(Finding(
-            "ERROR", NAME, 0, "STRUCT001",
-            f"根下多出未声明的条目 {name!r}：要么并进标准四件，"
-            "要么在 scripts/scopes/struct.py 的 EXTRAS 里写明理由",
-            path=name))
+        findings.append(
+            Finding(
+                "ERROR",
+                NAME,
+                0,
+                "STRUCT001",
+                f"根下多出未声明的条目 {name!r}：要么并进标准四件，"
+                "要么在 scripts/scopes/struct.py 的 EXTRAS 里写明理由",
+                path=name,
+            )
+        )
 
     check_references(skill_dir, findings)
 
@@ -82,12 +87,24 @@ def check_references(skill_dir, findings):
     for name in sorted(os.listdir(ref_dir)):
         rel = f"{REF_DIR}/{name}"
         if os.path.isdir(os.path.join(ref_dir, name)):
-            findings.append(Finding(
-                "ERROR", NAME, 0, "STRUCT002",
-                "references/ 不建子目录：层级一深，「要用时去查」就变成「得先找」",
-                path=rel))
+            findings.append(
+                Finding(
+                    "ERROR",
+                    NAME,
+                    0,
+                    "STRUCT002",
+                    "references/ 不建子目录：层级一深，「要用时去查」就变成「得先找」",
+                    path=rel,
+                )
+            )
         elif not name.endswith(REF_SUFFIX):
-            findings.append(Finding(
-                "ERROR", NAME, 0, "STRUCT002",
-                f"references/ 只放 {REF_SUFFIX} 文档，可执行代码放 scripts/",
-                path=rel))
+            findings.append(
+                Finding(
+                    "ERROR",
+                    NAME,
+                    0,
+                    "STRUCT002",
+                    f"references/ 只放 {REF_SUFFIX} 文档，可执行代码放 scripts/",
+                    path=rel,
+                )
+            )

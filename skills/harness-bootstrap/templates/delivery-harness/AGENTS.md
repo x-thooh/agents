@@ -28,7 +28,7 @@ make selftest       # 每个 scope 的反向测试 + 提交消息检查的正反
 
 每个阶段由一个 scope 判定，scope 名写在该阶段的 `scopes` 字段里；跨阶段由 `gates` 判定。
 当前 scope 清单：`scope=gates` `scope=requirements` `scope=design` `scope=dev` `scope=integration`
-`scope=selftest` `scope=review` `scope=coherence` `scope=submission`。
+`scope=selftest` `scope=review` `scope=coherence` `scope=submission`；跨阶段 `scope=baseline`。
 
 ## 硬规则
 
@@ -54,6 +54,10 @@ make selftest       # 每个 scope 的反向测试 + 提交消息检查的正反
     人手改过即 ERROR。`scope=gates`
 17. 提交消息符合 Conventional Commits 1.0.0，且**一个提交只做一件事**（正文行首以「顺带/另外/同时/此外」另起一件即为信号）。断言来源：`.harness/git-hooks/commit-msg`（`make init` 安装后强制）+ `tests/commit_msg.py` 正反例；它不在 verify 的 scope 里，且可被 `git commit --no-verify` 绕过——绕过口是明的，没装钩子时这条规则退化为人工纪律。钩子丢了执行位即 GATE008 ERROR（git 会静默跳过）。
 
+18. 基线：老账记在 `.harness/baseline.txt`（四列，TAB 分隔），显式豁免记在
+    `.harness/accepted.json`（理由 + 负责人 + 复查日期）。账本内降 WARN、账本外仍
+    ERROR 且前缀「新欠」；豁免过期、账本格式坏、总数上升都是 ERROR。
+    `scope=baseline`（跨阶段，最后跑）
 ## 人判项（无断言）
 
 以下是机器判不了的，必须在门记录里由 A 角色签字，强度来源是人工评审：
@@ -69,6 +73,8 @@ make selftest       # 每个 scope 的反向测试 + 提交消息检查的正反
 ```text
 AGENTS.md                        本文件（地图）
 Makefile                         make init / check / check-json / check-strict / fix / selftest
+.harness/baseline.txt           老账账本（四列；首版为空）
+.harness/accepted.json          显式豁免（理由/负责人/复查日期，只减不增）
 .harness/config.json             阈值（覆盖率、任务人天、MR 行数、冒烟通过率）
 .harness/workflow/flow.json      阶段唯一事实源（顺序/门记录/交付物/scope）
 .harness/workflow/transitions.json  结果状态机

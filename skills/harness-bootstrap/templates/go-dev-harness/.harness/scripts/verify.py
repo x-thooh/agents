@@ -18,6 +18,7 @@ if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
 from scopes import (  # noqa: E402
+    baseline,
     conf,
     contract,
     design,
@@ -42,6 +43,7 @@ SCOPES = (
     test,
     review,
     release,
+    baseline,
 )
 
 

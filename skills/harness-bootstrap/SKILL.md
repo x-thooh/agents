@@ -68,6 +68,8 @@ AGENTS.md                                              必建    入口（地图
 .harness/scripts/                                      必建    执行：verify 调度器 + 一个 scope 一个文件 + gen_guide
 .harness/git-hooks/                                    必建    执行：提交前跑共有门径
 .harness/config.json                                   必建    执行：阈值与模块根（单一根配置）
+.harness/baseline.txt                                 必建    状态：老账账本（四列，首版为空；`baseline` scope 读）
+.harness/accepted.json                                必建    状态：显式豁免（理由 + 负责人 + 复查日期，只减不增）
 .harness/deliverables/                                 必建    状态：门记录、证据、账本、报告
 .harness/tasks/                                        必建    状态：任务看板（还没做什么）
 .harness/memory/                                       必建    状态：踩坑记忆与全仓决策
@@ -257,9 +259,9 @@ find . -name AGENTS.md | wc -l                        # 已有规则文件数
 
 ### 基线机制
 
-**本节是规格，不是随附实现**：两套模板都没有 `baseline` / `accepted`（见
-`templates/README.md`「未实现清单」），阶段 3 按本节自建。为什么不预置一份见
-[`references/baseline.md`](references/baseline.md)。
+**本节既是规格，也有参考实现**：两套模板的 `scopes/baseline.py` 提供四列账本、`accepted`
+保质期与只减不增（有 git 比 `HEAD` 旧账本，没有 git 记 WARN 而不冒充通过），五条反向测试盯着
+它。指纹与规则集绑定，改的是常量与正则而不是重写；取舍见 [`references/baseline.md`](references/baseline.md)。
 
 - 基线一行一条（域 + 路径 + 指纹 + **条数**），指纹把会漂的数字抹成 `#`；判定只看条数：当前条数大于基线即新欠、报 ERROR。报告必须**逐条**列出并标「基线内 / 新欠」，不许只报「基线内 N 条」——只报计数时，「修掉一条老的、新增一条新的」会互相抵消。
 - **零基线**：首版必须为空，当天的 ERROR 不许整表灌进去；要么修掉，要么逐条进 `accepted`（理由 + 负责人 + 复查日期）。基线与 accepted 总数**只减不增**，新增一条同样 ERROR——那不是豁免，是把新欠盖了章。

@@ -218,6 +218,95 @@ def warn_case(name, scope, expected_code, mutate):
         print(f"PASS {name}: {expected_code} (WARN)")
 
 
+# --- baseline 账本 ---------------------------------------------------------
+
+LEDGER_REL = ".harness/baseline.txt"
+ACCEPTED_REL = ".harness/accepted.json"
+
+
+def write_text(root, rel, body):
+    path = root / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(body, encoding="utf-8")
+
+
+def ledger_line(scope, path, fingerprint, count):
+    return f"{scope}\t{path}\t{fingerprint}\t{count}\n"
+
+
+def ledger_fingerprint(code, message):
+    """与 scopes/baseline.py 同一条规则：code + 消息里数字抹成 #。
+
+    测试里再写一遍是有意的：这是**契约**，不是实现细节。规则改了而这里没改，
+    降级/新欠的判定就会静默漂——那时应该让这里红，而不是让断言悄悄跟着实现走。
+    """
+    return f"{code}:{''.join('#' if ch.isdigit() else ch for ch in message or '')}"
+
+
+def baseline_error_case(name, expected_code, setup):
+    """账本本身出错（格式 / 过期 / 只减不增）：只跑 baseline scope，期望唯一 ERROR。"""
+    with tempfile.TemporaryDirectory(prefix="go-base-") as tmp:
+        root = copy_root(tmp)
+        setup(root)
+        payload, rc = run_verify(root, "baseline")
+        codes = {finding["code"] for finding in payload["findings"]
+                 if finding["severity"] == "ERROR"}
+        if rc != 1 or codes != {expected_code}:
+            raise AssertionError(
+                f"{name}: 期望唯一的 ERROR 是 {expected_code}，实际 {sorted(codes)}，rc={rc}")
+        print(f"PASS {name}: {expected_code}")
+
+
+def baseline_behavior_case(name, defect_setup, scope, rel, code):
+    """账本内 → 降级 WARN；账本外 → 仍是 ERROR 且前缀「新欠」。"""
+    with tempfile.TemporaryDirectory(prefix="go-base-behavior-") as tmp:
+        root = copy_root(tmp)
+        defect_setup(root)
+        # 改证据文件会让 codebase-guide 索引漂移，那是第二个缺陷：先同步回去
+        subprocess.run(
+            [sys.executable, str(root / ".harness/scripts/gen_guide.py"), str(root)],
+            check=True, capture_output=True,
+        )
+        payload, rc = run_verify(root)
+        hits = [f for f in payload["findings"]
+                if f["severity"] == "ERROR" and f["code"] == code]
+        if len(hits) != 1:
+            raise AssertionError(f"{name}: 样本不干净，期望 1 条 {code}，实际 {len(hits)}")
+        fingerprint = ledger_fingerprint(code, hits[0]["message"])
+
+        write_text(root, LEDGER_REL, ledger_line(scope, rel, fingerprint, 1))
+        payload, rc = run_verify(root)
+        if rc != 0 or payload["summary"]["errors"] != 0:
+            raise AssertionError(f"{name}: 账本内仍报 ERROR {payload['summary']['errors']} 条")
+        kept = [f for f in payload["findings"] if f["code"] == code]
+        if not kept or kept[0]["severity"] != "WARN" or not kept[0]["message"].startswith("基线内"):
+            raise AssertionError(f"{name}: 账本内应降级为 WARN 且前缀「基线内」，实际 {kept}")
+
+        write_text(root, LEDGER_REL, ledger_line(scope, rel, f"{code}:不存在的旧账", 1))
+        payload, rc = run_verify(root)
+        debt = [f for f in payload["findings"]
+                if f["code"] == code and f["severity"] == "ERROR"]
+        if rc != 1 or len(debt) != 1 or not debt[0]["message"].startswith("新欠"):
+            raise AssertionError(f"{name}: 账本外应保持 ERROR 且前缀「新欠」，实际 {debt}")
+        print(f"PASS {name}: 基线内 WARN / 新欠 ERROR")
+
+
+def baseline_monotonic_case(name, scope, rel, code):
+    """只减不增：旧账本已提交（total=1），涨到 2 必须 ERROR。没有 git 的场景另测。"""
+    with tempfile.TemporaryDirectory(prefix="go-base-mono-") as tmp:
+        root = copy_root(tmp)
+        line = ledger_line(scope, rel, f"{code}:旧账", 1)
+        write_text(root, LEDGER_REL, line)
+        git_init(root)
+        write_text(root, LEDGER_REL, line + ledger_line(scope, rel, f"{code}:又一条", 1))
+        payload, rc = run_verify(root, "baseline")
+        codes = {f["code"] for f in payload["findings"] if f["severity"] == "ERROR"}
+        if rc != 1 or codes != {"BASE013"}:
+            raise AssertionError(f"{name}: 期望唯一 ERROR BASE013，实际 {sorted(codes)}，rc={rc}")
+        print(f"PASS {name}: BASE013")
+
+
+
 def main():
     positive_control()
 
@@ -481,6 +570,45 @@ def main():
         2,
         check_guide_untouched(),
     )
+
+    # --- baseline：账本自己也要被守 -----------------------------------------
+    baseline_error_case(
+        "baseline: 账本不是四列",
+        "BASE011",
+        lambda root: write_text(root, LEDGER_REL, "runtime\tinternal/order/service.go\tRUNT001:x\n"),
+    )
+    baseline_error_case(
+        "baseline: accepted 缺负责人与复查日期",
+        "BASE011",
+        lambda root: write_text(
+            root,
+            ACCEPTED_REL,
+            json.dumps([{"scope": "conf", "path": ".harness/config.json",
+                         "fingerprint": "CONF001:x", "count": 1, "reason": "赶工"}],
+                       ensure_ascii=False),
+        ),
+    )
+    baseline_error_case(
+        "baseline: accepted 已过复查日期",
+        "BASE012",
+        lambda root: write_text(
+            root,
+            ACCEPTED_REL,
+            json.dumps([{"scope": "conf", "path": ".harness/config.json",
+                         "fingerprint": "CONF001:x", "count": 1, "reason": "赶工",
+                         "owner": "reverse", "review_by": "2020-01-01"}], ensure_ascii=False),
+        ),
+    )
+    baseline_behavior_case(
+        "baseline: 账本内降级 / 账本外新欠",
+        lambda root: edit_json(
+            root, ".harness/config.json", lambda data: data.update({"go_srcx": "typo"})
+        ),
+        "conf",
+        ".harness/config.json",
+        "CONF001",
+    )
+    baseline_monotonic_case("baseline: 总数上升即 ERROR", "conf", ".harness/config.json", "CONF001")
 
     print("ALL REVERSE TESTS PASSED")
 

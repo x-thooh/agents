@@ -28,6 +28,7 @@ from scopes import (  # noqa: E402
     review,
     selftest,
     submission,
+    baseline,
 )
 from scopes.common import git_clean, load_json  # noqa: E402
 
@@ -42,6 +43,7 @@ SCOPES = (
     review,
     coherence,
     submission,
+    baseline,
 )
 
 

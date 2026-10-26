@@ -33,7 +33,7 @@ style/refactor/perf/test/build/ci/chore/revert。由 `commit-msg` 钩子判，�
 
 每个阶段由一个或多个 scope 判定（写在 flow.json 的 `scopes` 字段），跨阶段由 `gates` 判定。
 当前 scope 清单：`scope=gates` `scope=contract` `scope=design` `scope=layout` `scope=runtime`
-`scope=impl` `scope=test` `scope=review` `scope=release`。
+`scope=impl` `scope=test` `scope=review` `scope=release`；跨阶段 `scope=baseline`。
 
 ## 硬规则
 
@@ -61,6 +61,10 @@ style/refactor/perf/test/build/ci/chore/revert。由 `commit-msg` 钩子判，�
     `lefthook.yml` 只做调度、每条 job 委托给这些脚本，两边的 hook 集合必须一致。`scope=gates`
 18. 提交消息符合 Conventional Commits 1.0.0；`specs/standards.md` 引用的断言代码必须真的存在。`scope=gates`
 
+19. 基线：老账记在 `.harness/baseline.txt`（四列，TAB 分隔），显式豁免记在
+    `.harness/accepted.json`（理由 + 负责人 + 复查日期）。账本内降 WARN、账本外仍
+    ERROR 且前缀「新欠」；豁免过期、账本格式坏、总数上升都是 ERROR。
+    `scope=baseline`（跨阶段，最后跑）
 ## 人判项（无断言）
 
 以下是机器判不了的，必须在门记录里由 owner 签字，强度来源是人工评审：
@@ -78,6 +82,8 @@ AGENTS.md                        本文件（地图）
 Makefile                         make init / init-lefthook / check / fix / lint / selftest
 .golangci.yml                    工具层配置（需 Go 工具链；与 specs/standards.md「工具层」同批改）
 lefthook.yml                     可选钩子调度层，只委托 .harness/git-hooks/，不内联检查
+.harness/baseline.txt           老账账本（四列；首版为空）
+.harness/accepted.json          显式豁免（理由/负责人/复查日期，只减不增）
 .harness/config.json             阈值（覆盖率、main 行数、MR、发布观察窗）+ go_src
 .harness/workflow/flow.json      阶段唯一事实源（顺序/门记录/交付物/scope）
 .harness/workflow/transitions.json  结果状态机
