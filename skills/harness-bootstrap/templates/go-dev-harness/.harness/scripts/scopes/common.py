@@ -249,6 +249,39 @@ def code_lines(path):
     return out
 
 
+def blank_strings(code):
+    """把字面量内容抹成空格，引号保留。注释不动（TODO 常常就在注释里）。
+
+    code_lines() 故意保留字面量原文——错误文案标点（RUNT008）、%w、ERROR_LITERAL
+    都要读它。所以「禁某个调用」类断言必须读这份抹过的副本：否则
+    var _ = "panic(" 会被判成真调用，而正对照照样是绿的。
+
+    抹成空格而不是删掉：删掉会让 pa"x"nic( 拼回 panic(，把误报换成另一种误报。
+    """
+    out = []
+    in_str = None
+    i = 0
+    while i < len(code):
+        ch = code[i]
+        if in_str:
+            if ch == "\\" and in_str == '"' and i + 1 < len(code):
+                out.append("  ")
+                i += 2
+                continue
+            if ch == in_str:
+                in_str = None
+                out.append(ch)
+            else:
+                out.append(" ")
+            i += 1
+            continue
+        if ch in ('"', "`", "'"):
+            in_str = ch
+        out.append(ch)
+        i += 1
+    return "".join(out)
+
+
 def is_test_file(path):
     return str(path).endswith("_test.go")
 

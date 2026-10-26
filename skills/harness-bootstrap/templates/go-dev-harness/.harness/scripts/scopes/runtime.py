@@ -6,6 +6,7 @@ from .common import (
     WORD_ERR,
     add,
     as_dict,
+    blank_strings,
     code_lines,
     go_files,
     go_package,
@@ -37,46 +38,51 @@ def run(ctx, findings):
         rel = rel_to(root, path)
         pkg = go_package(path)
         lines = code_lines(path)
-        body = "\n".join(code for _, code in lines)
-        for idx, code in enumerate(lines):
-            lineno, text = code
-            _check_panic(pkg, rel, lineno, text, findings)
-            _check_exit(pkg, rel, lineno, text, findings)
-            _check_context(pkg, rel, lineno, text, findings)
-            _check_wrap(rel, lineno, text, findings)
+        # code_lines 保留字面量原文（错误文案标点、%w、ERROR_LITERAL 都要读它），
+        # 所以「禁某个调用」类断言读的是抹掉字面量的副本，否则
+        # var _ = "panic(" 会被判成真调用。
+        bare_lines = [(no, blank_strings(code)) for no, code in lines]
+        body = "\n".join(code for _, code in bare_lines)
+        for idx, (lineno, text) in enumerate(lines):
+            bare = bare_lines[idx][1]
+            _check_panic(pkg, rel, lineno, bare, findings)
+            _check_exit(pkg, rel, lineno, bare, findings)
+            _check_context(pkg, rel, lineno, bare, findings)
+            _check_wrap(rel, lineno, text, bare, findings)
             _check_swallow(rel, lines, idx, findings)
-            _check_sleep(rel, lineno, text, findings)
-            _check_goroutine(rel, lineno, text, body, findings)
+            _check_sleep(rel, lineno, bare, findings)
+            _check_goroutine(rel, lineno, bare, body, findings)
             _check_error_string(rel, lineno, text, findings)
             _check_error_var(rel, lineno, text, findings)
             _check_init(pkg, rel, lineno, text, findings)
     _check_error_type_names(error_types, findings)
 
 
-def _check_panic(pkg, rel, lineno, code, findings):
-    if pkg != "main" and "panic(" in code:
+def _check_panic(pkg, rel, lineno, bare, findings):
+    if pkg != "main" and "panic(" in bare:
         add(findings, "ERROR", NAME, rel, lineno, "RUNT001",
             "库代码里 panic：返回 error，由 main 决定退出")
 
 
-def _check_exit(pkg, rel, lineno, code, findings):
+def _check_exit(pkg, rel, lineno, bare, findings):
     if pkg == "main":
         return
-    if "log.Fatal(" in code or "os.Exit(" in code:
+    if "log.Fatal(" in bare or "os.Exit(" in bare:
         add(findings, "ERROR", NAME, rel, lineno, "RUNT002",
             "库代码里 log.Fatal/os.Exit：进程退出只属于 main")
 
 
-def _check_context(pkg, rel, lineno, code, findings):
+def _check_context(pkg, rel, lineno, bare, findings):
     if pkg == "main":
         return
-    if "context.Background()" in code or "context.TODO()" in code:
+    if "context.Background()" in bare or "context.TODO()" in bare:
         add(findings, "ERROR", NAME, rel, lineno, "RUNT005",
             "库代码自造 context：ctx 必须由调用方传入（首参 ctx context.Context）")
 
 
-def _check_wrap(rel, lineno, code, findings):
-    if "fmt.Errorf(" in code and WORD_ERR.search(code) and "%w" not in code:
+def _check_wrap(rel, lineno, code, bare, findings):
+    # 调用看 bare（字面量里出现 fmt.Errorf( 不是调用），%w 看 code（它是格式串内容）。
+    if "fmt.Errorf(" in bare and WORD_ERR.search(bare) and "%w" not in code:
         add(findings, "ERROR", NAME, rel, lineno, "RUNT003",
             "fmt.Errorf 包装 err 却没带 %w：错误链断了，上层无法 errors.Is/As")
 
@@ -98,14 +104,14 @@ def _check_swallow(rel, lines, idx, findings):
         return
 
 
-def _check_sleep(rel, lineno, code, findings):
-    if "time.Sleep(" in code:
+def _check_sleep(rel, lineno, bare, findings):
+    if "time.Sleep(" in bare:
         add(findings, "WARN", NAME, rel, lineno, "RUNT006",
             "time.Sleep 不是同步原语：用 ctx/errgroup/channel 收敛等待")
 
 
-def _check_goroutine(rel, lineno, code, body, findings):
-    if not GO_STMT.match(code):
+def _check_goroutine(rel, lineno, bare, body, findings):
+    if not GO_STMT.match(bare):
         return
     if "errgroup" in body or "sync." in body or "chan " in body or "chan<-" in body:
         return

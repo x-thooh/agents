@@ -218,6 +218,28 @@ def warn_case(name, scope, expected_code, mutate):
         print(f"PASS {name}: {expected_code} (WARN)")
 
 
+def clean_case(name, scope, mutate):
+    """误报守卫：写得像违规、其实是字面量 —— 期望这一域 0 ERROR。
+
+    正对照证明「合规样本全绿」，这里证明「合规样本不会因为长得像而被判红」。
+    两者不是同一条：字面量里的 panic( 曾经报 RUNT001，而正对照照样是绿的——
+    全绿只能证明跑过的那一类样本，证明不了没被误判的那一类。
+    """
+    with tempfile.TemporaryDirectory(prefix=f"go-{scope}-clean-") as tmp:
+        root = copy_root(tmp)
+        mutate(root)
+        subprocess.run(
+            [sys.executable, str(root / ".harness/scripts/gen_guide.py"), str(root)],
+            check=True, capture_output=True,
+        )
+        payload, rc = run_verify(root, scope)
+        errors = {finding["code"] for finding in payload["findings"]
+                  if finding["severity"] == "ERROR"}
+        if errors or rc != 0:
+            raise AssertionError(f"{name}: 合规写法被判成违规 {sorted(errors)}，exit {rc}")
+        print(f"PASS {name}: 0 ERROR")
+
+
 # --- baseline 账本 ---------------------------------------------------------
 
 LEDGER_REL = ".harness/baseline.txt"
@@ -414,6 +436,29 @@ def main():
             root,
             "sample/internal/order/order.go",
             "\nfunc boom() {\n\tpanic(\"boom\")\n}\n",
+        ),
+    )
+    # 误报守卫：code_lines 保留字面量原文（RUNT008 要读它），所以「禁调用」类
+    # 断言必须自己抹掉字面量。下面几条都不该报——它们只是文案。
+    clean_case(
+        "runtime: 字面量里的 panic( / log.Fatal( / context.Background() 不是调用",
+        "runtime",
+        lambda root: append_text(
+            root,
+            "sample/internal/order/order.go",
+            '\nvar _ = "库代码不许 panic( 见规范"\n'
+            'var _ = "log.Fatal( 也不许"\n'
+            'var _ = "context.Background() 不是调用"\n'
+            'var _ = "time.Sleep( 只是文案"\n',
+        ),
+    )
+    clean_case(
+        "impl: 字面量里的 TODO 不是待办",
+        "impl",
+        lambda root: append_text(
+            root,
+            "sample/internal/order/order.go",
+            '\nvar _ = "TODO 这种写法本来就不行"\n',
         ),
     )
     reverse_case(

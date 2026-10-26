@@ -2,7 +2,18 @@
 import re
 from pathlib import Path
 
-from .common import add, as_dict, check_fields, go_files, go_src, load_json, quality_get, rel_to, warn_example
+from .common import (
+    add,
+    as_dict,
+    blank_strings,
+    check_fields,
+    go_files,
+    go_src,
+    load_json,
+    quality_get,
+    rel_to,
+    warn_example,
+)
 
 NAME = "impl"
 REL = ".harness/deliverables/artifacts/impl.json"
@@ -39,7 +50,8 @@ def scan_sources(root, quality, findings):
                 add(findings, "ERROR", NAME, rel, idx, "IMP002", "行尾有多余空白")
             if not in_raw and SPACE_INDENT.match(line):
                 add(findings, "ERROR", NAME, rel, idx, "IMP002", "用空格缩进（Go 用 tab）")
-            if TODO.search(line):
+            # 只抹字面量、保留注释：TODO 本来就常写在注释里，但 "TODO 这种写法" 只是文案。
+            if TODO.search(blank_strings(line)):
                 add(findings, "WARN", NAME, rel, idx, "IMP004",
                     "TODO/FIXME 必须带负责人，形如 TODO(name): 原因")
             if line.count("`") % 2 == 1:
