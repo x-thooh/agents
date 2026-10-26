@@ -38,12 +38,14 @@ def run(ctx, findings):
         for idx, ln in enumerate(lines):
             for m in INTERNAL_XREF.finditer(ln):
                 letter, sub = m.group(1), m.group(2)
-                rel = f"{REF_DIR}/{name}:{idx + 1}"
+                # 判的是别的文件，必须带 path——否则报告落点回退成 SKILL.md，
+                # 把读者指到第 idx+1 行那个毫不相干的位置（Finding 的约定见 common.py）。
+                where = f"{REF_DIR}/{name}"
                 if letter not in sections:
                     findings.append(Finding(
                         "ERROR", NAME, idx + 1, "XREFDOC001",
-                        f"{rel} §{letter} 指向 SKILL.md 不存在的章节" + _NOTE))
+                        f"§{letter} 指向 SKILL.md 不存在的章节" + _NOTE, path=where))
                 elif sub is not None and as_int(sub) not in sections[letter]["subs"]:
                     findings.append(Finding(
                         "ERROR", NAME, idx + 1, "XREFDOC002",
-                        f"{rel} §{letter}.{sub} 指向 §{letter} 下不存在的条目" + _NOTE))
+                        f"§{letter}.{sub} 指向 §{letter} 下不存在的条目" + _NOTE, path=where))
