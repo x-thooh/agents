@@ -1,29 +1,20 @@
-"""docphantom：文档 → 源码方向——文档点名的 code 必须真的存在。
+"""docphantom：文档 → 源码方向——文档点名的 code / scope 模块必须真的存在。
 
-只守 DOC001 一个方向时，删掉/改名一个 code 而文档没跟着改，两边一起漂而门禁全绿。
-变异测试撞出过这个洞：把 `SKILL.md` 正文里的 `LP001` 改写成 `ZZ001`，audit 报 0 条。
+只守 DOC001 一个方向时，改名或删掉一个 code 而文档没跟着改，两边一起漂而门禁全绿。
+变异测试撞出过这个洞：把 `SKILL.md` 里的 `LP001` 改写成 `ZZ001`，audit 报 0 条。
 
-两处都扫，理由不同：
+两处扫描面：`SKILL.md` 正文（入口，替不存在的断言背书时读的人不会知道）；
+`acceptance.md` 里把 code 归给 `audit.py` 的行（那是「谁守这条规则」的台账——只判这些行，
+表里大量目标仓库侧的 code（CONF001 / GATE00x / CM006…）本来就不该在本仓库的 `scopes/` 里）。
 
-  * `SKILL.md` 正文 —— 这是入口。它在替一条不存在的断言背书时，读的人不会知道。
-  * `acceptance.md` 里把 code 归给 `audit.py` 的行 —— 这张表是「谁守这条规则」的台账。
-    只判这些行：表里还有大量目标仓库侧的 code（CONF001 / GATE00x / CM006…），
-    它们本来就不该出现在本仓库的 `scripts/scopes/` 里。
+判据收窄到「本仓库真实存在的 code」= 本 skill 的 `scripts/` ∪ `templates/`，再加上跑 audit 的
+那个 skill（`--skill-dir` 指向 fixture 时提到父 skill 的 code 合法）；仍构得出失败例。
 
-判据收窄到「本仓库真实存在的 code」= 本 skill 的 `scripts/` ∪ `templates/`，再加上
-跑 audit 的那个 skill（`--skill-dir` 指向 fixture 时，fixture 正文提到父 skill 的
-code 是合法的）。这样 fixture 仍构得出失败例：写一个谁都没有的 code 就要报。
-
-第三个方向：文档点名的 **scope 模块** 也必须真的存在（v2 评审 §4-3）。只守 code 时，
-把 `layout_parity` 改写成 `ghostscope` 仍全绿——而「.harness/scripts/scopes/ 一个 scope
-一个文件」这件事靠 scope 名指路，名字错了指向就不存在。
-
-为什么不能直接「见 `` `xxx` `` 就查」：文档里大量反引号是字段名、路径、命令
-（`scope`、`summary`、`import`、`verify`），抓一个报一个。实测 20+ 处误报，
-而误报会把真发现淹掉。所以只在两种写法上判，**并且要求这一行在讲本仓库的载体**
-（提到 `audit.py` 或本仓库某个真实 code）——`acceptance.md` 里 `scope=notes` 指的是
-目标仓库自己的 scope，不是本仓库的，那行不满足条件就不查。
+scope 模块名也判：只守 code 时把 `layout_parity` 改写成 `ghostscope` 仍全绿，
+而「一个 scope 一个文件」这句话靠 scope 名指路。为何不能「见反引号就查」、归属怎么判：
+见断言坑 #19——实测直查会产出 26 条语义正确的误报，误报会把真发现淹掉。
 """
+
 import os
 import pathlib
 import re
@@ -62,10 +53,12 @@ def _codes_under(root):
 
 def _known_codes(skill_dir):
     """「本仓库里真实存在的 code」：被审目录与跑 audit 的 skill，各自的 scripts/ 与 templates/。"""
-    return (_codes_under(pathlib.Path(skill_dir) / "scripts")
-            | _codes_under(pathlib.Path(skill_dir) / "templates")
-            | _codes_under(AUDIT_SKILL_DIR / "scripts")
-            | _codes_under(AUDIT_SKILL_DIR / "templates"))
+    return (
+        _codes_under(pathlib.Path(skill_dir) / "scripts")
+        | _codes_under(pathlib.Path(skill_dir) / "templates")
+        | _codes_under(AUDIT_SKILL_DIR / "scripts")
+        | _codes_under(AUDIT_SKILL_DIR / "templates")
+    )
 
 
 def _scopes_under(root):
@@ -82,25 +75,36 @@ def _check_scopes(text, known_scopes, known_codes, findings):
             continue
         if "audit.py" not in line and not any(code and code in line for code in known_codes):
             continue
-        names = (set(BACKTICK_SCOPE.findall(line)) | set(SCOPE_EQ.findall(line))
-                 | set(PAIRED_SCOPE.findall(line)))
+        names = set(BACKTICK_SCOPE.findall(line)) | set(SCOPE_EQ.findall(line)) | set(PAIRED_SCOPE.findall(line))
         phantom |= {n for n in names if n not in known_scopes}
     if phantom:
-        findings.append(Finding(
-            "ERROR", NAME, 0, "DOC002",
-            f"文档点到 {len(phantom)} 个 scope 模块，本仓库里却没有："
-            f"{' '.join(sorted(phantom))}。改 scope 名而文档没跟着改时，"
-            "「一个 scope 一个文件」这句话指向的目录已经不存在了"))
+        findings.append(
+            Finding(
+                "ERROR",
+                NAME,
+                0,
+                "DOC002",
+                f"文档点到 {len(phantom)} 个 scope 模块，本仓库里却没有："
+                f"{' '.join(sorted(phantom))}。改 scope 名而文档没跟着改时，"
+                "「一个 scope 一个文件」这句话指向的目录已经不存在了",
+            )
+        )
 
 
 def _check_skill(text, known, findings):
     phantom = {c for c in DOC_CODE_RE.findall(text) if c not in known}
     if phantom:
-        findings.append(Finding(
-            "ERROR", NAME, 0, "DOC002",
-            f"SKILL.md 点到 {len(phantom)} 个 code，本仓库源码里却没有："
-            f"{' '.join(sorted(phantom))}。删掉/改名一个 code 而正文没跟着改时，"
-            "正文就在替一条不存在的断言背书——「逐个点名」失效的正是这个方向"))
+        findings.append(
+            Finding(
+                "ERROR",
+                NAME,
+                0,
+                "DOC002",
+                f"SKILL.md 点到 {len(phantom)} 个 code，本仓库源码里却没有："
+                f"{' '.join(sorted(phantom))}。删掉/改名一个 code 而正文没跟着改时，"
+                "正文就在替一条不存在的断言背书——「逐个点名」失效的正是这个方向",
+            )
+        )
 
 
 def _check_acceptance(doc, codes, findings):
@@ -110,11 +114,17 @@ def _check_acceptance(doc, codes, findings):
             continue
         phantom |= {c for c in DOC_CODE_RE.findall(line) if c not in codes}
     if phantom:
-        findings.append(Finding(
-            "ERROR", NAME, 0, "DOC002",
-            f"{ACCEPTANCE_REL} 把 {len(phantom)} 个 code 归给 audit.py，源码里却没有它们："
-            f"{' '.join(sorted(phantom))}。文档点名的载体不存在时，这张表就是假台账",
-            path=ACCEPTANCE_REL))
+        findings.append(
+            Finding(
+                "ERROR",
+                NAME,
+                0,
+                "DOC002",
+                f"{ACCEPTANCE_REL} 把 {len(phantom)} 个 code 归给 audit.py，源码里却没有它们："
+                f"{' '.join(sorted(phantom))}。文档点名的载体不存在时，这张表就是假台账",
+                path=ACCEPTANCE_REL,
+            )
+        )
 
 
 def run(ctx, findings):
@@ -124,7 +134,7 @@ def run(ctx, findings):
         return
     known = _known_codes(ctx["skill_dir"])
     _check_skill(ctx["text"], known, findings)
-    known_scopes = (_scopes_under(ctx["skill_dir"]) | _scopes_under(AUDIT_SKILL_DIR))
+    known_scopes = _scopes_under(ctx["skill_dir"]) | _scopes_under(AUDIT_SKILL_DIR)
     _check_scopes(ctx["text"], known_scopes, known, findings)
     codes, unreadable = _codes(scopes_dir)
     if unreadable:

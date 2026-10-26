@@ -17,13 +17,13 @@
 harness-bootstrap/
 ├── SKILL.md          标准：入口与元数据（必需）
 ├── references/       标准：按需查的支撑文档，只放 .md，不建子目录（STRUCT002）
-├── scripts/          标准：可执行代码（audit.py 调度 + report.py 输出 + scopes/ 一个 scope 一个文件
-│                     + gen_code_index.py 生成清单 + check_strict.sh 判 strict）
+├── scripts/          标准：可执行代码（audit.py 调度 + report.py 输出 + cli.py 解析入口参数
+│                     + scopes/ 一个 scope 一个文件 + gen_code_index.py 生成清单 + check_strict.sh 判 strict）
 ├── agents/           标准：子 Agent 定义（本 skill 目前没有，不建空目录）
 ├── README.md         额外：维护者入口，给人看，不进 skill 上下文
 ├── Makefile          额外：统一命令入口（所有命令从 make 走）
 ├── tests/            额外：自身门禁的引擎（`fixtures.py`）+ 期望表（`cases.py`）+ 三道闸（`coverage.py`）+ 反向 fixture
-└── templates/        额外：生成物模板，拷进目标仓库用，不是参考文档
+└── templates/        额外：生成物模板（每套含 TEMPLATE.md 模板说明 + AGENTS.md 入口），拷进目标仓库用，不是参考文档
 ```
 
 「额外」不是随便加的：每一个都在 `scripts/scopes/struct.py` 的 `EXTRAS` 里带一句理由。
@@ -104,6 +104,8 @@ CI 不能——这是 CI 唯一的职责。它**不新增断言**：目录齐不
 
 两者都自带 `tests/reverse.py`（每个 scope 至少一条违规样本，外加 `--fix` 的边界样本）、
 `make check-strict`（示例数据判 ERROR）和 `make fix`（只修派生数据，前置条件按目标文件排除）。
+每套还有一个 `TEMPLATE.md`：模板自己的说明，拷进目标仓库时**不改名成 README**（早期版本就该叫 `README.md`，
+拷一次就把人家原来的覆盖了）。
 `go-dev-harness` 另有 `.harness/scripts/check_commit.py` 与 `tests/commit_msg.py`（提交消息按
 Conventional Commits 判）、`.golangci.yml`（工具层，`make lint`）和可选的 `lefthook.yml`
 （调度层，只委托 `.harness/git-hooks/` 的脚本）。

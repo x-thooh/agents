@@ -72,6 +72,8 @@ CASES = (
     # 幻影的第三个方向：正文点名的 **scope 模块** 不存在。
     # 只补 code 方向时这里全绿——而「拿别人家代码审谁守哪条」正是靠 scope 名指路的（v2 评审 §4-3）。
     ("bad-phantom-scope", {"DOC002"}, ()),
+    # 交付物孤儿：文件在、内容对，但文档一次都没点名（「有了却没人说」）
+    ("bad-orphan-deliverable", {"DLV001"}, ()),
     # 体量预算两档：两档都得真会响，否则「准备拆」只是句好听话
     ("bad-budget-warn", {"BUDGET001"}, ()),
     ("bad-budget-error", {"BUDGET001"}, ()),
@@ -86,10 +88,8 @@ CASES = (
     ("bad-bash-syntax", {"BASH002"}, ()),
     ("bad-host-no-section", {"HOST002"}, ()),
     ("bad-link-unchecked", {"LINK001"}, ()),
-    ("bad-link-dead", {"LINK002"},
-     ("--check-links", "--link-status", "https://example.com/dead-404=404")),
-    ("bad-link-unreachable", {"LINK003"},
-     ("--check-links", "--link-status", "https://example.com/unreachable=ERR")),
+    ("bad-link-dead", {"LINK002"}, ("--check-links", "--link-status", "https://example.com/dead-404=404")),
+    ("bad-link-unreachable", {"LINK003"}, ("--check-links", "--link-status", "https://example.com/unreachable=ERR")),
     ("bad-xrefdoc-missing", {"XREFDOC001"}, ()),
     # 调度器体征：换一个「长成实现」的调度器去审合规样本
     ("ok-minimal", {"LAYOUT001"}, ("--dispatch", "tests/fixtures/bad-inline-scope/scripts/audit.py")),

@@ -11,3 +11,5 @@ license: MIT
 所以唯一缺陷是反方向的「幻影 code」。除此之外不含缺陷。
 
 参考：`references/acceptance.md`、`references/code-index.md`。
+
+反向样本的脚本在 `scripts/scopes/demo.py`。本句只为让 DLV001 不误报：一个样本只该含一件缺陷。
