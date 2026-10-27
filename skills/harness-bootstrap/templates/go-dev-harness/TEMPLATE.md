@@ -17,7 +17,10 @@ Golang 软件开发工程师的业务 harness：把「接需求 → 定接口 �
 - `.harness/specs/standards.md`：Go 规范与断言对照表。
 - `.harness/deliverables/`：`gates/` 门记录、`artifacts/` 证据、`ledgers/` 变更与例外。
 - `.harness/tasks/board.json`、`.harness/memory/`、`.harness/codebase-guide/index.json`。
-- `.harness/scripts/`：`verify.py` 调度器 + 一组 scope（一个 scope 一个文件，见 `scopes/`）+ `gen_guide.py` + `evidence.py`（跑真实工具链产 `impl.json` / `test.json`）。
+- `.harness/scripts/`：`verify.py` 调度器（两套模板逐字节相同）+ `registry.py`（本套的 scope 清单）
+  + 一组 scope（一个 scope 一个文件，见 `scopes/`）+ `gen_guide.py` + `evidence.py`（跑真实工具链产
+  `impl.json` / `test.json`）+ `retro.py` / `retro_check.py` / `round.py`（复盘与环比）
+  + `wt.py`（任务级 worktree：`new` / `finish` / `list`）。
 - `sample/`：能过全部断言的示例 Go 模块（`go_src` 指向它）。
 - `tests/reverse.py`：每个 scope 一条违规样本，验证真的会报 ERROR。
 

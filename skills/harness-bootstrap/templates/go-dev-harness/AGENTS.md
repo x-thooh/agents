@@ -21,6 +21,11 @@ make race           # go test -race ./...
 make evidence       # 跑 build/vet/test -race/cover/bench/lint，全部 exit 0 才写 impl.json/test.json
 make lint           # 工具层：golangci-lint（需要 Go 工具链，可选）
 make selftest       # 反向测试：每个 scope 至少一条违规样本 + 提交消息检查
+make retro          # 本轮事实底板：verify 计数 / 反向用例数 / 环比，先有数字再写复盘
+make retro-check    # 复盘三栏与工单表校验（archive/retro/）
+make round          # 行为级环比：HEAD~1 与本轮的 ERROR 计数 + 手册行数
+make task-new TASK=ID   # 给任务开一棵树：同级 <repo>-wt/ID，分支 task/ID
+make task-done TASK=ID  # 收尾：查干净 → 查已合并 → 删树 → 删分支
 ```
 
 `make check` 仍只读 JSON、不依赖 Go；build/vet/test/race/evidence 需要 Go 工具链，不进 `check`。
@@ -40,7 +45,7 @@ style/refactor/perf/test/build/ci/chore/revert。由 `commit-msg` 钩子判，�
 
 每个阶段由一个或多个 scope 判定（写在 flow.json 的 `scopes` 字段），跨阶段由 `gates` 判定。
 当前 scope 清单：`scope=gates` `scope=contract` `scope=design` `scope=layout` `scope=runtime`
-`scope=impl` `scope=test` `scope=review` `scope=release`；`scope=notes`；跨阶段 `scope=baseline`。
+`scope=impl` `scope=test` `scope=review` `scope=release`；`scope=notes`；`scope=worktree`；跨阶段 `scope=baseline`。
 
 ## 硬规则
 
@@ -78,6 +83,8 @@ style/refactor/perf/test/build/ci/chore/revert。由 `commit-msg` 钩子判，�
 21. 证据的时效：`deliverables/artifacts/impl.json` 与 `test.json` 的 `at` 必须是 ISO 8601、
     `commit` 必须等于当前 HEAD（`example: true` 除外）。改完代码没重跑 `make evidence`，
     证据就过期了——而过期证据比没有证据更坏，它看起来可信。`IMP006` / `TST007`
+22. 一个任务一棵树：`make task-new TASK=ID` 开树（同级 `<repo>-wt/ID`，分支 `task/ID`）、`make task-done TASK=ID`
+    收尾（查干净 → 查已合并 → 删树 → 删分支）。`done` 的任务不许留树，`todo` 的任务不许先开树。`scope=worktree`
 
 ## 人判项（无断言）
 
@@ -113,6 +120,11 @@ lefthook.yml                     可选钩子调度层，只委托 .harness/git-
 .harness/memory/decisions.md     全仓级决策
 .harness/codebase-guide/index.json  代码库索引（脚本生成，禁手改）
 .harness/scripts/verify.py       调度器（注册表 / 排序 / 退出码 / --fix 编排）
+.harness/scripts/registry.py    本套模板的 scope 清单（verify.py 两套逐字节相同，清单在这里）
+.harness/scripts/retro.py        复盘事实底板：verify 计数 / 反向用例数 / 环比
+.harness/scripts/retro_check.py  复盘三栏与工单表校验（archive/retro/）
+.harness/scripts/round.py        行为级环比：HEAD~1 与本轮
+.harness/scripts/wt.py           任务级 worktree：new / finish / list
 .harness/scripts/scopes/         一个 scope 一个文件
 .harness/scripts/gen_guide.py    生成 codebase-guide/index.json
 .harness/scripts/evidence.py     跑真实工具链，写 impl.json / test.json

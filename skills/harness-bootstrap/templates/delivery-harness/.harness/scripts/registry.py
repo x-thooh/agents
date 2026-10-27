@@ -17,6 +17,7 @@ from scopes import (
     selftest,
     submission,
     notes,
+    worktree,
     baseline,
 )
 
@@ -33,5 +34,6 @@ SCOPES = (
     coherence,
     submission,
     notes,
+    worktree,
     baseline,
 )

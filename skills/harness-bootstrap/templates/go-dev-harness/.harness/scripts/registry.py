@@ -18,6 +18,7 @@ from scopes import (
     review,
     runtime,
     test,
+    worktree,
 )
 
 # 顺序 = 跑的顺序（输出还会按 severity/scope/line/code 再排序）
@@ -33,5 +34,6 @@ SCOPES = (
     review,
     release,
     notes,
+    worktree,
     baseline,
 )

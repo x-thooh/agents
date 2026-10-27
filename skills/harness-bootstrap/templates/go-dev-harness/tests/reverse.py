@@ -98,6 +98,39 @@ def git_init(root):
         subprocess.run(["git", *ident, *step], cwd=root, check=True, capture_output=True)
 
 
+def worktree_case(name, status, code, severity, expect_rc):
+    """树与看板对不上：done 却留着树（WT001，ERROR）/ todo 却先开了树（WT002，WARN）。
+
+    先 git_init 再建树：没有 git 时 scope 记 not_applicable（判不了就说判不了），
+    那样测到的是「判不了」这条分支，而不是「树与看板矛盾」这一条。
+
+    两条都测：只测 WT001 时，WT002 那个分支改坏了没有任何东西会响——覆盖闸数的是
+    「这个 scope 有没有用例」，不是「每个 code 有没有用例」，缺的那条只能靠自己补。
+    """
+    COVERED.add("worktree")
+    with tempfile.TemporaryDirectory(prefix="gh-wt-") as tmp:
+        root = copy_root(tmp)
+        git_init(root)
+        edit_json(
+            root,
+            ".harness/tasks/board.json",
+            lambda data: data["tasks"][0].update({"status": status}),
+        )
+        board = json.loads((root / ".harness/tasks/board.json").read_text(encoding="utf-8"))
+        tid = board["tasks"][0]["id"]
+        tree = Path(tmp) / "wt" / tid
+        subprocess.run(
+            ["git", "-C", str(root), "worktree", "add", "-q", "-b", f"task/{tid}", str(tree)],
+            check=True,
+            capture_output=True,
+        )
+        payload, rc = run_verify(root, "worktree")
+        hits = {f["code"] for f in payload["findings"] if f["severity"] == severity}
+        if rc != expect_rc or code not in hits:
+            raise AssertionError(f"{name}: 期望 {code} {severity}，实际 rc={rc} codes={sorted(hits)}")
+        print(f"PASS {name}: {code}")
+
+
 def mutate_guide(root):
     """把索引清空：GUIDE001 必报，且能被 --fix 复原成正确内容。"""
     edit_json(root, GUIDE_REL, lambda data: data.update({"entries": []}))
@@ -887,6 +920,8 @@ def main():
     )
     baseline_monotonic_case("baseline: 总数上升即 ERROR", "conf", ".harness/config.json", "CONF001")
     baseline_solo_case("baseline: 单查不许编造「可以刷新账本」", "conf", ".harness/config.json", "CONF001")
+    worktree_case("worktree: 任务已结束却还留着树", "done", "WT001", "ERROR", 1)
+    worktree_case("worktree: 树开了任务还是 todo", "todo", "WT002", "WARN", 0)
 
     registered = registered_scopes()
     missing = sorted(registered - COVERED)

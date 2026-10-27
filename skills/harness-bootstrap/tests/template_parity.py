@@ -27,7 +27,9 @@ GODEV = ROOT / "templates/go-dev-harness"
 
 SHARED = (
     ".harness/scripts/verify.py",
+    ".harness/scripts/wt.py",
     ".harness/scripts/scopes/baseline.py",
+    ".harness/scripts/scopes/worktree.py",
     ".harness/scripts/check_commit.py",
     ".harness/scripts/evidence_age.py",
     ".harness/scripts/gen_guide.py",

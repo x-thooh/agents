@@ -40,16 +40,24 @@ AGENTS.md                       地图：命令 + 硬规则（每条带 scope �
 .harness/tasks/board.json       任务看板（还没做什么）
 .harness/memory/                lessons.md（现象/根因/断言）+ decisions.md
 .harness/codebase-guide/        index.json，由 scripts/gen_guide.py 生成，禁手改
-.harness/scripts/               verify.py 调度器 + 一个 scope 一个文件 + gen_guide.py
+.harness/scripts/               verify.py 调度器（两套逐字节相同）+ registry.py 本套的 scope 清单
+                                 + 一个 scope 一个文件 + gen_guide.py + check_commit.py + evidence_age.py（共用）
+                                 + retro.py / retro_check.py / retro_board.py / round.py（复盘与环比）
+                                 + wt.py（任务级 worktree：new / finish / list）
 .harness/git-hooks/             pre-commit：提交前跑 make check
 .harness/stack-templates/       门记录与产物骨架
 .harness/config.json            单一根配置（阈值、模块根）
-tests/reverse.py                每个 scope 一条违规样本 + --fix 的四条边界样本
+tests/reverse.py                每个 scope 一条违规样本（一个 code 一条，不是一 scope 一条）+ --fix 四条边界样本
 Makefile                        init / check / check-json / check-strict / fix / selftest
+                                 / retro / retro-check / round / task-new / task-done / task-list
 ```
 
 根级 `skills/`（按需）是能力声明账本的磁盘侧；`playbooks/` 是旧名，已废弃。模板只放一个
 `.gitkeep`，因为声明账本与对账 scope 都还没预置（见上面的未实现清单）。
+
+证据时效是两套模板共用的那条：`artifacts/*.json` 里 `at` 必须是 ISO 8601、`commit` 必须等于
+当前 HEAD（`example: true` 除外）。没有 git 时只 WARN——判不了就说判不了，不冒充通过。
+判据本体在 `.harness/scripts/evidence_age.py`，两边逐字节相同，改一处两边一起变。
 
 五条一致的约定：`example: true` 的示例数据在 `--strict` 下判 ERROR；退出码 0 = 无 ERROR；
 反向测试与 scope 一一对应，新增 scope 必须同批加一条；**阶段只写在 `flow.json`，脚本与散文都不许再抄一份**；

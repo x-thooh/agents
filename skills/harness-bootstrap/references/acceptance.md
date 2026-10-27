@@ -7,8 +7,7 @@
 ## 规则 ↔ 断言载体对照
 
 右栏是**目标仓库自己实现**的载体，不是本 skill 自带的：默认按「服务名 + `pkg` 等共有目录」划分 scope，
-目标仓库可自行指定命名与划分。所以这张表是**给目标仓库抄的骨架**，不是本 skill 的验收清单——
-把它当成本 skill 的自查表，会把「目标仓库还没建这个 scope」读成「本 skill 有人守」。
+目标仓库可自行指定命名与划分。把它当成本 skill 的自查表，会把「目标仓库还没建这个 scope」读成「有人守」。
 
 按 [§五.2](../SKILL.md#2-规则与断言配对) 自查：每条规则要么在这里有一行，要么在台面上写明「无断言」及强度来源。
 
@@ -37,6 +36,7 @@
 | 枚举闭集（分类/状态/kind） | verify 常量表 | 强 |
 | 语料位置 ↔ `Status:` 互校 | **两套模板 verify 的 `scope=notes`（NTS002）**；头五行/`summary`/`不显然之处` 仍属目标仓库侧，模板未交付 | 强（位置互校）+ 无断言（其余） |
 | 笔记必须被文档引用（孤儿笔记 = 写了没人读得到） | **两套模板 verify 的 `scope=notes`（NTS001）**：`AGENTS.md` / `decisions.md` / 其它笔记里一次都没出现即 ERROR；归档区不豁免（仍要有入站链接才找得到） | 强（反向测试 `notes_case`） |
+| 一个任务一棵树（开工建树、收尾先提交再删树、`done` 的任务不许留树） | **两套模板 verify 的 `scope=worktree`**：WT001（树在而任务已 `done` 或不在看板）/ WT002（树在而任务还是 `todo`）+ `wt.py finish` 的两条前置（工作区干净、分支已合并）+ 反向测试 `worktree_case`。判据与坑见 [`worktree.md`](./worktree.md) | 强（本机树 ↔ 看板状态）+ **无断言**（「忘了开树」：任务可能在别人机器上做，写在 `AGENTS.md` 硬规则里靠人守） |
 | 索引派生一致性 | verify 重新生成比对 | 强 |
 | 额度（行数/篇数） | 常量住在 `scripts/scopes/common.py`；本仓库由 audit.py SECT001/SECT002（单节与单文件 80/100）、BUDGET001（代码 150/200，含调度器；覆盖 `scripts/` 与 `tests/`，`tests/fixtures/` 与 `templates/` 除外——见 `doc-budgets.md`）、BUDGET002（SKILL.md 总量 400/500）守 | 中（覆盖范围内强 / 范围外无断言） |
 | discovery 双向对账 | 目标仓库 verify `scope=skills`；模板未预置，见 templates/README 未实现清单 | 强（目标侧；模板侧未实现） |

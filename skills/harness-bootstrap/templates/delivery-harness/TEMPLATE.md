@@ -12,7 +12,10 @@
 - `.harness/deliverables/`：`gates/` 门记录、`artifacts/` 证据、`ledgers/` 变更与例外、`reports/` 报告。
 - `.harness/tasks/board.json`：任务看板；`.harness/memory/`：踩坑记忆与决策。
 - `.harness/codebase-guide/index.json`：代码库索引，由 `scripts/gen_guide.py` 生成，禁手改。
-- `.harness/scripts/`：`verify.py` 调度器 + 一组 scope（一个 scope 一个文件，见 `scopes/`）+ `gen_guide.py` + `check_commit.py`（提交消息：Conventional Commits + 一个提交一件事）。
+- `.harness/scripts/`：`verify.py` 调度器（两套模板逐字节相同）+ `registry.py`（本套的 scope 清单）
+  + 一组 scope（一个 scope 一个文件，见 `scopes/`）+ `gen_guide.py` + `check_commit.py`（提交消息：
+  Conventional Commits + 一个提交一件事）+ `retro.py` / `retro_check.py` / `round.py`（复盘与环比）
+  + `wt.py`（任务级 worktree：`new` / `finish` / `list`）。
 - `.harness/git-hooks/pre-commit`：提交前跑 `make check`。
 - `tests/reverse.py`：每个 scope 一条反向样本，验证真的会报 ERROR。
 

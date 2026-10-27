@@ -14,6 +14,11 @@ make check-json     # 原始 JSON，便于 CI
 make check-strict   # 示例数据 = ERROR；真实交付必须绿
 make fix            # 自动修派生数据（目前只有 GUIDE001 索引），修完重跑
 make selftest       # 每个 scope 的反向测试 + 提交消息检查的正反例
+make retro          # 本轮事实底板：verify 计数 / 反向用例数 / 环比，先有数字再写复盘
+make retro-check    # 复盘三栏与工单表校验（archive/retro/）
+make round          # 行为级环比：HEAD~1 与本轮的 ERROR 计数 + 手册行数
+make task-new TASK=ID   # 给任务开一棵树：同级 <repo>-wt/ID，分支 task/ID
+make task-done TASK=ID  # 收尾：查干净 → 查已合并 → 删树 → 删分支
 ```
 
 `--fix` 只动派生数据——重新生成一遍就能复原的东西。写证据、选版本、补理由一律不修：
@@ -28,7 +33,7 @@ make selftest       # 每个 scope 的反向测试 + 提交消息检查的正反
 
 每个阶段由一个 scope 判定，scope 名写在该阶段的 `scopes` 字段里；跨阶段由 `gates` 判定。
 当前 scope 清单：`scope=gates` `scope=requirements` `scope=design` `scope=dev` `scope=integration`
-`scope=selftest` `scope=review` `scope=coherence` `scope=submission`；`scope=notes`；跨阶段 `scope=baseline`。
+`scope=selftest` `scope=review` `scope=coherence` `scope=submission`；`scope=notes`；`scope=worktree`；跨阶段 `scope=baseline`。
 
 ## 硬规则
 
@@ -65,6 +70,8 @@ make selftest       # 每个 scope 的反向测试 + 提交消息检查的正反
 20. 决策笔记：`.harness/specs/notes/{proposed,implemented,rejected}/` 下每篇必须被文档引用
     （孤儿笔记 = 写了没人读得到），且 `status:` 与所在目录一致（换状态用 `git mv`，
     只改字段会留下没有版本记录的错位）。`scope=notes`
+21. 一个任务一棵树：`make task-new TASK=ID` 开树（同级 `<repo>-wt/ID`，分支 `task/ID`）、`make task-done TASK=ID`
+    收尾（查干净 → 查已合并 → 删树 → 删分支）。`done` 的任务不许留树，`todo` 的任务不许先开树。`scope=worktree`
 
 ## 人判项（无断言）
 
@@ -80,7 +87,7 @@ make selftest       # 每个 scope 的反向测试 + 提交消息检查的正反
 
 ```text
 AGENTS.md                        本文件（地图）
-Makefile                         make init / check / check-json / check-strict / fix / selftest
+Makefile                         make init / check / check-json / check-strict / fix / selftest / task-new
 skills/                          可安装流程（按需；声明账本在 .harness/workflow/skills.declared.yaml）
 .harness/baseline.txt           老账账本（四列；首版为空）
 .harness/accepted.json          显式豁免（理由/负责人/复查日期，只减不增）
@@ -99,6 +106,11 @@ skills/                          可安装流程（按需；声明账本在 .har
 .harness/memory/decisions.md     全仓级决策
 .harness/codebase-guide/index.json  代码库索引（脚本生成，禁手改）
 .harness/scripts/verify.py       调度器（注册表 / 排序 / 退出码 / --fix 编排）
+.harness/scripts/registry.py    本套模板的 scope 清单（verify.py 两套逐字节相同，清单在这里）
+.harness/scripts/retro.py        复盘事实底板：verify 计数 / 反向用例数 / 环比
+.harness/scripts/retro_check.py  复盘三栏与工单表校验（archive/retro/）
+.harness/scripts/round.py        行为级环比：HEAD~1 与本轮
+.harness/scripts/wt.py           任务级 worktree：new / finish / list
 .harness/scripts/scopes/         一个 scope 一个文件
 .harness/scripts/gen_guide.py    生成 codebase-guide/index.json
 .harness/scripts/check_commit.py 提交消息检查（Conventional Commits 1.0.0 + 一个提交一件事）
