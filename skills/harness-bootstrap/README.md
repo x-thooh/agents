@@ -26,7 +26,7 @@ harness-bootstrap/
 ├── agents/           标准：子 Agent 定义（本 skill 目前没有，不建空目录）
 ├── README.md         额外：维护者入口，给人看，不进 skill 上下文
 ├── Makefile          额外：统一命令入口（所有命令从 make 走）
-├── tests/            额外：自身门禁的引擎（`fixtures.py`）+ 期望表（`cases.py`）+ 三道闸（`coverage.py`）+ 行为层（`template_boot.py`）+ 模板共同文件 parity（`template_parity.py`）+ 复盘校验器的反向测试（`retro_reverse.py`）+ 反向 fixture
+├── tests/            额外：自身门禁的引擎（`fixtures.py`）+ 期望表（`cases.py`）+ 三道闸（`coverage.py`）+ 行为层（`template_boot.py`）+ 证据链行为测试（`evidence_boot.py`）+ 模板共同文件 parity（`template_parity.py`）+ 复盘校验器的反向测试（`retro_reverse.py`）+ 反向 fixture
 └── templates/        额外：生成物模板（每套含 TEMPLATE.md 模板说明 + AGENTS.md 入口），拷进目标仓库用，不是参考文档
 ```
 
@@ -75,6 +75,7 @@ make check          # 核心：技能自审 + fixture 断言表 + 模板共同�
 make check-all      # 全部：check + check-strict + check-boot + lint-python + retro-check。**提交前与 CI 都跑这一条**
 make check-strict   # 断言 --strict 能拦下模板自带的示例数据
 make check-boot     # 把模板拷进临时空仓库，验它装上之后是否仍然诚实（行为层）
+make check-evidence # 拷 go-dev 到临时仓库，跑 make evidence 再 verify（需要 Go + golangci-lint）
 make template-parity # 两套模板的共同文件逐字节一致
 make check-sample   # 样例 Go 模块 vet + test（需要 Go 工具链）
 make lint           # 工具层：golangci-lint（需要 Go 工具链）
@@ -123,8 +124,9 @@ pre-commit 能被 `git commit --no-verify` 绕过，CI 不能——这是 CI 唯
 每套还有一个 `TEMPLATE.md`：模板自己的说明，拷进目标仓库时**不改名成 README**（早期版本就该叫 `README.md`，
 拷一次就把人家原来的覆盖了）。
 `go-dev-harness` 另有 `.harness/scripts/check_commit.py` 与 `tests/commit_msg.py`（提交消息按
-Conventional Commits 判）、`.golangci.yml`（工具层，`make lint`）和可选的 `lefthook.yml`
-（调度层，只委托 `.harness/git-hooks/` 的脚本）。
+Conventional Commits 判）、`.harness/scripts/evidence.py`（`make evidence` 跑 build/vet/test
+-race/cover/bench/lint，全部 exit 0 才写 `impl.json` / `test.json`）、`.golangci.yml`（工具层，
+`make lint`）和可选的 `lefthook.yml`（调度层，只委托 `.harness/git-hooks/` 的脚本）。
 阶段定义只在 `.harness/workflow/flow.json` 一处。它们与 `SKILL.md` 单向无关：模板不引用正文，
 正文也不描述模板的具体规则。
 

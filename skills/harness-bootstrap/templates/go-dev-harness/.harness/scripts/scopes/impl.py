@@ -1,4 +1,4 @@
-"""impl: 编码阶段证据（build/vet/lint）+ 源码卫生。"""
+"""impl: 编码阶段证据（build/vet/lint + commit 时效）+ 源码卫生。"""
 
 import re
 from pathlib import Path
@@ -7,6 +7,7 @@ from .common import (
     add,
     as_dict,
     blank_strings,
+    check_evidence_commit,
     check_fields,
     go_files,
     go_src,
@@ -28,7 +29,16 @@ def run(ctx, findings):
     data = load_json(root, REL, NAME, findings, "IMP001")
     if isinstance(data, dict):
         warn_example(data, REL, NAME, findings, ctx["strict"])
-        check_fields(data, ("build", "vet", "lint", "changed_packages"), NAME, REL, findings, "IMP001")
+        ok = check_fields(
+            data,
+            ("build", "vet", "lint", "changed_packages", "commit", "at"),
+            NAME,
+            REL,
+            findings,
+            "IMP001",
+        )
+        if ok:
+            check_evidence_commit(root, data, REL, NAME, "IMP006", findings)
         for key in TOOLCHAIN:
             if key in data and data.get(key) != "pass":
                 add(findings, "ERROR", NAME, REL, 1, "IMP001", f"{key} = {data.get(key)!r}，必须为 'pass'")

@@ -6,6 +6,8 @@
   "max_file_lines": 400,
   "max_interface_methods": 5,
   "coverage": {
+    "include": ["internal"],
+    "core_packages": ["internal/order"],
     "total_min": 75,
     "core_min": 80
   },

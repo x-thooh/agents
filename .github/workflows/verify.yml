@@ -90,3 +90,8 @@ jobs:
 
       - name: make lint
         run: make lint
+
+      # 证据链行为测试：在临时仓库里跑 make evidence，证明 build/vet/test/race/cover/bench/lint
+      # 真能产出 impl.json / test.json，而不是只靠手抄。
+      - name: make check-evidence
+        run: make check-evidence

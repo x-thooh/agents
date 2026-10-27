@@ -41,6 +41,10 @@ python3 scripts/audit.py --skill-dir tests/fixtures/ok-minimal   # 正对照：0
 而仓库代码里的 `panic` 一次也没被检查——因为 `go_src` 还指着模板自带的 `sample/`。
 **全绿只能证明跑过的那一层**，所以层与层的边界写在这里，不靠读者自己想。
 
+`make check-evidence` 是行为层的加验：把 go-dev 拷进临时仓库，跑真实 `make evidence`
+再 verify，证明 build/vet/test -race/cover/bench/lint 能产出证据。它需要 Go 与
+golangci-lint，所以**不进 `check-all`**；CI 的 sample job 跑它。
+
 ## `audit.py` 守什么、不守什么
 
 目标仓库侧的 scope 一个都不在本仓库里——本 skill 没有「自己的 verify」。它只有 `audit.py`：守 frontmatter 合规、目录形状、章节与条目引用存在性、相对链接与锚点存在性、调度器体征、布局表↔模板对账、交付物是否被文档点名（`DLV001`）、四段纪律的分列与 scope 层钩子对账（`LOOP001`–`LOOP004`）、基线/版本/账本这几段**文本是否写全**，外加 [§五.5](../SKILL.md#5-状态只三类--写入门槛) 的两档额度（`SECT001` 单节 / `SECT002` 参考材料：撞 80 记 WARN，超 100 记 ERROR）。一句话：**只判「规范写没写清」与「交付物有没有人提」，不判「规范对不对」**。

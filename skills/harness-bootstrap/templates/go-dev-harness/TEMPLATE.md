@@ -10,14 +10,14 @@ Golang 软件开发工程师的业务 harness：把「接需求 → 定接口 �
 
 ## 内容
 
-- `AGENTS.md`：入口、命令、16 条硬规则（每条带 scope 或「无断言」）、目录地图。
+- `AGENTS.md`：入口、命令、硬规则（每条带 scope 或「无断言」）、目录地图。
 - `.harness/workflow/`：`flow.json`（阶段唯一事实源）、`transitions.json`（结果状态机）、
   `contract.json`（门记录字段与账本位置）、`README.md`（6 阶段流程正文，在 `workflow/` 下）。
-- `.harness/config.json`：阈值（覆盖率、main 行数、MR、发布观察窗）+ `go_src`。
+- `.harness/config.json`：阈值（覆盖率范围/阈值、main 行数、MR、发布观察窗）+ `go_src`。
 - `.harness/specs/standards.md`：Go 规范与断言对照表。
 - `.harness/deliverables/`：`gates/` 门记录、`artifacts/` 证据、`ledgers/` 变更与例外。
 - `.harness/tasks/board.json`、`.harness/memory/`、`.harness/codebase-guide/index.json`。
-- `.harness/scripts/`：`verify.py` 调度器 + 一组 scope（一个 scope 一个文件，见 `scopes/`）+ `gen_guide.py`。
+- `.harness/scripts/`：`verify.py` 调度器 + 一组 scope（一个 scope 一个文件，见 `scopes/`）+ `gen_guide.py` + `evidence.py`（跑真实工具链产 `impl.json` / `test.json`）。
 - `sample/`：能过全部断言的示例 Go 模块（`go_src` 指向它）。
 - `tests/reverse.py`：每个 scope 一条违规样本，验证真的会报 ERROR。
 
@@ -27,13 +27,15 @@ Golang 软件开发工程师的业务 harness：把「接需求 → 定接口 �
 
 1. 把 `.harness/config.json` 的 `go_src` 从 `"sample"` 改成 `"."`（你的模块根），删掉 `sample/`。
 2. 按团队实际改阈值：覆盖率、`main_max_lines`、MR 行数、评审人数、发布观察窗。
-3. 逐项替换 `example: true` 的证据为真实证据，最后跑 `python3 .harness/scripts/gen_guide.py` 刷新索引。
+3. 先删掉 `.harness/config.json` 的 `example`（否则 `make evidence` 拒绝运行），再跑
+   `make evidence` 生成 `impl.json` / `test.json`；最后跑 `python3 .harness/scripts/gen_guide.py` 刷新索引。
 
 ```bash
 make init           # 装 pre-commit 钩子：提交前自动跑 check
 make check          # 示例数据只产生 WARN；0 ERROR 即通过
 make check-strict   # 示例数据按 ERROR 处理；替换真实证据后应变绿
-make selftest       # 正对照 + 11 个反向测试
+make evidence       # 跑 build/vet/test -race/cover/bench/lint，写真实证据（需要 Go 工具链）
+make selftest       # 正对照 + 全部反向测试
 ```
 
 ## scope 一览（一个 scope 一个文件）
@@ -46,8 +48,8 @@ make selftest       # 正对照 + 11 个反向测试
 | `design` | 包职责、依赖无环、被否方案、失败模式 | DES001–004 |
 | `layout` | `go.mod`、`cmd` 薄、包边界、导出符号 doc、接口大小 | LAY001–007 |
 | `runtime` | panic/退出/丢链/吞错/自造 context/goroutine 收敛 | RUNT001–007 |
-| `impl` | build/vet/lint 证据 + 源码卫生（CRLF、行尾空白、tab） | IMP001–004 |
-| `test` | 每包有测试、覆盖率、race、benchmark 退化、跳过理由 | TST001–006 |
+| `impl` | build/vet/lint 证据、证据 commit 时效 + 源码卫生（CRLF、行尾空白、tab） | IMP001–006 |
+| `test` | 每包有测试、覆盖率、race、benchmark 退化、跳过理由、证据 commit 时效 | TST001–007 |
 | `review` | MR 体量、评审人数、自批、意见闭环 | REV001–004 |
 | `release` | 版本/tag 一致、回滚预案、冒烟全绿、观察窗 | REL001–005 |
 
@@ -55,5 +57,5 @@ make selftest       # 正对照 + 11 个反向测试
 
 - 机器判：文件形状、字段、阈值、状态、依赖、词法可见的调用模式、索引与磁盘一致。
 - 人判：需求价值、方案取舍、可读性、错误码语义、灰度风险；见 `AGENTS.md`「人判项（无断言）」。
-- 不依赖 Go 工具链：verify 是纯 Python，`build/vet/lint/覆盖率/benchmark` 以证据文件记录。
+- verify 不依赖 Go 工具链：它只读证据；`build/vet/lint/覆盖率/benchmark` 由 `make evidence` 跑真实命令产出，并带 `commit` 与 `at`，改完代码不重跑会被 `IMP006` / `TST007` 拦下。
 - 反向测试与 scope 一一对应：新增 scope 必须同批加一条反向样本，否则该 scope 可能从上线起就没执行过。

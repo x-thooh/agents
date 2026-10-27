@@ -14,9 +14,16 @@ make check          # 全量校验；0 ERROR 才可交付
 make check-json     # 原始 JSON，便于 CI
 make check-strict   # 示例数据 = ERROR；真实交付必须绿
 make fix            # 自动修派生数据（目前只有 GUIDE001 索引），修完重跑
+make build          # go build ./...
+make vet            # go vet ./...
+make test           # go test ./...
+make race           # go test -race ./...
+make evidence       # 跑 build/vet/test -race/cover/bench/lint，全部 exit 0 才写 impl.json/test.json
 make lint           # 工具层：golangci-lint（需要 Go 工具链，可选）
 make selftest       # 反向测试：每个 scope 至少一条违规样本 + 提交消息检查
 ```
+
+`make check` 仍只读 JSON、不依赖 Go；build/vet/test/race/evidence 需要 Go 工具链，不进 `check`。
 
 提交消息按 Conventional Commits 1.0.0：`<type>[(scope)][!]: <描述>`，type ∈ feat/fix/docs/
 style/refactor/perf/test/build/ci/chore/revert。由 `commit-msg` 钩子判，细则见
@@ -50,8 +57,8 @@ style/refactor/perf/test/build/ci/chore/revert。由 `commit-msg` 钩子判，�
 9. 导出符号必须有 doc 注释；接口方法数不超过 `max_interface_methods`。`scope=layout`
 10. 库代码（非 `package main`）不许 `panic`、`log.Fatal`、`os.Exit`，不许自造 `context.Background()`/`TODO()`。`scope=runtime`
 11. 包装错误必须用 `%w`；`if err != nil` 后直接 `return nil` 视为吞错。`scope=runtime`
-12. `build`/`vet`/`lint` 必须 `pass`；源码不许 CRLF、行尾空白、空格缩进。`scope=impl`
-13. 每个非 main 包必须有 `_test.go`；覆盖率与 `-race` 按 `config.json` 判定；benchmark 退化超 20% 即 ERROR。`scope=test`
+12. `build`/`vet`/`lint` 必须 `pass`；证据必须带 `commit`（= 当前 HEAD）与 `at`；源码不许 CRLF、行尾空白、空格缩进。`scope=impl`（IMP001 / IMP006）
+13. 每个非 main 包必须有 `_test.go`；覆盖率与 `-race` 按 `config.json` 判定；benchmark 退化超 20% 即 ERROR；证据必须带 `commit`（= 当前 HEAD）与 `at`。`scope=test`（TST001–TST007）
 14. MR 行数、评审人数按 `config.json`；超出需 `oversize_approved`；作者不得自批；意见必须全部 `closed`。`scope=review`
 15. 发布：`tag` 必须是 `v<version>`；`env` ∈ {dev, gray, prod}；回滚三要素齐全；冒烟全绿；观察窗与错误率/p99 在阈值内。`scope=release`
 16. 状态层三条：`tasks/board.json` 的 `stage` 必须在 `flow.json` 里（**例外**：`origin=reflect` 的反思工单可写 `-`，且必须带 `origin_ref` 指向它补的缺口）、`status` 只能是 todo/doing/blocked/done；
@@ -89,7 +96,7 @@ skills/                          可安装流程（按需；声明账本在 .har
 lefthook.yml                     可选钩子调度层，只委托 .harness/git-hooks/，不内联检查
 .harness/baseline.txt           老账账本（四列；首版为空）
 .harness/accepted.json          显式豁免（理由/负责人/复查日期，只减不增）
-.harness/config.json             阈值（覆盖率、main 行数、MR、发布观察窗）+ go_src
+.harness/config.json             阈值（覆盖率范围/阈值、main 行数、MR、发布观察窗）+ go_src
 .harness/workflow/flow.json      阶段唯一事实源（顺序/门记录/交付物/scope）
 .harness/workflow/transitions.json  结果状态机
 .harness/workflow/contract.json  门记录必填字段、账本位置
@@ -105,6 +112,7 @@ lefthook.yml                     可选钩子调度层，只委托 .harness/git-
 .harness/scripts/verify.py       调度器（注册表 / 排序 / 退出码 / --fix 编排）
 .harness/scripts/scopes/         一个 scope 一个文件
 .harness/scripts/gen_guide.py    生成 codebase-guide/index.json
+.harness/scripts/evidence.py     跑真实工具链，写 impl.json / test.json
 .harness/scripts/check_commit.py 提交消息检查（Conventional Commits 1.0.0）
 .harness/git-hooks/pre-commit    提交前跑 check（make init 安装）
 .harness/git-hooks/commit-msg    提交消息门（同上；必须可执行）

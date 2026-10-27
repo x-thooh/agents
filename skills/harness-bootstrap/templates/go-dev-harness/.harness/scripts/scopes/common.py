@@ -364,6 +364,47 @@ def check_lessons(content, scope, path, findings, code):
                 add(findings, "ERROR", scope, path, 1, code, f"{title} 缺「{key}」一段")
 
 
+# --- 证据时效 ---------------------------------------------------------------
+
+
+def head_commit(root):
+    """当前 HEAD；不是 git 仓库或没有提交时返回 None。"""
+    proc = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "HEAD"], check=False, capture_output=True, text=True
+    )
+    return proc.stdout.strip() if proc.returncode == 0 else None
+
+
+def check_evidence_commit(root, data, rel, scope, code, findings):
+    """证据必须对应当前 HEAD；没有 git 时只 WARN，不冒充通过。
+
+    `example: true` 的示例数据跳过：strict 已经用 EXAMPLE001 拦它，这里再报一次
+    只是同一原因的第二条。真实数据才要求 commit 等于 HEAD。
+    """
+    if data.get("example") is True:
+        return
+    at = data.get("at")
+    try:
+        datetime.datetime.fromisoformat(str(at).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        add(findings, "ERROR", scope, rel, 1, code, f"at = {at!r} 不是 ISO 8601 时间")
+    head = head_commit(root)
+    if head is None:
+        add(findings, "WARN", scope, rel, 1, code, "没有 git，证据时效判不了；不按通过处理")
+        return
+    commit = data.get("commit")
+    if commit != head:
+        add(
+            findings,
+            "ERROR",
+            scope,
+            rel,
+            1,
+            code,
+            f"证据 commit {str(commit)[:12]!r} 不是当前 HEAD {head[:12]!r}：重新跑 make evidence",
+        )
+
+
 # --- --fix 前置条件 ---------------------------------------------------------
 
 

@@ -22,7 +22,7 @@ ALLOWED = {
     "main_max_lines": None,
     "max_file_lines": None,
     "max_interface_methods": None,
-    "coverage": {"total_min", "core_min"},
+    "coverage": {"include", "core_packages", "total_min", "core_min"},
     "review": {"max_lines", "min_reviewers"},
     "release": {"smoke_min_total", "observe_min_window_min", "max_error_rate", "max_p99_ms"},
 }

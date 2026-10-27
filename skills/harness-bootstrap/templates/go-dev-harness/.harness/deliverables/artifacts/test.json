@@ -2,16 +2,18 @@
   "example": true,
   "cases": 14,
   "race": "pass",
+  "commit": "0000000000000000000000000000000000000000",
+  "at": "2026-10-27T00:00:00Z",
   "coverage": {
-    "total": 88,
-    "core": 92
+    "total": 88.0,
+    "core": 92.9
   },
   "benchmarks": [
     {
       "name": "BenchmarkServiceCreate",
-      "ns_per_op": 49,
+      "ns_per_op": 43.0,
       "baseline_ns_per_op": 60
     }
   ],
-  "notes": "覆盖率范围 ./internal/...（cmd 只装配不计）：config 91.7% / httpapi 82.9% / order 92.9%，总 88.0%，order 为 core；BenchmarkServiceCreate 实测 49ns/op"
+  "notes": "示例数据；make evidence 在 sample 上实测 total 88.0 / core 92.9、43ns/op（真实证据会覆盖它）"
 }

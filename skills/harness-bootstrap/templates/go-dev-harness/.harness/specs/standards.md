@@ -80,9 +80,11 @@
 | 性能不退化 | benchmark 超基线 20% | `TST003` | 本项目阈值 |
 | 不静默跳过 | `t.Skip` 同行写理由 | `TST005`（WARN） | 本项目 |
 | 测试不用 Sleep | `time.Sleep(` | `TST006`（WARN） | 本项目 |
+| 证据对应当前提交 | `test.json` 的 `commit` = 当前 HEAD | `TST007` | 本项目 |
 
-覆盖率统计范围约定为 `./internal/...`：`cmd/` 只做装配，计入总数会把「入口薄」这条规则变成惩罚。
-`core` 取承载业务规则的那个包（本例 `internal/order`），不是全仓平均。
+覆盖率统计范围由 `config.json` 的 `coverage.include` 决定（本例 `["internal"]`）；`cmd/` 只做装配，
+计入总数会把「入口薄」这条规则变成惩罚。`coverage.core_packages` 指定承载业务规则的包
+（本例 `["internal/order"]`），`core` 是这些包的加权平均，不是全仓平均。
 
 表驱动测试的判据是「失败时能一眼看出是哪个 case」：`t.Run(tc.name, ...)` + `t.Fatalf` 带输入与期望。
 
@@ -95,6 +97,7 @@
 | import 分组：标准库单独第一组 | 首段带点即第三方 | `IMP005` | `CR` Imports |
 | 单文件不过长 | `max_file_lines` | `IMP003`（WARN） | 本项目 |
 | TODO 有主 | `TODO(name):` | `IMP004`（WARN） | 本项目 |
+| 证据对应当前提交 | `impl.json` 的 `commit` = 当前 HEAD | `IMP006` | 本项目 |
 
 `IMP005` 只判路径形状：`github.com/x/y` 首段带点 ⇒ 第三方，`net/http` 不带点 ⇒ 标准库。
 `goimports` 会替你排，但它没被跑过的时候总得有人看出来。
@@ -113,21 +116,22 @@
 
 不判的：描述写得好不好、body 讲清没讲清——那是人的事，机器判不了就别假装判。
 
-## 工具层：四层各管一件事
+## 工具层：各管一件事
 
 **重叠是故意的，代替是不允许的。** 同一件事在两层各判一次，比「以为有人在判」安全。
 
 | 层 | 入口 | 依赖 | 判什么 |
 | --- | --- | --- | --- |
 | 词法层 | `make check` → `verify.py` | 只要 `python3` | 文件形状、JSON 契约、正则可见的调用与字面量 |
+| 构建与测试层 | `make evidence` → `build/vet/test -race/cover/bench` + `golangci-lint` | Go 工具链 + golangci-lint | 编译、静态检查、并发安全、覆盖率、benchmark；全部 exit 0 才写 `impl.json` / `test.json` |
 | 类型层 | `make lint` → `golangci-lint` | Go 工具链 + golangci-lint | 需要类型信息的：`errcheck` `unused` `unparam` `errorlint` `revive` |
 | 钩子层 | `make init` / `make init-lefthook` | git；lefthook 可选 | 什么时候跑 |
 | 消息层 | `commit-msg` → `check_commit.py` | 只要 `python3` | `CC` 的条文 |
 
-分工的关键一条：`IMP001` 要求 `impl.json` 里 `lint = "pass"`——**verify.py 只判「写了 pass」，
-golangci-lint 判「是不是真 pass」**。前者零依赖，任何机器（含 CI 的 gate job，不装 Go）都能跑；
-后者要工具链，跑在 sample job 里。两层都留着，因为它们的失效方式不同：前者怕人抄假数据，
-后者怕人没跑。
+分工的关键一条：`IMP001` / `TST002` / `TST004` 要求证据里写 `pass`——**verify.py 只判「写了 pass」，
+`make evidence` 跑真实命令产证据**。前者零依赖，任何机器（含 CI 的 gate job，不装 Go）都能跑；
+后者要工具链，跑在 sample job 里。证据带 `commit`，`IMP006` / `TST007` 在 verify 侧校验它等于
+当前 HEAD：改了代码不重跑，证据就过期。
 
 改 `.golangci.yml` 的启用项或阈值，同批改这一节——否则这张表就是过期的说明书。
 

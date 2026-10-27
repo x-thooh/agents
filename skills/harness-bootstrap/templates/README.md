@@ -21,6 +21,7 @@
 | 阶段 | 8：需求 → 方案 → 开发 → 联调 → 自测 → CR → 自洽 → 提测 | 6：契约 → 设计 → 编码 → 测试 → 评审 → 发布观察 |
 | 判据对象 | 文档与证据齐不齐（PRD、任务卡、跟踪矩阵、联调清单、提测包） | 代码形状对不对（包布局、错误链、context、导出面、源码卫生） |
 | scope 读什么 | 9 个全部读 `.harness/deliverables/` 的 JSON 证据 | 7 个读证据；`layout`、`runtime` 直接扫 `.go` 源码，`impl`/`test` 两边都看 |
+| 证据怎么来 | 人工/流程产出 JSON | `make evidence` 跑 build/vet/test -race/cover/bench/lint，全部 exit 0 才写；verify 只读 |
 | 谁签字 | PO / Dev / QA / Arch（RACI 分工） | 研发本人 + 评审人 |
 | 出口 | 提测包 manifest + 冒烟报告，交给 QA | tag + 灰度比例 + 回滚预案 + 观察窗，直接对生产 |
 | 典型阈值 | 任务 ≤3 人天、核心覆盖 60%、自测通过率 95% | main ≤80 行、覆盖 75/80、MR ≤400 行、观察窗 ≥30min |

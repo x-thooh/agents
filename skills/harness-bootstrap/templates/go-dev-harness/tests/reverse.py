@@ -691,6 +691,32 @@ def main():
         lambda root: append_text(root, "sample/internal/config/config.go", "\nfunc init() {}\n"),
     )
     reverse_case(
+        "impl: 证据 commit 不是当前 HEAD",
+        "impl",
+        "IMP006",
+        lambda root: (
+            git_init(root),
+            edit_json(
+                root,
+                ".harness/deliverables/artifacts/impl.json",
+                lambda data: data.update({"example": False, "commit": "deadbeef"}),
+            ),
+        ),
+    )
+    reverse_case(
+        "test: 证据 commit 不是当前 HEAD",
+        "test",
+        "TST007",
+        lambda root: (
+            git_init(root),
+            edit_json(
+                root,
+                ".harness/deliverables/artifacts/test.json",
+                lambda data: data.update({"example": False, "commit": "deadbeef"}),
+            ),
+        ),
+    )
+    reverse_case(
         "impl: stdlib and third-party in one import group",
         "impl",
         "IMP005",

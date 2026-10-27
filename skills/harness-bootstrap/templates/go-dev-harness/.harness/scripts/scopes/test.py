@@ -1,4 +1,4 @@
-"""test: 测试证据（覆盖率 / race / benchmark）+ 每包必须有测试 + 测试卫生。"""
+"""test: 测试证据（覆盖率 / race / benchmark + commit 时效）+ 每包必须有测试 + 测试卫生。"""
 import re
 from pathlib import Path
 
@@ -6,6 +6,7 @@ from .common import (
     add,
     as_dict,
     as_list,
+    check_evidence_commit,
     check_fields,
     go_files,
     go_package,
@@ -29,7 +30,9 @@ def run(ctx, findings):
     data = load_json(root, REL, NAME, findings, "TST002")
     if isinstance(data, dict):
         warn_example(data, REL, NAME, findings, ctx["strict"])
-        check_fields(data, ("coverage", "race", "cases"), NAME, REL, findings, "TST002")
+        ok = check_fields(data, ("coverage", "race", "cases", "commit", "at"), NAME, REL, findings, "TST002")
+        if ok:
+            check_evidence_commit(root, data, REL, NAME, "TST007", findings)
         check_coverage(data, quality, findings)
         check_race(data, findings)
         check_benchmarks(data, findings)
