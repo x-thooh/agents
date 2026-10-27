@@ -5,6 +5,12 @@
 README 里那张手动命令表靠人记得跑；这张表把它变成 make check 的一部分。
 不这么做的后果，SKILL.md §六 写过：scope 可能上线起就没执行过，跑一百次都「通过」。
 
+**「精确对上」包括条数，不只是 code 集合**：只比集合时，一条规则在同一个 fixture 上
+多报一次也照样绿。实测代价——`bad-template-phantom-path` 声称守「能解析的路径必须放过」，
+把 `tplpath` 的存在性检查摘掉（退化成「见到反引号就报」），它报出 2 条 TP001 而期望集合
+仍是 `{TP001}`，**PASS**。集合相等是「这条规则响过」，条数相等才是「它只在该响的地方响」。
+所以这里同时判 `len(findings) == len(expected)`：一个 fixture 一件缺陷，就该恰好一条发现。
+
 正对照（ok-minimal）排第一：没有它，「全部符合期望」可能只是检查器根本没跑。
 
 用法: python3 tests/fixtures.py
@@ -66,9 +72,11 @@ def main():
         findings = payload["findings"]
         actual = {f["code"] for f in findings}
         summary = payload["summary"]
-        if actual != expected:
+        # 条数与集合一起判：一个 fixture 一件缺陷，多报一条也是漂移（误报方向）。
+        if actual != expected or len(findings) != len(expected):
             failures.append(
-                f"{label}: 期望 {sorted(expected) or '无'}，实际 {sorted(actual) or '无'}")
+                f"{label}: 期望 {sorted(expected) or '无'} 各一条，实际 {len(findings)} 条 "
+                f"{sorted(actual) or '无'}")
             continue
         if not expected and (summary["errors"] or summary["warns"]):
             failures.append(
