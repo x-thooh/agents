@@ -22,6 +22,11 @@ import tempfile
 HERE = pathlib.Path(__file__).resolve().parent
 SKILL = HERE.parent
 
+# 一轮允许的手册增长（行）。20 = 单节额度 80 的四分之一：一轮加出一节四分之一的量，
+# 说明这一轮在塞内容而不是在收口。比的是**环比**，不是「离 400 还有多远」——
+# 后者把「贴线」变成目标（doc-budgets.md「额度是上限，不是目标」）。
+GROWTH = 20
+
 
 def audit(cwd):
     """在该目录跑一次 audit，返回 (errors, warns)。失败时返回 None 并打印原因。"""
@@ -37,6 +42,14 @@ def audit(cwd):
         print(f"round: {cwd} 下 audit 没给出可解析的 JSON：{proc.stderr.strip()[:200]}", file=sys.stderr)
         return None
     return summary["errors"], summary["warns"]
+
+
+def handbook_lines(skill_dir):
+    """SKILL.md 的行数；读不动返回 None（判不了要说出来，不当 0）。"""
+    try:
+        return len((skill_dir / "SKILL.md").read_text(encoding="utf-8").splitlines())
+    except OSError:
+        return None
 
 
 def repo_root():
@@ -69,6 +82,7 @@ def main(argv):
             return 2
         try:
             before = audit(tree / rel)
+            b_lines = handbook_lines(tree / rel)
         finally:
             subprocess.run(
                 ["git", "-C", str(root), "worktree", "remove", "--force", str(tree)],
@@ -81,11 +95,24 @@ def main(argv):
         return 2
     b_err, b_warn = before
     c_err, c_warn = current
+    c_lines = handbook_lines(SKILL)
+    # 先把两个数都打出来，再判。判据写在数字后面：先报错再给数，读的人只看见红。
     print(f"round: {base} = {b_err} ERROR / {b_warn} WARN  →  当前 = {c_err} ERROR / {c_warn} WARN")
+    if b_lines is None or c_lines is None:
+        print("round: SKILL.md 行数读不到，环比判不了——不按通过处理", file=sys.stderr)
+    else:
+        print(f"round: SKILL.md {b_lines} → {c_lines} 行（{c_lines - b_lines:+d}）")
     if c_err > b_err:
         print(
             f"round: ERROR 上升 {c_err - b_err} 条——说不出原因不许交付"
             "（§〇 感知 / §三 反思：与改前基准逐项对照，任何上升都要归因）",
+            file=sys.stderr,
+        )
+        return 1
+    if b_lines is not None and c_lines is not None and c_lines - b_lines > GROWTH:
+        print(
+            f"round: SKILL.md 一轮涨了 {c_lines - b_lines} 行 > {GROWTH} 行：这一轮在塞内容，不是在收口——"
+            "要么把等量的成段细节外置到 references/，要么拆成两轮。额度是上限不是目标（doc-budgets.md）",
             file=sys.stderr,
         )
         return 1
