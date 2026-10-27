@@ -56,12 +56,12 @@
 | **行为级**：一轮（一次提交）之后审计计数不许上升 | `scripts/round.py`（把 `HEAD~1` 检出到临时 worktree 跑一遍 audit，与当前工作树比计数；上升即 exit 1）；`make round` | 强（执行） |
 | 四段纪律的每一节都留下可判的痕（感知 / 规划 / 行动 / 反思） | audit.py LOOP001 / LOOP002 / LOOP003 / LOOP004（各节必须有「机器判：」与「人判：」分列；写了其中一节就得四节齐；一节都没有则记 not_applicable）。分列里点到的 code 由 DOC002 交叉校验存在。**scope 层的落点**：`scripts/hooks.py` 的 PLAN / REFLECT 必须与各 scope 源码里的 code 集逐条对得上（漏登记 / 多登记 / 空即 ERROR） | 强（分列形状）+ 人判（判据本身是否成立） |
 | **交付物必须在文档里被点名**（有了却没人说 = 文档与交付物脱钩） | audit.py DLV001（`scripts/*.py` / `tests/*.py` / `references/*.md` / 根文件 / 每套模板的四个文件：相对路径或文件名至少出现一次；`scripts/scopes/*.py` 不在内，它们已由 `code-index.md` 逐个点名） | 强（存在性）+ 人判（点到的位置对不对） |
+| **模板文档点名的路径必须存在**（模板即目标仓库的根，所以这条在模板侧判得动；本 skill 的 SKILL.md 不判——它写的是目标仓库的布局，见断言坑 #19） | audit.py TP001（`scripts/scopes/tplpath.py`：只判「带 `/` 且带扩展名或 `.harness/` 开头」的反引号片段，基址 = 模板根 与 `<模板>/.harness`；通配/花括号/占位符/basename 不收） | 强（存在性）+ 人判（指得对不对） |
 | **提交是最小不可分割单位**（一个提交一件事，不合并多功能） | 两套模板的 `check_commit.py` CM006（行首并列连接词启发式；句中不算），由 `.harness/git-hooks/commit-msg` 强制、`tests/commit_msg.py` 正反例守；钩子丢执行位即 GATE008 | 机器（启发式 + 钩子）+ 人判（两处改动算不算一件事）；`git commit --no-verify` 可绕过，绕过口是明的 |
 | 决策理由是否仍成立 | 人判 | **无断言**（人审 diff） |
 | 教训是否真能改变下次做法 | 人判 | **无断言**（人审） |
 
 标「无断言」的行是本 skill 的待补项：要么补断言，要么在目标仓库的断言表里显式标「无断言」——不许既不补也不标。（不写行数：数出来的值和表必然一致，写死的数字迟早不一致——[§五.8](../SKILL.md#8-语料生命周期) 禁人手索引。）
-
 
 ### 目标仓库的 discovery 块（`.harness/INDEX.md` 顶部）
 

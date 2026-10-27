@@ -3,13 +3,12 @@
 边界（不要越界）：只审一个 skill 目录（默认 = 本脚本所在 skill），不扫描其他 skill；
   * 读取面 = 本 skill 目录：SKILL.md 全文；references/*.md（链接/锚点、§X.Y 引用、
     行数额度、交付物点名）；scripts/、tests/、templates/ 的机械检查；只做机械检查，不判语义；
-  * 只读，不写文件；不依赖 git；同输入同输出（可重复执行）；
-  * 不审目标仓库的 harness —— 那是目标仓库自己的 verify.py 的事。
+  * 只读，不写文件；不依赖 git；同输入同输出（可重复执行）；不审目标仓库的 harness——
+    那是目标仓库自己的 verify.py 的事。
 
-本文件只做调度：读入 → 跑注册表里的 scope → 把结果交给 `report.py`。
-scope 实现在 `scripts/scopes/<name>.py`，输出与退出码在 `scripts/report.py`
-（§六 verify 脚本规范：单文件长到一次只能改一处、改不动时，就该拆了）。
-拆分判据：拆分前后输出字节等同。
+本文件只做调度：读入 → 跑注册表里的 scope → 把结果交给 `report.py`。scope 实现在
+`scripts/scopes/<name>.py`，输出与退出码在 `scripts/report.py`（§六 verify 脚本规范：
+单文件长到一次只能改一处、改不动时，就该拆了）。拆分判据：拆分前后输出字节等同。
 
 语义一致性机器判不了——那是人判项，由 SKILL.md 的「判据类型」列标注，本脚本不冒充。
 用法: python3 scripts/audit.py [--skill-dir DIR] [--only a,b] [--check-links] [--json]
@@ -45,6 +44,7 @@ from scopes import (  # noqa: E402  （必须先修好 sys.path 再导入）
     sections,
     struct,
     terms,
+    tplpath,
     version,
     xref,
     xrefdoc,
@@ -67,6 +67,7 @@ SCOPES = (
     deliverable,
     ledger,
     terms,
+    tplpath,
     version,
     xref,
     xrefdoc,
@@ -120,8 +121,7 @@ def main(argv=None):
     except ValueError as exc:
         parser.error(str(exc))  # 退出码 2，与「用法错误」一致，不带 traceback
 
-    skill_dir = args.skill_dir or os.path.dirname(_HERE)
-    skill_dir = os.path.abspath(skill_dir)
+    skill_dir = os.path.abspath(args.skill_dir or os.path.dirname(_HERE))
     skill_md = os.path.join(skill_dir, "SKILL.md")
     if not os.path.isfile(skill_md):
         print(f"audit: {skill_md} 不存在", file=sys.stderr)

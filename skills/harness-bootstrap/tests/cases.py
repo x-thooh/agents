@@ -85,6 +85,9 @@ CASES = (
     ("bad-anchor-link", {"LINK004"}, ()),
     # 交付物孤儿：文件在、内容对，但文档一次都没点名（「有了却没人说」）
     ("bad-orphan-deliverable", {"DLV001"}, ()),
+    # 反方向只在模板侧判得动（模板即目标仓库的根）：文档点名的路径在模板里不存在。
+    # 只跑 tplpath——templates/ 一出现，布局对账会按自己的规矩报 LP003，混进来就证明不了「恰好是它」。
+    ("bad-template-phantom-path", {"TP001"}, ("--only", "tplpath")),
     # 体量预算两档：两档都得真会响，否则「准备拆」只是句好听话
     ("bad-budget-warn", {"BUDGET001"}, ()),
     ("bad-budget-error", {"BUDGET001"}, ()),
