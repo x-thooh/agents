@@ -29,6 +29,7 @@ SHARED = (
     ".harness/scripts/verify.py",
     ".harness/scripts/scopes/baseline.py",
     ".harness/scripts/check_commit.py",
+    ".harness/scripts/evidence_age.py",
     ".harness/scripts/gen_guide.py",
     ".harness/git-hooks/pre-commit",
     ".harness/git-hooks/commit-msg",

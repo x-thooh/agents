@@ -13,6 +13,7 @@ from .common import (
     as_dict,
     as_list,
     build_guide,
+    check_evidence_commit,
     check_fields,
     check_lessons,
     load_json,
@@ -31,14 +32,36 @@ CONTRACT = f"{HARNESS}/workflow/contract.json"
 BOARD = f"{HARNESS}/tasks/board.json"
 LESSONS = f"{HARNESS}/memory/lessons.md"
 GUIDE = f"{HARNESS}/codebase-guide/index.json"
+ARTIFACTS = f"{HARNESS}/deliverables/artifacts"
+EVIDENCE_CODE = "GATE009"
 ORIGINS = ("manual", "reflect")
 TASK_STATUS = ("todo", "doing", "blocked", "done")
 AGENTS_MAX_LINES = 150
 HOOKS_DIR = f"{HARNESS}/git-hooks"
 
 
+def check_artifact_age(root, findings):
+    """GATE009：证据必须对应当前 HEAD——过期证据比没有证据更坏，它看起来可信。
+
+    这里扫全部 `artifacts/*.json`，而不是在 8 个 scope 里各调一次：口径只有一个
+    （「这份证据是不是这一轮的」），分散调用就会出现 8 个可能忘记加的地方。
+    解析失败的文件跳过：那是它自己的 scope 用各自的 code 报的，同一缺陷不报第二条。
+    """
+    d = root / ARTIFACTS
+    if not d.is_dir():
+        return
+    for path in sorted(d.glob("*.json")):
+        rel = f"{ARTIFACTS}/{path.name}"
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        check_evidence_commit(root, data, rel, NAME, EVIDENCE_CODE, findings)
+
+
 def run(ctx, findings):
     root = Path(ctx["root"])
+    check_artifact_age(root, findings)
     flow = load_json(root, FLOW, NAME, findings, "GATE001")
     transitions = load_json(root, TRANSITIONS, NAME, findings, "GATE001")
     contract = load_json(root, CONTRACT, NAME, findings, "GATE001")

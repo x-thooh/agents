@@ -100,6 +100,32 @@ def codes_of(payload):
     return [finding["code"] for finding in payload["findings"]]
 
 
+
+ARTIFACT_AGE_REL = ".harness/deliverables/artifacts/requirements.json"
+
+
+def evidence_age_case():
+    """证据时效：commit 与 HEAD 不一致即 ERROR。
+
+    没有 git 时 verify 只 WARN（判不了就说判不了），所以这个用例先 git_init——
+    否则它测到的是「没有 git」那条分支，而不是「证据过期」这一条。
+    """
+    COVERED.add("gates")
+    with tempfile.TemporaryDirectory(prefix="dh-age-") as tmp:
+        root = copy_root(tmp)
+        git_init(root)
+        data = read_json(root, ARTIFACT_AGE_REL)
+        data.pop("example", None)
+        data["at"] = "2026-01-01T00:00:00Z"
+        data["commit"] = "0" * 40
+        write_json(root, ARTIFACT_AGE_REL, data)
+        payload, rc = run_verify(root, "gates")
+        codes = {f["code"] for f in payload["findings"] if f["severity"] == "ERROR"}
+        if rc != 1 or "GATE009" not in codes:
+            raise AssertionError(f"证据时效: 期望 GATE009 ERROR，实际 {sorted(codes)}，rc={rc}")
+        print("PASS 证据时效: commit 与 HEAD 不一致 → GATE009")
+
+
 def check_guide_regenerated():
     """--fix 之后 GUIDE001 必须消失，且索引真的被重新生成了（不是只把报错藏掉）。"""
 
@@ -629,6 +655,7 @@ def main():
     baseline_solo_case(
         "baseline: 单查不许编造「可以刷新账本」", "conf", ".harness/config.json", "CONF001"
     )
+    evidence_age_case()
 
     registered = registered_scopes()
     missing = sorted(registered - COVERED)

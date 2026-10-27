@@ -4,6 +4,8 @@ import json
 import subprocess
 from pathlib import Path
 
+import evidence_age  # 同层（.harness/scripts/），verify.py 已把该目录放进 sys.path
+
 
 class Finding:
     __slots__ = ("code", "line", "message", "path", "scope", "severity")
@@ -247,3 +249,11 @@ def git_clean(root, targets=()):
         )
     return None
 
+
+# --- 证据时效 ---------------------------------------------------------------
+# 判定本体在 ../evidence_age.py（两套模板共用一份）；这里只留同签名包装。
+
+
+def check_evidence_commit(root, data, rel, scope, code, findings):
+    """证据必须对应当前 HEAD；没有 git 时只 WARN，不冒充通过。"""
+    evidence_age.check(add, findings, root, data, rel, scope, code)

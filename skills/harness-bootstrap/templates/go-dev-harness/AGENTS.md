@@ -75,6 +75,9 @@ style/refactor/perf/test/build/ci/chore/revert。由 `commit-msg` 钩子判，�
 20. 决策笔记：`.harness/specs/notes/{proposed,implemented,rejected}/` 下每篇必须被文档引用
     （孤儿笔记 = 写了没人读得到），且 `status:` 与所在目录一致（换状态用 `git mv`，
     只改字段会留下没有版本记录的错位）。`scope=notes`
+21. 证据的时效：`deliverables/artifacts/impl.json` 与 `test.json` 的 `at` 必须是 ISO 8601、
+    `commit` 必须等于当前 HEAD（`example: true` 除外）。改完代码没重跑 `make evidence`，
+    证据就过期了——而过期证据比没有证据更坏，它看起来可信。`IMP006` / `TST007`
 
 ## 人判项（无断言）
 

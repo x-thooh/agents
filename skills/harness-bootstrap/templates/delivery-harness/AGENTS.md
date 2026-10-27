@@ -58,7 +58,11 @@ make selftest       # 每个 scope 的反向测试 + 提交消息检查的正反
     `.harness/accepted.json`（理由 + 负责人 + 复查日期）。账本内降 WARN、账本外仍
     ERROR 且前缀「新欠」；豁免过期、账本格式坏、总数上升都是 ERROR。
     `scope=baseline`（跨阶段，最后跑）
-19. 决策笔记：`.harness/specs/notes/{proposed,implemented,rejected}/` 下每篇必须被文档引用
+
+19. 证据的时效：`deliverables/artifacts/*.json` 的 `at` 必须是 ISO 8601、`commit` 必须等于当前
+    HEAD（`example: true` 除外）。改完代码没重跑，证据就过期了——而过期证据比没有证据更坏，
+    它看起来可信。没有 git 时只 WARN（判不了就说判不了）。`scope=gates` `GATE009`
+20. 决策笔记：`.harness/specs/notes/{proposed,implemented,rejected}/` 下每篇必须被文档引用
     （孤儿笔记 = 写了没人读得到），且 `status:` 与所在目录一致（换状态用 `git mv`，
     只改字段会留下没有版本记录的错位）。`scope=notes`
 

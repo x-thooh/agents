@@ -6,6 +6,8 @@ import re
 import subprocess
 from pathlib import Path
 
+import evidence_age  # 同层（.harness/scripts/），verify.py 已把该目录放进 sys.path
+
 
 class Finding:
     __slots__ = ("code", "line", "message", "path", "scope", "severity")
@@ -365,44 +367,12 @@ def check_lessons(content, scope, path, findings, code):
 
 
 # --- 证据时效 ---------------------------------------------------------------
-
-
-def head_commit(root):
-    """当前 HEAD；不是 git 仓库或没有提交时返回 None。"""
-    proc = subprocess.run(
-        ["git", "-C", str(root), "rev-parse", "HEAD"], check=False, capture_output=True, text=True
-    )
-    return proc.stdout.strip() if proc.returncode == 0 else None
-
+# 判定本体在 ../evidence_age.py（两套模板共用一份，见该文件 docstring）；
+# 这里只保留调用点要的同签名包装，避免每个 scope 都记一遍 import 路径。
 
 def check_evidence_commit(root, data, rel, scope, code, findings):
-    """证据必须对应当前 HEAD；没有 git 时只 WARN，不冒充通过。
-
-    `example: true` 的示例数据跳过：strict 已经用 EXAMPLE001 拦它，这里再报一次
-    只是同一原因的第二条。真实数据才要求 commit 等于 HEAD。
-    """
-    if data.get("example") is True:
-        return
-    at = data.get("at")
-    try:
-        datetime.datetime.fromisoformat(str(at).replace("Z", "+00:00"))
-    except (TypeError, ValueError):
-        add(findings, "ERROR", scope, rel, 1, code, f"at = {at!r} 不是 ISO 8601 时间")
-    head = head_commit(root)
-    if head is None:
-        add(findings, "WARN", scope, rel, 1, code, "没有 git，证据时效判不了；不按通过处理")
-        return
-    commit = data.get("commit")
-    if commit != head:
-        add(
-            findings,
-            "ERROR",
-            scope,
-            rel,
-            1,
-            code,
-            f"证据 commit {str(commit)[:12]!r} 不是当前 HEAD {head[:12]!r}：重新跑 make evidence",
-        )
+    """证据必须对应当前 HEAD；没有 git 时只 WARN，不冒充通过。"""
+    evidence_age.check(add, findings, root, data, rel, scope, code)
 
 
 # --- --fix 前置条件 ---------------------------------------------------------
