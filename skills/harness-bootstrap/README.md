@@ -3,9 +3,9 @@
 给一个 git 仓库搭建、移植、重做 `.harness` 工程层的抽象 skill。生成物布局以 `SKILL.md` §二.1 的
 标准布局表为准——这里不抄第二份清单，抄出来的迟早和正文不一致。
 
-- 正文：`SKILL.md`（每节只留判据：修改三段纪律、九条设计判据、六条原则、三个形状、五阶段、记忆树、断言坑、破坏性操作、验收、移植清单）
-- 自身门禁：`scripts/audit.py` + `tests/fixtures/`——审本 skill 目录（SKILL.md / references / scripts / tests / templates：frontmatter / bash 围栏 / 交叉引用 / 相对链接 / 基线记账 / 版本保质期 / 宿主实测 / 双向对账 / 规范用语 / 调度器体征 / 目录形状 / 参考文件可达性（STRUCT003）/ 节与参考材料的 80/100 两档上限 / 布局表↔模板 / 交付物点名），不依赖 git，不碰其他 skill；实现按 scope 分文件住 `scripts/scopes/`
-- `references/`：**按需才读**的部分——判据的展开、失败态论证、笔记/归档/记忆树约定、额度与基线规格。
+- 正文：`SKILL.md`（每节只留判据：修改三段纪律、九条设计判据、六条原则、三个形状、五阶段、记忆树、断言坑、破坏性操作、验收、移植清单；门禁上线与复盘这类展开在 `references/`，正文只留指针）
+- 自身门禁：`scripts/audit.py` + `tests/fixtures/`——审本 skill 目录（SKILL.md / references / scripts / tests / templates：frontmatter / bash 围栏 / 交叉引用 / 相对链接 / 基线记账 / 版本保质期 / 宿主实测 / 双向对账 / 规范用语 / 调度器体征 / 目录形状 / 参考文件可达性（STRUCT003）/ 节与参考材料的 80/100 两档上限 / 布局表↔模板 / 交付物点名 / 模板文档点名的路径必须存在（TP001）），不依赖 git，不碰其他 skill；实现按 scope 分文件住 `scripts/scopes/`
+- `references/`：**按需才读**的部分——判据的展开、失败态论证、门禁上线顺序、笔记/归档/记忆树约定、额度与基线规格。
   入口只留判据与链接；`SECT002` 守住单个参考文件 ≤100 行（撞 80 记 WARN），所以它只能越拆越细，不能长成第二个手册
 
 ## 目录形状
@@ -42,10 +42,10 @@ magpie 把本目录**整体软链**到 `~/.pi/agent/skills`、`~/.qoder/skills`�
 | --- | --- | --- | --- |
 | `.git/` | — | 是 | 已知污染：不在仓库内另写副本，接受它被看到 |
 | `.idea/`、`.ruff_cache/`、`__pycache__/` | 否 | 是 | 同上；`.gitignore` 只防提交，防不了软链 |
-| `.workbuddy-ai/` | 曾是 | 是 | **已移出**（存档在 `~/.agents/archive/`）：本地工作记忆不属于 skill 载荷 |
+| `.workbuddy-ai/` | 否 | 是 | **回来了，并已声明**：宿主 agent 的工作区记忆（`memory/` 日志）由运行环境写在这个路径上，挪不走。它 `.gitignore` 掉了（不进版本库），但在 `EXTRAS` 里带理由（不再算未声明条目）——「不进版本库」与「不声明」是两件事 |
 
-规矩一句话：**只为本机服务的目录，不进这个目录。** 工程层工作记忆、会话日志、临时笔记一律放在仓库之外——
-`STRUCT001` 不再为 `.workbuddy-ai` 开豁免，它回来就会报错。
+规矩一句话：**只为本机服务的目录，不进版本库；进来了就必须在 `EXTRAS` 里写明理由。**
+`.workbuddy-ai/` 是唯一带豁免的条目，理由写在 `scripts/scopes/struct.py`：路径由宿主写死，挪不动。
 
 ## 安装：拷贝就是安装
 
@@ -65,6 +65,22 @@ cd ~/.agents && git pull --ff-only             # 升级；本 skill 无运行时
 - **许可**：[MIT](LICENSE)。没有许可声明时，默认是「保留所有权利」——拷贝给别人用需要授权，
   这正是本 skill 的使用方式，所以许可与正文同样算交付物。
 - **不做的事**：不写目标仓库之外的路径、不联网取模板、不在安装时改宿主配置。
+
+## 前置：哪些命令需要什么
+
+`make check` 只依赖 Python 3（零第三方库、不依赖 git）。其余命令各有前置，缺了会**响亮地红**，
+不静默跳过——静默跳过会让「本地没装」退化成「没有这条门禁」。
+
+| 命令 | 前置 | 缺了会怎样 |
+| --- | --- | --- |
+| `make check` / `fixtures` / `template-parity` / `selftest` | Python 3.9+ | —— |
+| `make retro-check` | **完整 git 历史**（`git clone`，不是 zip / tarball） | 报 R-1「标 done 却没给可核验证据」：工单里的 `commit:<sha>` 要在历史里查得到 |
+| `make round` | 完整 git 历史（要检出 `HEAD~1`） | 退出码 2，明说基准取不到 |
+| `make lint-python` | ruff：`python3 -m pip install 'ruff>=0.17,<0.18'` | 退出码 1，并打出安装命令 |
+| `make check-evidence` / `make lint` | Go 工具链 + golangci-lint | 退出码 2，并给出取路径的提示 |
+
+从 zip / tarball 下载的人会看到 `retro-check` 失败：**那不是仓库坏了，是缺 git 历史**。
+这条边界写在前面，是因为「红得没有解释」与「真的坏了」在观感上没有区别。
 
 ## 本仓库自己的门禁
 
@@ -121,6 +137,9 @@ pre-commit 能被 `git commit --no-verify` 绕过，CI 不能——这是 CI 唯
 
 两者都自带 `tests/reverse.py`（每个 scope 至少一条违规样本，外加 `--fix` 的边界样本）、
 `make check-strict`（示例数据判 ERROR）和 `make fix`（只修派生数据，前置条件按目标文件排除）。
+两套的 `verify.py` 调度器**逐字节相同**（scope 清单在各自的 `registry.py` 里），
+证据时效判定共用 `.harness/scripts/evidence_age.py`，复盘与环比共用
+`retro.py` / `retro_check.py` / `round.py`——这几份都在 `make template-parity` 的 SHARED 清单里。
 每套还有一个 `TEMPLATE.md`：模板自己的说明，拷进目标仓库时**不改名成 README**（早期版本就该叫 `README.md`，
 拷一次就把人家原来的覆盖了）。
 `go-dev-harness` 另有 `.harness/scripts/check_commit.py` 与 `tests/commit_msg.py`（提交消息按
