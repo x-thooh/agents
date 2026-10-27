@@ -5,8 +5,14 @@
 `workflow/contract.json` 在两套模板里是同一份实现。修一个基线 bug 要改两处，
 而没有任何断言要求两边一致；只改一边时，两套模板的语义就静默分叉了。
 
-只比较**确实应相同**的共同子集；`common.py` / `gates.py` / `verify.py` 因模板差异
+只比较**确实应相同**的共同子集；`common.py` / `gates.py` / `registry.py` 因模板差异
 而合法不同，不在表里。新增共同文件时把它加进 SHARED。
+
+`verify.py` 曾经也在豁免名单里，理由是「因模板差异而合法不同」——实测它 195 行里 178 行
+相同，差异只有 import 清单、SCOPES 与一句 `--help` 描述。整个文件因局部差异被全量豁免，
+重复的主体就没人守了。治法不是把差异抹平，是把差异搬出去：scope 清单进 `registry.py`
+（各域本来就该不同），调度骨架留在 `verify.py` 并纳入 SHARED。豁免的理由要能被复核——
+「合法不同」四个字掩盖的是「哪里不同、有多少」。
 
 用法: python3 tests/template_parity.py
 退出码: 0 = 一致；1 = 分叉或缺失；2 = 环境错误
@@ -20,6 +26,7 @@ DELIVERY = ROOT / "templates/delivery-harness"
 GODEV = ROOT / "templates/go-dev-harness"
 
 SHARED = (
+    ".harness/scripts/verify.py",
     ".harness/scripts/scopes/baseline.py",
     ".harness/scripts/check_commit.py",
     ".harness/scripts/gen_guide.py",

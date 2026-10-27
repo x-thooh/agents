@@ -20,10 +20,10 @@ COVERED = set()
 
 def registered_scopes():
     """verify.py 的注册表——新增 scope 却没反向用例时，这里会红。"""
-    text = (ROOT / ".harness/scripts/verify.py").read_text(encoding="utf-8")
+    text = (ROOT / ".harness/scripts/registry.py").read_text(encoding="utf-8")
     match = re.search(r"SCOPES\s*=\s*\((.*?)\)", text, re.S)
     if not match:
-        raise AssertionError("verify.py 里找不到 SCOPES 注册表")
+        raise AssertionError("registry.py 里找不到 SCOPES 注册表")
     return set(re.findall(r"\b([a-z][a-z0-9_]*)\b", match.group(1)))
 
 

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Go dev harness verify dispatcher.
+"""verify dispatcher：两套模板逐字节相同的一份（`tests/template_parity.py` 的 SHARED）。
 
-Each scope lives in scripts/scopes/<name>.py. This file only:
-  * loads quality.json once;
-  * runs the registered scopes;
-  * applies --fix fixes declared by scopes (FIXERS), then re-runs;
-  * sorts and prints findings;
-  * owns the exit-code contract (0 = no ERROR, 1 = ERROR, 2 = usage / 前置条件不满足).
+骨架归这里，**scope 清单归 `registry.py`**——各域该有哪些 scope 本来就不该一致，
+而调度逻辑不该因此分叉。这个文件只做四件事：
+
+  * 从 registry 取 scope 清单；
+  * 跑注册的 scope（`config.json` 只读一次）；
+  * 应用 `--fix`（scope 用 `FIXERS` 声明的派生修复），修完重跑；
+  * 排序输出，并持有退出码契约（0 = 无 ERROR，1 = 有 ERROR，2 = 用法 / 前置条件不满足）。
 """
 
 import argparse
@@ -18,36 +19,9 @@ HERE = Path(__file__).resolve().parent
 if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
-from scopes import (  # noqa: E402
-    baseline,
-    conf,
-    contract,
-    design,
-    gates,
-    impl,
-    layout,
-    notes,
-    release,
-    review,
-    runtime,
-    test,
-)
+from registry import SCOPES  # noqa: E402
 from scopes.common import git_clean, load_json  # noqa: E402
 
-SCOPES = (
-    gates,
-    conf,
-    contract,
-    design,
-    layout,
-    runtime,
-    impl,
-    test,
-    review,
-    release,
-    notes,
-    baseline,
-)
 
 
 def collect(root, selected, strict):
@@ -98,7 +72,7 @@ def apply_fixes(root, findings, fixers):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Go 研发业务流程门禁校验")
+    parser = argparse.ArgumentParser(description="门禁校验：跑本套模板注册的全部 scope")
     parser.add_argument("--root", default=str(HERE.parents[1]), help="仓库根目录")
     parser.add_argument("--scope", default=None, help="只跑一个 scope")
     parser.add_argument("--json", action="store_true", help="输出 JSON")
@@ -167,7 +141,7 @@ def main(argv=None):
         for code, note in fixed:
             print(f"FIXED {code:<8} {note}")
         for f in findings:
-            print(f"{f.severity:<5} {f.scope:<10} {f.path}:{f.line}  {f.code:<8} {f.message}")
+            print(f"{f.severity:<5} {f.scope:<12} {f.path}:{f.line}  {f.code:<8} {f.message}")
         if args.fix:
             manual = sorted({f.code for f in findings if f.code not in fixers})
             if manual:
