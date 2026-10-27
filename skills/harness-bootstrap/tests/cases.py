@@ -29,6 +29,8 @@ CASES = (
     ("bad-expiry-decor", {"BASE004"}, ()),
     ("bad-host-loading", {"HOST001"}, ()),
     ("bad-dual-ledger", {"DUAL001"}, ()),
+    # 对账的磁盘侧必须出现在布局表里；只写一个不存在的目录不算对账
+    ("bad-dual-disk", {"DUAL001"}, ()),
     ("bad-scope-grading", {"SCOPE001"}, ()),
     ("bad-version-ungated", {"VER001"}, ()),
     ("bad-xref", {"XREF001"}, ()),

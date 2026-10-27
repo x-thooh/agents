@@ -1,6 +1,5 @@
-"""links：外部链接与相对链接 + 锚点（离线强断言）。
-文件在、锚点错就是「重排后静默指向别处」（坑 #12）；内联外部链接是承诺
-（`--check-links` 才真查），脚注是引用出处不管。
+"""links：外部链接与相对链接 + 锚点（离线强断言）。内联外链是承诺（`--check-links` 才真查），
+文件在、锚点错就是「重排后静默指向别处」（坑 #12）；脚注是引用出处不管。
 """
 
 import http.client
@@ -40,8 +39,7 @@ def run(ctx, findings):
     text = strip_code(ctx["text"])
     check_relative_links(text, root, findings)
     check_external_links(text, findings, ctx.get("check_links", False), ctx.get("link_status"))
-    # 参考材料里的链接也要查：它们同为文档面，且 §X 去编号化之后全靠锚点指路。
-    # 基址是**文件所在目录**，不是 skill 根——`./acceptance.md` 是 references/ 内的相对路径。
+    # 参考材料也要查；基址是**文件所在目录**，不是 skill 根（`./acceptance.md` 在 references/ 内）。
     refs = root / "references"
     if not refs.is_dir():
         return
@@ -55,6 +53,8 @@ def run(ctx, findings):
             )
             continue
         check_relative_links(strip_code(body), refs, findings, source=rel)
+        check_external_links(strip_code(body), findings, ctx.get("check_links", False),
+                             ctx.get("link_status"), source=rel)
 
 
 def check_relative_links(text, base, findings, source=None):
@@ -79,30 +79,26 @@ def check_relative_links(text, base, findings, source=None):
             if anchors is None:
                 emit(idx + 1, "LINK004", f"链接目标读不了，锚点判不了（不能当通过）: {target}")
             elif frag not in anchors:
-                emit(
-                    idx + 1,
-                    "LINK004",
-                    f"锚点在目标文件里不存在: {target}——文件在、锚点错，就是「重排后静默指向别处」那个形态",
-                )
+                emit(idx + 1, "LINK004",
+                     f"锚点在目标文件里不存在: {target}——文件在、锚点错，"
+                     "就是「重排后静默指向别处」那个形态")
 
 
-def check_external_links(text, findings, do_check, status_override=None):
-    urls = []
-    for idx, ln in enumerate(text.split("\n")):
-        urls.extend((idx + 1, u) for u in MD_LINK.findall(ln))
+def check_external_links(text, findings, do_check, status_override=None, source=None):
+    urls = [(idx + 1, u) for idx, ln in enumerate(text.split("\n")) for u in MD_LINK.findall(ln)]
     if not urls:
         return
     if not do_check:
-        findings.append(
-            Finding("WARN", NAME, urls[0][0], "LINK001", f"外部链接 {len(urls)} 条未检查（--check-links 才真查）")
-        )
+        findings.append(Finding("WARN", NAME, urls[0][0], "LINK001",
+                                f"外部链接 {len(urls)} 条未检查（--check-links 才真查）", path=source))
         return
     for line, url in urls:
         code, err = _status(url, status_override)
         if code is None:
-            findings.append(Finding("WARN", NAME, line, "LINK003", f"链接不可达（降级 WARN）: {url} ({err})"))
+            findings.append(Finding("WARN", NAME, line, "LINK003",
+                                    f"链接不可达（降级 WARN）: {url} ({err})", path=source))
         elif code >= 400:
-            findings.append(Finding("ERROR", NAME, line, "LINK002", f"链接返回 {code}: {url}"))
+            findings.append(Finding("ERROR", NAME, line, "LINK002", f"链接返回 {code}: {url}", path=source))
 
 
 def _status(url, override):
@@ -134,15 +130,16 @@ def http_status(url):
     conn = None
     try:
         conn = conn_cls(parsed.hostname, parsed.port, timeout=10)
-        conn.request(
-            "HEAD",
-            path,
-            headers={
-                "User-Agent": "harness-bootstrap-audit/1",
-                "Host": parsed.netloc,
-            },
-        )
-        return conn.getresponse().status, None
+        headers = {"User-Agent": "harness-bootstrap-audit/1", "Host": parsed.netloc}
+        conn.request("HEAD", path, headers=headers)
+        response = conn.getresponse()
+        status = response.status
+        if status in (403, 405, 501):
+            # HEAD 可能不被支持（405/501）或被更严格地拒绝（403）；用 GET 复核一次。
+            response.read()
+            conn.request("GET", path, headers=headers)
+            status = conn.getresponse().status
+        return status, None
     except Exception as exc:  # 网络/代理/证书问题一律降级，不冒充内容错误
         return None, type(exc).__name__
     finally:

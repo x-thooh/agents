@@ -65,6 +65,7 @@ def collect(root, selected, strict):
         "strict": strict,
         "quality": quality if isinstance(quality, dict) else {},
         "selected": tuple(mod.NAME for mod in selected),
+        "registry": tuple(mod.NAME for mod in SCOPES),
     }
     for mod in selected:
         mod.run(ctx, findings)

@@ -64,6 +64,7 @@ def run(ctx, findings):
     stages = check_flow(flow, findings)
     if not stages:
         return
+    check_stage_scopes(stages, ctx.get("registry"), findings)
     check_agents(root, stages, findings)
     check_hooks(root, findings)
     check_specs(root, findings)
@@ -120,6 +121,23 @@ def check_flow(flow, findings):
     return sorted(stages, key=lambda s: s.get("order", 0))
 
 
+def check_stage_scopes(stages, registry, findings):
+    """flow.json 的 stage.scopes 必须是 verify.py 真注册的 scope。
+
+    只在 AGENTS.md 写 `scope=ghost` 不算数：入口声明了、调度器没执行，
+    就是「声明即承诺」的假绿灯。
+    """
+    if not registry:
+        return
+    known = set(registry)
+    for stage in stages:
+        for scope in as_list(stage.get("scopes")):
+            if scope not in known:
+                add(findings, "ERROR", NAME, FLOW, 1, "GATE001",
+                    f"stage {stage.get('id')!r} 声明了未注册的 scope {scope!r}："
+                    f"verify.py 不会执行它。已注册：{', '.join(sorted(known))}")
+
+
 def check_agents(root, stages, findings):
     path = root / "AGENTS.md"
     rel = "AGENTS.md"
@@ -158,6 +176,21 @@ def check_agents(root, stages, findings):
             if rel_target and not (root / rel_target).exists():
                 add(findings, "ERROR", NAME, rel, idx, "GATE002",
                     f"AGENTS.md 相对链接指向不存在的文件: {target}")
+    check_rule_numbers(content, rel, findings)
+
+
+def check_rule_numbers(content, rel, findings):
+    """硬规则编号必须连续：删掉一条却留着 18→20 是肉眼可见的断裂。"""
+    start = re.search(r"^##\s+硬规则\s*$", content, re.M)
+    if not start:
+        return
+    tail = content[start.end():]
+    nxt = re.search(r"^##\s+", tail, re.M)
+    body = tail[:nxt.start()] if nxt else tail
+    nums = [int(n) for n in re.findall(r"^(\d+)\.\s", body, re.M)]
+    if nums != list(range(1, len(nums) + 1)):
+        add(findings, "ERROR", NAME, rel, 1, "GATE002",
+            f"硬规则编号不连续：{nums}，期望 1..{len(nums)}——删/并规则时把编号一起改")
 
 
 def check_hooks(root, findings):

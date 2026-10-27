@@ -5,8 +5,9 @@
 #
 # 边界：check 不依赖 Go 工具链（verify 只做词法检查），
 #       需要编译器的检查单独放 check-sample，且缺工具链时报错而不是静默跳过。
-#       Python 静态检查（ruff）是 check-all 的一部分：本 skill 的自身门禁只审 SKILL.md
-#       与派生物，审不到自己写的 Python——实测代价是同一段 if 被逐字写了两遍。
+#       Python 静态检查（ruff）是 check-all 的一部分：本 skill 的自身门禁审
+#       SKILL.md / references / scripts / tests / templates 的机械形状，审不到
+#       自己写的 Python 运行时行为——实测代价是同一段 if 被逐字写了两遍。
 
 PY ?= python3
 GO ?= go
@@ -14,14 +15,15 @@ TPL := templates
 DELIVERY := $(TPL)/delivery-harness
 GODEV := $(TPL)/go-dev-harness
 
-.PHONY: help check check-all check-json check-skill fixtures check-templates check-boot selftest check-sample check-strict lint lint-python guide code-index
+.PHONY: help check check-all check-json check-skill fixtures template-parity check-templates check-boot selftest check-sample check-strict lint lint-python guide code-index round retro retro-check
 
 help:
-	@echo "make check            核心门禁：技能自审 + fixture 断言表 + 两套模板 verify + 两套反向测试（不需要 Go）"
-	@echo "make check-all        全部：check + check-strict + check-boot + lint-python（不需要 Go）。CI 跑的就是这一条"
+	@echo "make check            核心门禁：技能自审 + fixture 断言表 + 模板共同文件 parity + 两套模板 verify + 两套反向测试（不需要 Go）"
+	@echo "make check-all        全部：check + check-strict + check-boot + lint-python + retro-check（不需要 Go）。CI 跑的就是这一条"
 	@echo "make check-json        只出三段 JSON：技能自审 + 两套模板（不含 fixtures/selftest/strict）"
 	@echo "make check-skill       只跑 scripts/audit.py"
 	@echo "make fixtures          全部反向 fixture 逐条比对期望的 code"
+	@echo "make template-parity   两套模板的共同文件逐字节一致"
 	@echo "make check-templates   只跑两套模板的 .harness/scripts/verify.py（自洽性）"
 	@echo "make check-boot        把模板拷进临时空仓库，验它装上之后是否仍然诚实（行为）"
 	@echo "make selftest          只跑两套 tests/reverse.py + 提交消息检查"
@@ -31,13 +33,16 @@ help:
 	@echo "make lint-python       工具层：ruff 检查全部 Python（需要 ruff；配置在 pyproject.toml）"
 	@echo "make guide             重新生成两套 codebase-guide/index.json"
 	@echo "make code-index        重新生成 references/code-index.md（全部 code 清单）"
+	@echo "make round             行为级对照：HEAD~1 与当前工作树的 audit 计数"
+	@echo "make retro             打印本轮复盘的事实底板"
+	@echo "make retro-check       校验复盘正文与工单表（复盘校验器的反向测试也在这里）"
 
 # 两级：check 是跑得快的那一半，check-all 是全部门禁。
 # 为什么不是「check 就是全部」：跑完一条改就要等 strict 的两个模板全量，
 # 而 strict 验的是模板不变量，与本 skill 正文改动无关。分成两条，日常快、提交全。
 # 但**两地跑的必须是同一条**：CI 用 check-all，你在本地提交前也用它。
-check: check-skill fixtures check-templates selftest
-	@echo "== check 通过：技能自审 + fixture 断言表 + 两套模板 + 两套反向测试 =="
+check: check-skill fixtures template-parity check-templates selftest
+	@echo "== check 通过：技能自审 + fixture 断言表 + 模板共同文件 + 两套模板 + 两套反向测试 =="
 
 round:
 	@$(PY) scripts/round.py
@@ -50,7 +55,7 @@ retro-check:
 	@$(PY) tests/retro_reverse.py
 
 check-all: check check-strict check-boot lint-python retro-check
-	@echo "== check-all 通过：以上 + strict 不变量 + 模板装上后的行为 + Python 静态检查 =="
+	@echo "== check-all 通过：以上 + strict 不变量 + 模板装上后的行为 + Python 静态检查 + 复盘校验 =="
 
 check-json:
 	@$(PY) scripts/audit.py --json
@@ -62,6 +67,9 @@ check-skill:
 
 fixtures:
 	@$(PY) tests/fixtures.py
+
+template-parity:
+	@$(PY) tests/template_parity.py
 
 check-templates:
 	@$(PY) $(DELIVERY)/.harness/scripts/verify.py

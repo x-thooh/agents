@@ -7,7 +7,7 @@
 所以本 scope 只判三件机器判得了的事：
   1. 拼写：`reference` / `script` / `agent` 这类近似名一律按错报（标准是复数）；
   2. 声明：根下每个条目必须落在 STANDARD、EXTRAS（带理由）或 TOOL_JUNK 里；
-  3. 可达：`references/` 下的每个 .md 必须被 SKILL.md 或另一个参考文件链到（STRUCT003）。
+  3. 可达：`references/` 下的每个 .md 必须被 SKILL.md 或另一个参考文件**提到或链到**（STRUCT003）。
      密度改造会把细节搬进 references/，搬完忘了在入口加链接，这份内容就没人读得到——
      它不报错、不计入任何额度，只是安静地变成死重量。
 
@@ -84,7 +84,7 @@ def run(ctx, findings):
 
 
 def check_reachability(skill_dir, findings):
-    """STRUCT003：references/ 里每一份都得有人链——外置内容没人链，等于没外置。"""
+    """STRUCT003：references/ 里每一份都得有人提到或链到——外置内容没人提，等于没外置。"""
     ref_dir = os.path.join(skill_dir, REF_DIR)
     if not os.path.isdir(ref_dir):
         return
@@ -110,8 +110,8 @@ def check_reachability(skill_dir, findings):
             continue
         findings.append(Finding(
             "ERROR", NAME, 0, "STRUCT003",
-            f"references/{name} 没有被任何入口链到（SKILL.md 与其它参考文件都没提它）："
-            f"外置内容没人链就没人读得到，等于没外置。可链的入口：{', '.join(others[:4])}…" ,
+            f"references/{name} 没有被任何入口提到或链到（SKILL.md 与其它参考文件都没提它）："
+            f"外置内容没人提就没人读得到，等于没外置。可用的入口：{', '.join(others[:4])}…" ,
             path=f"{REF_DIR}/{name}"))
 
 

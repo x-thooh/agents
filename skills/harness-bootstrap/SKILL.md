@@ -12,7 +12,7 @@ license: MIT
 # Skill：Harness 项目初始化
 
 **适用**：给一个 git 仓库补 agent 工程层；把一套 harness 移植到另一个 git 仓库；重做某一层。目标仓库必须有 git（改前基准依赖 `git status`）。本 skill 只讲 harness 通用机制，不涉及任何具体业务领域。
-**核心产物**：入口 `AGENTS.md` ×N、流程 `.harness/workflow/`、知识 `.harness/specs/`、执行 `.harness/scripts/`（verify）、状态 `.harness/{deliverables,tasks,memory}/`、配置 `.harness/config.json`；本 skill 自身门禁 `scripts/audit.py`（只审本 SKILL.md，不依赖 git）。
+**核心产物**：入口 `AGENTS.md` ×N、流程 `.harness/workflow/`、知识 `.harness/specs/`、执行 `.harness/scripts/`（verify）、状态 `.harness/{deliverables,tasks,memory}/`、配置 `.harness/config.json`；本 skill 自身门禁 `scripts/audit.py`（只审本 skill 目录，不只 SKILL.md，不依赖 git）。
 
 ---
 
@@ -79,9 +79,9 @@ license: MIT
 ```text
 路径                                                     形态    说明
 AGENTS.md                                              必建    入口（地图，不是手册）
+skills/                                                按需    可安装流程；没有就不建目录（声明账本的磁盘侧）
 .harness/workflow/                                     必建    流程：flow.json（阶段唯一事实源）+ transitions + contract + 正文
-.harness/workflow/playbooks/                           按需    一组可复用的操作剧本；没有剧本就不建目录
-.harness/workflow/skills.declared.yaml                 按需    声明本仓库装了哪些 skill（声明即承诺）
+.harness/workflow/skills.declared.yaml                 按需    声明本仓库装了哪些 skill（声明即承诺，磁盘侧 = skills/）
 .harness/specs/                                        必建    知识：业务域规格、规范与断言对照
 .harness/specs/notes/{proposed,implemented,rejected}/  按需    决策的三种状态，各是一个目录
 .harness/codebase-guide/                               必建    知识（派生）：代码库索引，脚本生成，禁手改
@@ -184,7 +184,7 @@ DSH[^dsh] 是运行时产品页，不是协议：它给的是「一个 harness �
 只借三个形状——把它的 App 概念整套搬成文件结构就是张冠李戴：
 
 1. 能力账本要两栏：声明账本 `.harness/workflow/skills.declared.yaml`（意图，人手维护，脚本只读）
-   ↔ 磁盘 `playbooks/`，双向对账：多一个报 ERROR（加了没人知道），少一个也报 ERROR（没装机）。
+   ↔ 磁盘 `skills/`，双向对账：多一个报 ERROR（加了没人知道），少一个也报 ERROR（没装机）。
    账本是意图不是索引；两侧都由脚本生成时这条恒真、构不出失败例，等于没写。
 2. 交付要含「验证装好了」：阶段 4 的验收是三条——怎么跑、什么时候跑、怎么验证装好了
    （通常就是一次反向测试）。

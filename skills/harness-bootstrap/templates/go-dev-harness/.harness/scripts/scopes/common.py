@@ -98,7 +98,7 @@ def quality_get(quality, dotted, default=None):
 
 
 def check_fields(obj, required, scope, path, findings, code, prefix=""):
-    """Require keys to exist and be non-empty strings/lists. Numbers/bools pass."""
+    """Require keys to exist and be non-empty. Numbers/bools pass; null does not."""
     ok = True
     for key in required:
         if not isinstance(obj, dict) or key not in obj:
@@ -106,7 +106,9 @@ def check_fields(obj, required, scope, path, findings, code, prefix=""):
             ok = False
             continue
         value = obj[key]
-        if (isinstance(value, str) and not value.strip()) or (isinstance(value, list) and not value):
+        if value is None or (isinstance(value, str) and not value.strip()) or (
+            isinstance(value, (list, dict)) and not value
+        ):
             add(findings, "ERROR", scope, path, 1, code, f"{prefix}{key} 不能为空")
             ok = False
     return ok

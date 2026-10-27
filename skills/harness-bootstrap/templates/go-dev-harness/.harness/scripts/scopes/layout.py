@@ -63,26 +63,31 @@ def check_methods(root, src, findings):
             if not match:
                 continue
             recv, star, typ = match.group(1), match.group(2), match.group(3)
-            methods.setdefault(typ, []).append((recv, "指针" if star else "值", rel, idx))
+            # 包路径必须一起做 key：不同包里的同名类型不是同一个类型，
+            # 只按 typ 聚合会把两套 receiver 约定拼在一起，产出假阳性。
+            methods.setdefault((path.parent, typ), []).append((recv, "指针" if star else "值", rel, idx))
 
-    for typ, entries in methods.items():
+    for (pkg_dir, typ), entries in methods.items():
         bad = [e for e in entries if e[0] in BAD_RECEIVER_NAMES]
         if bad:
             recv, _kind, rel, line = bad[0]
             add(findings, "ERROR", NAME, rel, line, "LAY008",
-                f"{typ} 的 receiver 叫 {recv!r}：用类型首字母（c / cl），this/self 是别的语言的习惯")
+                f"{rel_to(root, pkg_dir)} 的 {typ} receiver 叫 {recv!r}："
+                "用类型首字母（c / cl），this/self 是别的语言的习惯")
         names = {e[0] for e in entries}
         if len(names) > 1:
             recv, _kind, rel, line = entries[0]
             others = "、".join(sorted(names - {recv}))
             add(findings, "ERROR", NAME, rel, line, "LAY008",
-                f"{typ} 的 receiver 名不一致：{recv!r} 与 {others} 混用，同一个类型只准一个名字")
+                f"{rel_to(root, pkg_dir)} 的 {typ} receiver 名不一致："
+                f"{recv!r} 与 {others} 混用，同一个类型只准一个名字")
         kinds = {e[1] for e in entries}
         if len(kinds) > 1:
             kind, rel, line = entries[0][1], entries[0][2], entries[0][3]
             other = next(k for k in kinds if k != kind)
             add(findings, "ERROR", NAME, rel, line, "LAY009",
-                f"{typ} 混用{kind}与{other} receiver：同一类型统一一种，拿不准就用指针")
+                f"{rel_to(root, pkg_dir)} 的 {typ} 混用{kind}与{other} receiver："
+                "同一类型统一一种，拿不准就用指针")
 
 
 def check_package_comment(root, src, findings):

@@ -35,7 +35,7 @@ make selftest       # 每个 scope 的反向测试 + 提交消息检查的正反
 每条规则要么有 scope 断言，要么标「无断言」并写强度来源。
 
 1. 不得跳阶：前序阶段为 `reject` 或缺失时，后续阶段不得为 `pass`/`conditional`。`scope=gates`
-2. 门记录字段取自 `workflow/contract.json` 的 `gate_fields`，`stage` 与 `process_version` 必须与 `flow.json` 一致。`scope=gates`
+2. 门记录字段取自 `workflow/contract.json` 的 `gate_fields`，`stage` 与 `process_version` 必须与 `flow.json` 一致；`flow.json` 的 `scopes` 必须是 `verify.py` 注册的 scope，硬规则编号必须连续。`scope=gates`
 3. `pass`/`conditional` 必须有证据；`conditional` 必须有未过期例外（责任人 + 批准人 + 到期日）。`scope=gates`
 4. `flow.json` 声明的每个交付物必须真实存在。`scope=gates`
 5. 需求必须有唯一 ID、可测验收标准、优先级、目标版本；任务卡 1 到 `config.json.task_max_days` 人天，超限必须再拆且依赖可解析。`scope=requirements`
@@ -58,7 +58,7 @@ make selftest       # 每个 scope 的反向测试 + 提交消息检查的正反
     `.harness/accepted.json`（理由 + 负责人 + 复查日期）。账本内降 WARN、账本外仍
     ERROR 且前缀「新欠」；豁免过期、账本格式坏、总数上升都是 ERROR。
     `scope=baseline`（跨阶段，最后跑）
-20. 决策笔记：`.harness/specs/notes/{proposed,implemented,rejected}/` 下每篇必须被文档引用
+19. 决策笔记：`.harness/specs/notes/{proposed,implemented,rejected}/` 下每篇必须被文档引用
     （孤儿笔记 = 写了没人读得到），且 `status:` 与所在目录一致（换状态用 `git mv`，
     只改字段会留下没有版本记录的错位）。`scope=notes`
 
@@ -77,6 +77,7 @@ make selftest       # 每个 scope 的反向测试 + 提交消息检查的正反
 ```text
 AGENTS.md                        本文件（地图）
 Makefile                         make init / check / check-json / check-strict / fix / selftest
+skills/                          可安装流程（按需；声明账本在 .harness/workflow/skills.declared.yaml）
 .harness/baseline.txt           老账账本（四列；首版为空）
 .harness/accepted.json          显式豁免（理由/负责人/复查日期，只减不增）
 .harness/config.json             阈值（覆盖率、任务人天、MR 行数、冒烟通过率）

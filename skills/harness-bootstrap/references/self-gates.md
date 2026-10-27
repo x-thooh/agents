@@ -12,7 +12,10 @@ python3 tests/fixtures.py                 # 反向断言 + 覆盖闸（每个 co
 python3 scripts/audit.py --skill-dir tests/fixtures/ok-minimal   # 正对照：0 ERROR 0 WARN
 ```
 
-`make check-all` 包含上面这些命令，另加两套模板的 `--strict` 不变量；单独列出那几条，是为了改一处时不必等全量。
+`make check-all` 包含上面这些命令，另加两套模板的 `--strict` 不变量、`check-boot`、
+`lint-python` 与 `retro-check`；单独列出那几条，是为了改一处时不必等全量。模板共同文件由
+`tests/template_parity.py`（`make template-parity`，已进 `check`）逐字节对账；两套模板的
+`tests/reverse.py` 还会检查「verify 注册表 ↔ 反向 case」覆盖，新增 scope 没用例就红。
 
 **期望清单只有一处**：`tests/cases.py` 的 `CASES` 表。它逐条写明每个 fixture 该报哪个 code，
 跑 `make check-all` 时一起执行。这里不再抄一份——抄出来的第二份表迟早和第一份不一致，

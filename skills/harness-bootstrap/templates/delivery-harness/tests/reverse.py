@@ -6,6 +6,7 @@ Exit 0 only when the positive control and every reverse case pass.
 """
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -13,6 +14,16 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+COVERED = set()
+
+
+def registered_scopes():
+    """verify.py 的注册表——新增 scope 却没反向用例时，这里会红。"""
+    text = (ROOT / ".harness/scripts/verify.py").read_text(encoding="utf-8")
+    match = re.search(r"SCOPES\s*=\s*\((.*?)\)", text, re.S)
+    if not match:
+        raise AssertionError("verify.py 里找不到 SCOPES 注册表")
+    return set(re.findall(r"\b([a-z][a-z0-9_]*)\b", match.group(1)))
 
 
 def copy_root(tmp):
@@ -178,6 +189,7 @@ def positive_control():
 
 
 def reverse_case(name, rel, mutate, scope, expected_code):
+    COVERED.add(scope)
     with tempfile.TemporaryDirectory(prefix=f"dh-{scope}-") as tmp:
         root = copy_root(tmp)
         data = read_json(root, rel)
@@ -207,6 +219,51 @@ def write_text(root, rel, body):
     path.write_text(body, encoding="utf-8")
 
 
+def replace_text(root, rel, old, new):
+    path = root / rel
+    text = path.read_text(encoding="utf-8")
+    if old not in text:
+        raise AssertionError(f"{rel} 里找不到待替换片段：{old!r}")
+    path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
+def text_reverse_case(name, rel, mutate, scope, expected_code):
+    """非 JSON 文件（AGENTS.md）的反向用例：只期望命中指定 code。"""
+    COVERED.add(scope)
+    with tempfile.TemporaryDirectory(prefix=f"dh-{scope}-") as tmp:
+        root = copy_root(tmp)
+        mutate(root)
+        payload, rc = run_verify(root, scope)
+        codes = codes_of(payload)
+        if rc == 0 or expected_code not in codes:
+            raise AssertionError(f"{name}: 期望 {expected_code}，实际 rc={rc} codes={codes}")
+        print(f"PASS {name}: {expected_code}")
+
+
+def stage_scope_case(name, scope_name, expected_code):
+    """flow.json 里写一个未注册 scope，AGENTS.md 也照着写——仍必须报错。"""
+    COVERED.add("gates")
+    with tempfile.TemporaryDirectory(prefix="dh-stage-scope-") as tmp:
+        root = copy_root(tmp)
+        flow = read_json(root, ".harness/workflow/flow.json")
+        flow["stages"][0]["scopes"].append(scope_name)
+        write_json(root, ".harness/workflow/flow.json", flow)
+        agents = root / "AGENTS.md"
+        agents.write_text(
+            agents.read_text(encoding="utf-8") + f"\n- `scope={scope_name}`\n", encoding="utf-8"
+        )
+        subprocess.run(
+            [sys.executable, str(root / ".harness/scripts/gen_guide.py"), str(root)],
+            check=True,
+            capture_output=True,
+        )
+        payload, rc = run_verify(root, "gates")
+        codes = codes_of(payload)
+        if rc == 0 or expected_code not in codes:
+            raise AssertionError(f"{name}: 期望 {expected_code}，实际 rc={rc} codes={codes}")
+        print(f"PASS {name}: {expected_code}")
+
+
 def ledger_line(scope, path, fingerprint, count):
     return f"{scope}\t{path}\t{fingerprint}\t{count}\n"
 
@@ -227,6 +284,7 @@ def baseline_solo_case(name, scope, rel, code):
     「账本比现状多」会被算成正数——BASE014 于是把「上游没跑」误报成
     「老账已修掉一部分，可以刷新账本」。那是一条假建议，而刷新方式是手改文件。
     """
+    COVERED.add("baseline")
     with tempfile.TemporaryDirectory(prefix="baseline-solo-") as tmp:
         root = copy_root(tmp)
         write_text(root, LEDGER_REL, ledger_line(scope, rel, f"{code}:x", 1))
@@ -244,6 +302,7 @@ def baseline_solo_case(name, scope, rel, code):
 
 def notes_case(name, expected_code, setup):
     """notes scope 的反向测试：一篇笔记一个缺陷，期望恰好报那个 code。"""
+    COVERED.add("notes")
     with tempfile.TemporaryDirectory(prefix="notes-") as tmp:
         root = copy_root(tmp)
         setup(root)
@@ -261,6 +320,7 @@ def notes_case(name, expected_code, setup):
 
 def baseline_error_case(name, expected_code, setup):
     """账本本身出错（格式 / 过期 / 只减不增）：只跑 baseline scope，期望唯一 ERROR。"""
+    COVERED.add("baseline")
     with tempfile.TemporaryDirectory(prefix="go-base-") as tmp:
         root = copy_root(tmp)
         setup(root)
@@ -275,6 +335,7 @@ def baseline_error_case(name, expected_code, setup):
 
 def baseline_behavior_case(name, defect_setup, scope, rel, code):
     """账本内 → 降级 WARN；账本外 → 仍是 ERROR 且前缀「新欠」。"""
+    COVERED.add(scope)
     with tempfile.TemporaryDirectory(prefix="go-base-behavior-") as tmp:
         root = copy_root(tmp)
         defect_setup(root)
@@ -309,6 +370,7 @@ def baseline_behavior_case(name, defect_setup, scope, rel, code):
 
 def baseline_monotonic_case(name, scope, rel, code):
     """只减不增：旧账本已提交（total=1），涨到 2 必须 ERROR。没有 git 的场景另测。"""
+    COVERED.add("baseline")
     with tempfile.TemporaryDirectory(prefix="go-base-mono-") as tmp:
         root = copy_root(tmp)
         line = ledger_line(scope, rel, f"{code}:旧账", 1)
@@ -325,6 +387,22 @@ def baseline_monotonic_case(name, scope, rel, code):
 
 def main():
     positive_control()
+
+    stage_scope_case("gates: stage.scopes 必须是已注册 scope", "ghost", "GATE001")
+    text_reverse_case(
+        "gates: AGENTS.md 规则编号必须连续",
+        "AGENTS.md",
+        lambda root: replace_text(root, "AGENTS.md", "10. 联调清单", "联调清单"),
+        "gates",
+        "GATE002",
+    )
+    reverse_case(
+        "gates: required field 为 null 不当作已填",
+        ".harness/deliverables/gates/01-requirements.json",
+        lambda data: data.update({"owner": None}),
+        "gates",
+        "GATE003",
+    )
 
     hooks_case("gates: commit-msg 丢了执行位（git 会静默跳过）", "GATE008", strip_exec=True)
 
@@ -469,6 +547,17 @@ def main():
         ),
     )
     baseline_error_case(
+        "baseline: accepted 的 reason/owner 不能为 null",
+        "BASE011",
+        lambda root: write_text(
+            root,
+            ACCEPTED_REL,
+            json.dumps([{"scope": "conf", "path": ".harness/config.json",
+                         "fingerprint": "CONF001:x", "count": 1, "reason": None,
+                         "owner": None, "review_by": "2099-01-01"}], ensure_ascii=False),
+        ),
+    )
+    baseline_error_case(
         "baseline: accepted 已过复查日期",
         "BASE012",
         lambda root: write_text(
@@ -540,6 +629,12 @@ def main():
     baseline_solo_case(
         "baseline: 单查不许编造「可以刷新账本」", "conf", ".harness/config.json", "CONF001"
     )
+
+    registered = registered_scopes()
+    missing = sorted(registered - COVERED)
+    if missing:
+        raise AssertionError(f"这些注册 scope 没有反向用例：{missing}（新增 scope 必须同批加一条）")
+    print(f"PASS scope coverage: {len(COVERED)}/{len(registered)}")
 
     print("ALL REVERSE TESTS PASSED")
 

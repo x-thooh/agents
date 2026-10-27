@@ -10,7 +10,8 @@
 
 | 机制 | 为什么没预置 | 归属阶段 |
 | --- | --- | --- |
-| （当前没有） | 基线 / `accepted` 已由 `scopes/baseline.py` 提供参考实现：空账本 + 四条断言 + 五条反向测试。指纹规则若与本仓库规则集不匹配，改的是常量与正则，不是重写 | — |
+| `INDEX.md` discovery 块 + `skills.declared.yaml` ↔ `skills/` 双向对账 | 需要目标仓库自己的 scope 划分与 skill 清单；模板不预置一份会过期的声明，所以也没法预置对账 | 5 |
+| 基线 / `accepted` | 已由 `scopes/baseline.py` 提供参考实现：空账本 + 四条断言 + 五条反向测试。指纹规则若与本仓库规则集不匹配，改的是常量与正则，不是重写 | — |
 
 ## 两套的区别
 
@@ -45,6 +46,9 @@ AGENTS.md                       地图：命令 + 硬规则（每条带 scope �
 tests/reverse.py                每个 scope 一条违规样本 + --fix 的四条边界样本
 Makefile                        init / check / check-json / check-strict / fix / selftest
 ```
+
+根级 `skills/`（按需）是能力声明账本的磁盘侧；`playbooks/` 是旧名，已废弃。模板只放一个
+`.gitkeep`，因为声明账本与对账 scope 都还没预置（见上面的未实现清单）。
 
 五条一致的约定：`example: true` 的示例数据在 `--strict` 下判 ERROR；退出码 0 = 无 ERROR；
 反向测试与 scope 一一对应，新增 scope 必须同批加一条；**阶段只写在 `flow.json`，脚本与散文都不许再抄一份**；

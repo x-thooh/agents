@@ -29,7 +29,7 @@ NAME = "sections"
 # 数值不在这里：DOC_WARN / DOC_LIMIT 住在 common.py（全仓唯一事实源）。
 # 动额度要单独一轮并在 decisions 写明理由（§二.5 额度只减不增）。
 
-HEAD = re.compile(r"^(#{1,2})\s+\S")
+HEAD = re.compile(r"^(#{2})\s+\S")
 
 
 def _headings(lines):

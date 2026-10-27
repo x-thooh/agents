@@ -59,6 +59,10 @@
       "kind": "file"
     },
     {
+      "path": "skills",
+      "kind": "dir"
+    },
+    {
       "path": "tests",
       "kind": "dir"
     },

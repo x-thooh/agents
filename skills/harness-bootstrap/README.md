@@ -4,7 +4,7 @@
 标准布局表为准——这里不抄第二份清单，抄出来的迟早和正文不一致。
 
 - 正文：`SKILL.md`（每节只留判据：修改三段纪律、九条设计判据、六条原则、三个形状、五阶段、记忆树、断言坑、破坏性操作、验收、移植清单）
-- 自身门禁：`scripts/audit.py` + `tests/fixtures/`——审本 SKILL.md（frontmatter / bash 围栏 / 交叉引用 / 相对链接 / 基线记账 / 版本保质期 / 宿主实测 / 双向对账 / 规范用语 / 调度器体征 / 目录形状 / 参考文件可达性（STRUCT003）/ 节与参考材料的 80/100 两档上限）+ references/*.md 里的跨文件 §X 引用（存在性），不依赖 git，不碰其他 skill；实现按 scope 分文件住 `scripts/scopes/`
+- 自身门禁：`scripts/audit.py` + `tests/fixtures/`——审本 skill 目录（SKILL.md / references / scripts / tests / templates：frontmatter / bash 围栏 / 交叉引用 / 相对链接 / 基线记账 / 版本保质期 / 宿主实测 / 双向对账 / 规范用语 / 调度器体征 / 目录形状 / 参考文件可达性（STRUCT003）/ 节与参考材料的 80/100 两档上限 / 布局表↔模板 / 交付物点名），不依赖 git，不碰其他 skill；实现按 scope 分文件住 `scripts/scopes/`
 - `references/`：**按需才读**的部分——判据的展开、失败态论证、笔记/归档/记忆树约定、额度与基线规格。
   入口只留判据与链接；`SECT002` 守住单个参考文件 ≤100 行（撞 80 记 WARN），所以它只能越拆越细，不能长成第二个手册
 
@@ -26,7 +26,7 @@ harness-bootstrap/
 ├── agents/           标准：子 Agent 定义（本 skill 目前没有，不建空目录）
 ├── README.md         额外：维护者入口，给人看，不进 skill 上下文
 ├── Makefile          额外：统一命令入口（所有命令从 make 走）
-├── tests/            额外：自身门禁的引擎（`fixtures.py`）+ 期望表（`cases.py`）+ 三道闸（`coverage.py`）+ 行为层（`template_boot.py`）+ 复盘校验器的反向测试（`retro_reverse.py`）+ 反向 fixture
+├── tests/            额外：自身门禁的引擎（`fixtures.py`）+ 期望表（`cases.py`）+ 三道闸（`coverage.py`）+ 行为层（`template_boot.py`）+ 模板共同文件 parity（`template_parity.py`）+ 复盘校验器的反向测试（`retro_reverse.py`）+ 反向 fixture
 └── templates/        额外：生成物模板（每套含 TEMPLATE.md 模板说明 + AGENTS.md 入口），拷进目标仓库用，不是参考文档
 ```
 
@@ -71,25 +71,37 @@ cd ~/.agents && git pull --ff-only             # 升级；本 skill 无运行时
 这个仓库自己也是一份 harness——它管别人怎么建 harness，所以得先过自己的关。命令只从 `make` 走：
 
 ```bash
-make check          # 核心：技能自审 + fixture 断言表 + 两套模板 verify + 两套反向测试
-make check-all      # 全部：check + check-strict + check-boot + lint-python。**提交前与 CI 都跑这一条**
+make check          # 核心：技能自审 + fixture 断言表 + 模板共同文件 parity + 两套模板 verify + 两套反向测试
+make check-all      # 全部：check + check-strict + check-boot + lint-python + retro-check。**提交前与 CI 都跑这一条**
 make check-strict   # 断言 --strict 能拦下模板自带的示例数据
 make check-boot     # 把模板拷进临时空仓库，验它装上之后是否仍然诚实（行为层）
+make template-parity # 两套模板的共同文件逐字节一致
 make check-sample   # 样例 Go 模块 vet + test（需要 Go 工具链）
 make lint           # 工具层：golangci-lint（需要 Go 工具链）
 make lint-python    # 工具层：ruff 检查全部 Python（需要 ruff，配置在 pyproject.toml）
+make round          # 行为级对照：HEAD~1 与当前工作树的 audit 计数
+make retro          # 打印本轮复盘的事实底板
+make retro-check    # 校验复盘正文与工单表
 make guide          # 重新生成两套 codebase-guide/index.json
+make code-index     # 重新生成 references/code-index.md
 ```
 
-两级不是为了宽松，是为了「改一行还能快跑」：`check` 秒级，`check-all` 多两条模板不变量。
-但**提交前和 CI 必须是同一条**——否则「本地绿、CI 红」只是时间问题。
+两级不是为了宽松，是为了「改一行还能快跑」：`check` 是快的那一半，`check-all` 追加
+strict 不变量、模板装上后的行为、Python 静态检查与复盘校验。但**提交前和 CI 必须是同一条**
+——否则「本地绿、CI 红」只是时间问题。
 
-仓库根（`~/.agents`）的 `.github/workflows/verify.yml` 跑的是同一串命令，
-每个 job 的 `working-directory` 指向本目录——workflow 只能在仓库根被 GitHub 读到。pre-commit 能被 `git commit --no-verify` 绕过，
-CI 不能——这是 CI 唯一的职责。它**不新增断言**：目录齐不齐由模板的 `GATE00x` 判，
-索引对不对由 `GUIDE001` 判；同一个断言写两处，就有两个地方会漂。CI 的两个 job 按依赖分：
-`gate` 故意不装 Go（「verify 只做词法检查」这句话在那里被真实执行），`sample` 装 Go 跑
-`check-sample` 与 `lint`。CI 的 `gate` job 跑 `make check-all`，与本地的提交前命令一致。
+仓库根（`~/.agents`）的 `.github/workflows/verify.yml` 是 CI 的唯一入口（workflow 只能在
+仓库根被 GitHub 读到）。它有三个 job，职责不同：
+
+| job | 工作目录 | 跑什么 |
+| --- | --- | --- |
+| `gate` | 本目录 | `make check-all`，与本地的提交前命令一致 |
+| `skills` | 仓库根 | `make audit-skills`，审**所有** skill 的通用子集（frontmatter / 围栏 / 链接 / §引用） |
+| `sample` | 本目录 | `check-sample` 与 `lint`（装 Go 与 golangci-lint） |
+
+pre-commit 能被 `git commit --no-verify` 绕过，CI 不能——这是 CI 唯一的职责。`gate` 与本 skill
+的本地门禁同一条，而且故意不装 Go（「verify 只做词法检查」在那里被真实执行）；`skills` 是
+跨技能审计，不是本 skill 的第二个门禁；`sample` 才需要 Go 工具链。
 
 反向测试里有两处需要说清，否则下一个人会以为门禁在偷工：
 

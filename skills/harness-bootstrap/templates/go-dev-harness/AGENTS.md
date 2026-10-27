@@ -40,7 +40,7 @@ style/refactor/perf/test/build/ci/chore/revert。由 `commit-msg` 钩子判，�
 每条规则要么有 scope 断言，要么标「无断言」并写强度来源。
 
 1. 不得跳阶：前序阶段为 `reject` 或缺失时，后续阶段不得为 `pass`/`conditional`。`scope=gates`
-2. 门记录字段取自 `workflow/contract.json` 的 `gate_fields`，`stage` 与 `process_version` 必须与 `flow.json` 一致。`scope=gates`
+2. 门记录字段取自 `workflow/contract.json` 的 `gate_fields`，`stage` 与 `process_version` 必须与 `flow.json` 一致；`flow.json` 的 `scopes` 必须是 `verify.py` 注册的 scope，硬规则编号必须连续。`scope=gates`
 3. `pass`/`conditional` 必须有证据；`conditional` 必须有未过期例外。`scope=gates`
 4. `flow.json` 声明的每个交付物必须真实存在。`scope=gates`
 5. 接口必须声明方法、路径、请求、响应、错误码、幂等性；验收标准必须可测（given_when_then 或 measure）。`scope=contract`
@@ -84,6 +84,7 @@ style/refactor/perf/test/build/ci/chore/revert。由 `commit-msg` 钩子判，�
 ```text
 AGENTS.md                        本文件（地图）
 Makefile                         make init / init-lefthook / check / fix / lint / selftest
+skills/                          可安装流程（按需；声明账本在 .harness/workflow/skills.declared.yaml）
 .golangci.yml                    工具层配置（需 Go 工具链；与 specs/standards.md「工具层」同批改）
 lefthook.yml                     可选钩子调度层，只委托 .harness/git-hooks/，不内联检查
 .harness/baseline.txt           老账账本（四列；首版为空）

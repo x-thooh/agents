@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """harness-bootstrap 自身门禁：只审 --skill-dir 指定的这一个 skill。
 边界（不要越界）：只审一个 skill 目录（默认 = 本脚本所在 skill），不扫描其他 skill；
-  * 读取面 = SKILL.md 全文 + skill 根目录与 references/ 的条目名（struct）+ references/*.md
-    里的 §X.Y 引用（仅存在性，xrefdoc）——不对 references 做全文审查，也不改写它们；
+  * 读取面 = 本 skill 目录：SKILL.md 全文；references/*.md（链接/锚点、§X.Y 引用、
+    行数额度、交付物点名）；scripts/、tests/、templates/ 的机械检查；只做机械检查，不判语义；
   * 只读，不写文件；不依赖 git；同输入同输出（可重复执行）；
   * 不审目标仓库的 harness —— 那是目标仓库自己的 verify.py 的事。
 

@@ -40,7 +40,7 @@ NAME = "baseline"
 BASELINE_REL = ".harness/baseline.txt"
 ACCEPTED_REL = ".harness/accepted.json"
 DIGITS = re.compile(r"\d+")
-ACCEPTED_FIELDS = ("scope", "path", "fingerprint", "count", "reason", "owner", "review_by")
+ACCEPTED_TEXT_FIELDS = ("scope", "path", "fingerprint", "reason", "owner", "review_by")
 REVIEW_BY = "%Y-%m-%d"
 
 
@@ -50,6 +50,11 @@ def fingerprint(code, message):
 
 def key_of(finding):
     return (finding.scope, finding.path or "", fingerprint(finding.code, finding.message))
+
+
+def _nonempty_text(value):
+    """字段必须是写下来的非空字符串：None / 数字 / 空串都不算「有负责人」。"""
+    return isinstance(value, str) and value.strip() != ""
 
 
 def _positive_int(raw):
@@ -132,7 +137,7 @@ def read_accepted(root, findings):
     table, today = {}, datetime.date.today()
     for idx, entry in enumerate(data, 1):
         item = as_dict(entry)
-        missing = [f for f in ACCEPTED_FIELDS if not str(item.get(f, "")).strip()]
+        missing = [f for f in ACCEPTED_TEXT_FIELDS if not _nonempty_text(item.get(f))]
         count = _positive_int(item.get("count"))
         if missing or count is None:
             lack = missing + ([] if count is not None else ["count(正整数)"])

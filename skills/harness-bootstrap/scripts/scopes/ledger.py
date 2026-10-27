@@ -6,16 +6,20 @@
 import re
 
 from .common import Finding
+from .layout_parity import _layout
 
 NAME = "ledger"
 
 DUAL_TRIGGER = re.compile(r"双向对账|双向比对")
 DUAL_INTENT = re.compile(r"声明|意图")
 DUAL_CARRIER = re.compile(r"`[^`\s]+\.(?:ya?ml|json|csv|txt|md)`")
+# 「↔ 磁盘 `skills/`」里的磁盘侧目录；它必须出现在布局表里，否则两侧各说各话。
+DUAL_DISK = re.compile(r"磁盘\s*`([^`\s]+/)`")
 
 
 def run(ctx, findings):
     lines = ctx["text"].splitlines()
+    layout_paths = {path for _line, path, _shape, _desc in _layout(lines)}
     heads = []
     for i, ln in enumerate(lines):
         m = re.match(r"^(#{1,6})\s+", ln)
@@ -35,3 +39,8 @@ def run(ctx, findings):
         if missing:
             findings.append(Finding("ERROR", NAME, start + 1, "DUAL001",
                 "双向对账小节没点名：" + "；".join(missing) + "。两侧都派生时断言恒真、构不出失败例"))
+        for disk in DUAL_DISK.findall(body):
+            if disk not in layout_paths and not any(p.startswith(disk) for p in layout_paths):
+                findings.append(Finding("ERROR", NAME, start + 1, "DUAL001",
+                    f"双向对账写到的磁盘侧 `{disk}` 不在布局表里：布局表是唯一事实源，"
+                    "对账两侧必须有一侧是表里登记过的真实目录"))
