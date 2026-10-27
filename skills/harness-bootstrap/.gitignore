@@ -7,5 +7,8 @@ __pycache__/
 # 系统
 .DS_Store
 
+# 宿主 agent 的工作区元数据（记忆/日志）：本机状态，不进版本库
+.workbuddy-ai/
+
 # 失败过程留痕（.harness/memory/trace/）默认入库，只忽略其中临时产物
 *.log
