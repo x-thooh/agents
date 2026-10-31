@@ -7,6 +7,14 @@
       "origin": "reflect",
       "retro": "2026-10-26-harness-four-stages.md",
       "evidence": "commit:4da2929"
+    },
+    {
+      "id": "R-2",
+      "status": "done",
+      "title": "CM006 只认「顺带：」这种刻意造句，真实写法「顺带修了两处：…」漏检——补反向用例并放宽到「连接词后 10 字内出现标点」",
+      "origin": "reflect",
+      "retro": "2026-10-31-harness-tidy.md",
+      "evidence": "commit:8bf57ed"
     }
   ]
 }
