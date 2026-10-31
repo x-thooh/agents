@@ -31,7 +31,13 @@ jobs:
       run:
         working-directory: skills/harness-bootstrap
     steps:
+      # 取全历史，不是默认的 depth=1：check-all 里的 retro-check 要拿工单的
+      # `commit:<sha>` 去 git 历史里核验。浅克隆里查不到旧提交，会被报成
+      # 「标 done 却没给可核验证据」——把「历史不全」误报成「工单说谎」，两者
+      # 要做的动作相反（补历史 vs 改工单）。实测：CI 连续两次红在这一条，本地全绿。
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
