@@ -14,6 +14,8 @@
   ② 拦到 0 且复检行只有结论词、没有理由 → 必须 FAIL（那是一个人就能盖的章）
   ③ 拦到 0、复检行给结论 + 理由 → 必须 PASS
   ④ 拦到点名了 code → 不要求复检行（这一轮它证明过自己）→ 必须 PASS
+  ⑤ done 的证据在历史里查不到、而本目录不是仓库 → 必须「判不了」（退出码 2），
+     不是「工单说谎」（退出码 1）：CI 浅克隆红的就是这一格，指向了错的一边。
 
 用法: python3 tests/retro_reverse.py
 退出码: 0 = 全过；1 = 有失败；2 = 环境错误
@@ -44,7 +46,7 @@ NOTE = """# 复盘（测试样本）
 REASON = "目标仓库每周真要跑一次 pre-commit，本周没有提交，所以这一轮它没机会拦到。"
 
 
-def run(note):
+def run(note, board_data=None):
     """在临时根下跑校验器：把脚本拷进 skills/harness-bootstrap/scripts/ 让 parents[1] 落在 tmp。"""
     with tempfile.TemporaryDirectory(prefix="retro-rev-") as base:
         tmp = Path(base)
@@ -55,7 +57,7 @@ def run(note):
         retro = tmp / "archive/retro"
         retro.mkdir(parents=True)
         (retro / "2026-01-01-sample.md").write_text(note, encoding="utf-8")
-        board = {"tasks": [{"id": "R-1", "status": "open", "title": "测试工单"}]}
+        board = board_data or OPEN
         (retro / "tasks.json").write_text(json.dumps(board, ensure_ascii=False), encoding="utf-8")
         proc = subprocess.run(
             [sys.executable, str(scripts / "retro_check.py")],
@@ -66,18 +68,25 @@ def run(note):
         return proc.returncode, proc.stdout + proc.stderr
 
 
+OPEN = {"tasks": [{"id": "R-1", "status": "open", "title": "测试工单"}]}
+# 临时目录不是 git 仓库，也没有那个提交：这一格测的是「判不了」与「工单说谎」分不分得开。
+DONE_UNVERIFIABLE = {
+    "tasks": [{"id": "R-1", "status": "done", "title": "测试工单", "evidence": "commit:deadbeef"}]
+}
+
 CASES = (
-    ("拦到 0 且无复检行", "0", "", 1, "复检"),
-    ("拦到 0 但复检只有结论词", "0", "## 复检：保留。", 1, "复检行要给结论"),
-    ("拦到 0 且复检给了结论与理由", "0", f"## 复检：保留 {REASON}", 0, "篇复盘通过"),
-    ("拦到点名了 code（不要求复检）", "RUNT001×3", "", 0, "篇复盘通过"),
+    ("拦到 0 且无复检行", "0", "", 1, "复检", OPEN),
+    ("拦到 0 但复检只有结论词", "0", "## 复检：保留。", 1, "复检行要给结论", OPEN),
+    ("拦到 0 且复检给了结论与理由", "0", f"## 复检：保留 {REASON}", 0, "篇复盘通过", OPEN),
+    ("拦到点名了 code（不要求复检）", "RUNT001×3", "", 0, "篇复盘通过", OPEN),
+    ("done 的证据查不到且没有完整历史", "RUNT001×3", "", 2, "判不了", DONE_UNVERIFIABLE),
 )
 
 
 def main():
     failures = []
-    for name, hit, review, want_rc, want_text in CASES:
-        rc, out = run(NOTE.format(hit=hit, review=review))
+    for name, hit, review, want_rc, want_text, board in CASES:
+        rc, out = run(NOTE.format(hit=hit, review=review), board)
         if rc != want_rc:
             failures.append(f"{name}: 期望退出码 {want_rc}，实际 {rc}\n{out[-600:]}")
         elif want_text not in out:

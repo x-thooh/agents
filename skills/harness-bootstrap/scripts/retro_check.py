@@ -96,11 +96,18 @@ def check(root=None):
     bad, cited = [], set()
     for path in files:
         _columns(path, path.read_text(encoding="utf-8"), board, bad, cited)
-    bad += retro_board.findings(root, board, cited)
+    board_bad, undecided = retro_board.findings(root, board, cited)
+    bad += board_bad
     if bad:
         for line in bad:
             print(f"FAIL {line}", file=sys.stderr)
         return 1
+    if undecided:
+        # 退出码 2 = 判不了。与 1（不合规）分开：这条链上「历史不全」与「工单说谎」
+        # 的动作相反，用同一个码会让人去改没错的那一边。
+        for line in undecided:
+            print(f"UNDECIDED {line}", file=sys.stderr)
+        return 2
     print(f"retro: {len(files)} 篇复盘通过；工单 {len(cited)} 条全部可追溯")
     return 0
 
