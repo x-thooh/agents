@@ -175,6 +175,11 @@ def previous_baselines(path):
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return {}
+    if data.get("example") is True:
+        # 示例证据里的基准是别人机器上测的：拿它当基准，等于把「这台机器比作者慢」
+        # 判成「代码退化」。实测 CI runner 把 43ns 的样例测成 76.9ns，>20% 直接 ERROR，
+        # 而代码一行没动。真实仓库（example: false）照旧继承——那才是回归判据。
+        return {}
     out = {}
     for item in data.get("benchmarks") or []:
         if isinstance(item, dict) and isinstance(item.get("name"), str):

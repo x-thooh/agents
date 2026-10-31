@@ -612,6 +612,16 @@ def main():
         lambda root: (root / "sample/internal/config/config_test.go").unlink(),
     )
     reverse_case(
+        "test: benchmark 比基准慢过 20%",
+        "test",
+        "TST003",
+        lambda root: edit_json(
+            root,
+            ".harness/deliverables/artifacts/test.json",
+            lambda data: data["benchmarks"][0].update({"ns_per_op": 90.0, "baseline_ns_per_op": 60}),
+        ),
+    )
+    reverse_case(
         "review: author self-approves",
         "review",
         "REV002",
